@@ -13,7 +13,7 @@
   <p class="discret" id="clinique">—</p>
 
   <div class="carte-suivi">
-    <p class="discret">Personnes avant vous</p>
+    <p class="discret" id="etiquette-rang">Personnes avant vous</p>
     <p class="rang" id="rang">—</p>
     <p class="attente" id="attente">chargement…</p>
   </div>
@@ -44,19 +44,52 @@ const CONSIGNES = {
   ANNULE: 'Ce ticket a été annulé.',
 };
 
+/**
+ * Ce que la grande carte affiche, selon l'état.
+ *
+ * Une file d'attente et un appel ne se racontent pas avec les mêmes mots.
+ * Afficher « 2 personnes avant vous » à quelqu'un qu'on vient d'appeler est
+ * faux et coûteux : sur un téléphone, c'est le grand chiffre qu'on lit en
+ * premier, et le client reste assis dans sa voiture. Dès qu'il est appelé, la
+ * carte montre SON numéro — celui que l'écran de la salle affiche et que l'ASV
+ * annonce — et plus aucune estimation.
+ */
+function carte(etat) {
+  switch (etat.statut) {
+    case 'APPELE':
+      return { etiquette: "C'est à vous", valeur: etat.numero, dessous: '', appel: true };
+    case 'EN_CONSULTATION':
+      return { etiquette: 'Votre numéro', valeur: etat.numero, dessous: '', appel: true };
+    case 'TERMINE':
+    case 'PARTI':
+    case 'ANNULE':
+      return { etiquette: 'Votre numéro', valeur: etat.numero, dessous: '', appel: false };
+    default:
+      // EN_ATTENTE, PREVENU, ABSENT : la position a un sens, et pour un
+      // absent elle en a même beaucoup — elle dit où il reprend sa place.
+      return {
+        etiquette: 'Personnes avant vous',
+        valeur: Math.max(0, etat.position - 1),
+        dessous: minutes(etat.attenteMinMinutes, etat.attenteMaxMinutes),
+        appel: etat.position <= 1,
+      };
+  }
+}
+
 async function relire() {
   try {
     const etat = await appel(`/api/suivi/${encodeURIComponent(reference)}`);
     el('clinique').textContent = etat.clinique;
-    el('numero-ticket').textContent = `Votre numéro : ${etat.numero}`;
 
+    const vue = carte(etat);
+    el('etiquette-rang').textContent = vue.etiquette;
     const rang = el('rang');
-    const devant = Math.max(0, etat.position - 1);
-    const cestAVous = etat.position <= 1 || etat.statut === 'APPELE';
-    rang.textContent = etat.position === 0 ? '—' : devant;
-    rang.classList.toggle('rang--cest-a-vous', cestAVous);
-    el('attente').textContent = etat.position === 0
-      ? '' : minutes(etat.attenteMinMinutes, etat.attenteMaxMinutes);
+    rang.textContent = vue.valeur;
+    rang.classList.toggle('rang--cest-a-vous', vue.appel);
+    el('attente').textContent = vue.dessous;
+    // Le rappel du numéro est redondant quand la carte montre déjà le numéro.
+    el('numero-ticket').textContent =
+      vue.etiquette === 'Personnes avant vous' ? `Votre numéro : ${etat.numero}` : '';
 
     const consigne = el('consigne');
     consigne.textContent = CONSIGNES[etat.statut] ?? '';
