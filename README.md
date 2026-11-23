@@ -1,5 +1,7 @@
 # Attenso
 
+[![Tests](https://github.com/ndjoumessi/attenso/actions/workflows/ci.yml/badge.svg)](https://github.com/ndjoumessi/attenso/actions/workflows/ci.yml)
+
 File d'attente virtuelle pour cabinets à flux libre. **V0 : la file seule.**
 
 Ce fichier dit comment le faire tourner, et surtout **pourquoi le code est
