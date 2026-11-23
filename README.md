@@ -257,11 +257,37 @@ Une panne de l'agrégateur ou un dépassement de délai donnent aussi
 attendre. Le délai de lecture est court et assumé (3 s), contre 15 s pour
 l'envoi de SMS qui, lui, tourne en arrière-plan.
 
-**Les garde-fous passent avant l'appel payant.** Le plafond du jour et la limite
-de deux tickets par numéro sont vérifiés *avant* le HLR : sans cet ordre, un
-script brûlerait des crédits sans même créer de ticket. Et le deuxième ticket
-d'un même numéro dans la journée réutilise le verdict déjà payé — une famille
-avec deux animaux ne coûte pas deux vérifications.
+**Le budget se compte sur les vérifications, pas sur les tickets.** La première
+version comptait des tickets et prétendait ainsi protéger la dépense : c'était
+faux, et la revue de sécurité l'a relevé. Un numéro **refusé** ne crée aucun
+ticket, donc le compteur ne bougeait jamais dans le seul cas qui coûte — un
+numéro mort martelé donnait des appels payants à l'infini.
+
+La table `verification_numero` porte donc le compteur et le cache. Elle est
+cloisonnée comme les autres, et purgée à J+1 : elle contient des numéros de
+téléphone, même règle que `ticket`.
+
+- `attenso.hlr.max-par-jour` (300) plafonne les appels payants par clinique.
+  Au-delà, on rend « indéterminé » sans appeler — **le ticket part quand même**.
+  Un plafond de dépense n'a pas à fermer la salle d'attente.
+- Le cache couvre les verdicts **négatifs** aussi : repasser le même numéro
+  refusé ne coûte plus rien, et n'apprend rien de neuf à qui le tenterait.
+- Le plafond de tickets et la limite par numéro restent vérifiés avant l'appel,
+  mais ils ne sont plus présentés comme le garde-fou de la dépense.
+
+**L'oracle de validité.** Un enregistrement qui répond « numéro injoignable »
+distingue une ligne morte d'une ligne vivante : c'est un vérificateur de numéros
+gratuit pour qui l'interroge et payé par la clinique. Les **refus** sont donc
+comptés par adresse, à part et serré (5 par 10 min), là où les enregistrements
+réussis gardent leur limite large. Un vrai client se trompe une ou deux fois ;
+quelqu'un qui nettoie une liste volée dépasse le seuil immédiatement, et n'a
+alors plus ni réponse ni appel payant. Le compteur n'est alimenté que par les
+échecs, donc il ne coûte rien à personne d'honnête.
+
+Ce n'est pas une fermeture complète : un attaquant disposant de nombreuses
+adresses peut encore sonder, borné par le budget quotidien. C'est le budget qui
+protège la clinique financièrement, et c'est la partie qui lui fait vraiment
+mal.
 
 Les deux réglages sont indépendants : on peut activer le HLR sans l'envoi réel,
 par exemple pour mesurer la qualité des numéros d'une clinique avant d'ouvrir

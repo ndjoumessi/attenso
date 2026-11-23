@@ -12,4 +12,13 @@ package ai.attenso.numero;
 public interface VerificateurNumero {
 
 	ResultatVerification verifier(String telephoneE164);
+
+	/**
+	 * Cet appel coûte-t-il de l'argent ? Le budget quotidien et le cache ne
+	 * s'appliquent qu'aux vérificateurs payants : les faire mordre sur un
+	 * contrôle gratuit limiterait des enregistrements pour rien.
+	 */
+	default boolean payant() {
+		return false;
+	}
 }

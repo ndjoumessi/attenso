@@ -5,6 +5,8 @@ import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.ServiceTenant;
 import ai.attenso.tenant.Tenant;
 import ai.attenso.ticket.Fourchette;
+import ai.attenso.ticket.NumeroInjoignable;
+import ai.attenso.ticket.NumeroInvalide;
 import ai.attenso.ticket.ServiceCreationTicket;
 import ai.attenso.ticket.ServiceEstimation;
 import ai.attenso.ticket.ServiceFile;
@@ -22,17 +24,26 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Auto-enregistrement depuis le QR du comptoir.
  *
- * <p><strong>La limite de débit est volontairement large.</strong> Les clients
- * scannent le QR depuis la salle d'attente, souvent sur le wifi de la clinique :
- * ils partagent alors une seule adresse publique. Une limite serrée par IP
- * bloquerait les vrais clients un jour de forte affluence. La protection utile
- * est ailleurs — deux tickets par numéro et par jour, tenue en base. Celle-ci
- * ne sert qu'à arrêter un script.
+ * <p><strong>La limite de débit générale est volontairement large.</strong> Les
+ * clients scannent le QR depuis la salle d'attente, souvent sur le wifi de la
+ * clinique : ils partagent alors une seule adresse publique. Une limite serrée
+ * par IP bloquerait les vrais clients un jour de forte affluence. La protection
+ * utile est ailleurs — deux tickets par numéro et par jour, tenue en base.
+ *
+ * <p><strong>La limite sur les REFUS, elle, est serrée</strong>, et pour une
+ * raison différente. Un enregistrement qui répond « numéro injoignable »
+ * distingue une ligne morte d'une ligne vivante : c'est un oracle de validité
+ * de numéro, gratuit pour qui l'interroge et payé par la clinique. Un vrai
+ * client se trompe une ou deux fois ; quelqu'un qui nettoie une liste volée
+ * dépasse le seuil immédiatement. Le compteur n'est alimenté que par les
+ * échecs, donc il ne coûte rien à personne d'honnête.
  */
 @RestController
 public class ControleurPublic {
 
 	private static final int ENREGISTREMENTS_MAX = 30;
+
+	private static final int REFUS_MAX = 5;
 
 	private static final Duration FENETRE = Duration.ofMinutes(10);
 
@@ -70,14 +81,27 @@ public class ControleurPublic {
 				FENETRE)) {
 			throw new TropDeRequetes();
 		}
+		String cleRefus = "refus:" + adresses.de(requete);
+		if (!limiteur.sousLaLimite(cleRefus, REFUS_MAX, FENETRE)) {
+			// Déjà trop de numéros refusés depuis cette adresse : on ne répond
+			// plus, et surtout on ne lance pas la vérification payante.
+			throw new TropDeRequetes();
+		}
 		Tenant clinique = cliniques.parSlug(slug);
-		return ContexteTenant.avec(clinique.id(), () -> {
-			Ticket ticket = creation.creerDepuisQr(clinique, file.jourCourant(clinique),
-					demande.telephone());
-			int position = file.position(ticket);
-			Fourchette attente = estimation.fourchette(clinique.id(), position);
-			return new ReponseTicket(ticket.numeroJour(), ticket.reference(),
-					liens.pour(ticket), position, attente.minMinutes(), attente.maxMinutes());
-		});
+		try {
+			return ContexteTenant.avec(clinique.id(), () -> {
+				Ticket ticket = creation.creerDepuisQr(clinique, file.jourCourant(clinique),
+						demande.telephone());
+				int position = file.position(ticket);
+				Fourchette attente = estimation.fourchette(clinique.id(), position);
+				return new ReponseTicket(ticket.numeroJour(), ticket.reference(),
+						liens.pour(ticket), position, attente.minMinutes(),
+						attente.maxMinutes());
+			});
+		}
+		catch (NumeroInjoignable | NumeroInvalide refus) {
+			limiteur.compter(cleRefus);
+			throw refus;
+		}
 	}
 }

@@ -104,6 +104,11 @@ public class VerificateurNumeroOctopush implements VerificateurNumero {
 		return valeur == null ? "" : valeur.toLowerCase(java.util.Locale.ROOT);
 	}
 
+	@Override
+	public boolean payant() {
+		return true;
+	}
+
 	public java.math.BigDecimal coutCentimes() {
 		return proprietes.coutCentimes();
 	}

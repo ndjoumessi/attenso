@@ -46,13 +46,6 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
 	long countByTenantIdAndJourAndTelephoneE164(UUID tenantId, LocalDate jour, String telephone);
 
-	/**
-	 * Le dernier ticket du jour pour ce numéro. Sert à réutiliser un verdict
-	 * HLR déjà payé : une famille avec deux animaux ne doit pas coûter deux
-	 * vérifications, et le second ticket est alors instantané.
-	 */
-	Optional<Ticket> findFirstByTenantIdAndJourAndTelephoneE164OrderByCreeLeDesc(
-			UUID tenantId, LocalDate jour, String telephone);
 
 	boolean existsByTenantIdAndJourAndOrdre(UUID tenantId, LocalDate jour, long ordre);
 

@@ -1,8 +1,10 @@
 package ai.attenso.ticket;
 
 import ai.attenso.config.ProprietesFile;
+import ai.attenso.config.ProprietesHlr;
 import ai.attenso.numero.ResultatVerification;
 import ai.attenso.numero.VerificateurNumero;
+import ai.attenso.numero.VerificationDao;
 import ai.attenso.numero.Verdict;
 import ai.attenso.tenant.Tenant;
 import java.time.LocalDate;
@@ -35,14 +37,21 @@ public class ServiceCreationTicket {
 
 	private final VerificateurNumero verificateur;
 
+	private final VerificationDao verifications;
+
 	private final ProprietesFile proprietes;
 
+	private final ProprietesHlr proprietesHlr;
+
 	public ServiceCreationTicket(InsertionTicket insertion, TicketRepository tickets,
-			VerificateurNumero verificateur, ProprietesFile proprietes) {
+			VerificateurNumero verificateur, VerificationDao verifications,
+			ProprietesFile proprietes, ProprietesHlr proprietesHlr) {
 		this.insertion = insertion;
 		this.tickets = tickets;
 		this.verificateur = verificateur;
+		this.verifications = verifications;
 		this.proprietes = proprietes;
+		this.proprietesHlr = proprietesHlr;
 	}
 
 	/**
@@ -88,26 +97,39 @@ public class ServiceCreationTicket {
 	}
 
 	/**
-	 * Vérifie le numéro, ou réutilise un verdict déjà payé le même jour pour le
-	 * même numéro — le cas de la famille avec deux animaux.
+	 * Vérifie le numéro, avec cache et budget.
+	 *
+	 * <p><strong>Le budget se compte sur les vérifications, pas sur les
+	 * tickets</strong>, et c'est la correction d'une erreur de la première
+	 * version. Un numéro refusé ne crée aucun ticket : les garde-fous qui
+	 * comptaient des tickets ne comptaient donc rien dans le seul cas qui
+	 * coûte, et un numéro mort martelé donnait des appels payants à l'infini.
+	 *
+	 * <p>Le cache couvre les verdicts négatifs aussi, pour la même raison :
+	 * repasser le même numéro refusé ne doit plus rien coûter, et n'apprend
+	 * d'ailleurs rien de neuf à qui le tenterait.
+	 *
+	 * <p>Budget épuisé : on rend « indéterminé » sans appeler, et le ticket
+	 * part quand même. Un plafond de dépense n'a pas à fermer la salle
+	 * d'attente.
 	 */
 	private ResultatVerification verifier(Tenant tenant, LocalDate jour, String e164) {
-		Optional<Ticket> dejaVu = tickets
-				.findFirstByTenantIdAndJourAndTelephoneE164OrderByCreeLeDesc(tenant.id(), jour,
-						e164);
-		if (dejaVu.isPresent()) {
-			Boolean connu = dejaVu.get().telephoneValide();
-			JOURNAL.debug("verdict réutilisé pour un numéro déjà vu aujourd'hui");
-			return new ResultatVerification(verdictDe(connu), "déjà vérifié aujourd'hui");
+		if (!verificateur.payant()) {
+			return verificateur.verifier(e164);
 		}
-		return verificateur.verifier(e164);
-	}
-
-	private Verdict verdictDe(Boolean valide) {
-		if (Boolean.TRUE.equals(valide)) {
-			return Verdict.JOIGNABLE;
+		Optional<ResultatVerification> connu = verifications.retrouver(tenant.id(), jour, e164);
+		if (connu.isPresent()) {
+			return connu.get();
 		}
-		return Boolean.FALSE.equals(valide) ? Verdict.INJOIGNABLE : Verdict.INDETERMINE;
+		if (verifications.compterDuJour(tenant.id(), jour) >= proprietesHlr.maxParJour()) {
+			JOURNAL.warn("budget de {} vérifications atteint pour {} : les tickets "
+					+ "continuent d'être émis, sans contrôle du numéro",
+					proprietesHlr.maxParJour(), tenant.slug());
+			return ResultatVerification.indetermine("budget de vérifications du jour atteint");
+		}
+		ResultatVerification resultat = verificateur.verifier(e164);
+		verifications.enregistrer(tenant.id(), jour, e164, resultat);
+		return resultat;
 	}
 
 	private void refuserSiPlafondAtteint(Tenant tenant, LocalDate jour) {

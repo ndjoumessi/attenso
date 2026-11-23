@@ -29,7 +29,10 @@ import org.springframework.test.web.servlet.MockMvc;
  * exécution.
  */
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "attenso.file.tickets-max-par-jour=2")
+@TestPropertySource(properties = {
+		"attenso.file.tickets-max-par-jour=2",
+		"attenso.hlr.max-par-jour=2",
+})
 class VerificationNumeroIntegrationTest extends SocleIntegration {
 
 	@Autowired
@@ -41,10 +44,20 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 	@MockitoBean
 	VerificateurNumero verificateur;
 
-	private void enregistrer(String slug, String telephone, int statutAttendu) throws Exception {
+	/**
+	 * Chaque test parle depuis sa propre adresse : le limiteur de débit est un
+	 * singleton du contexte, et des tests qui se partagent une adresse se
+	 * pollueraient l'un l'autre.
+	 */
+	private void enregistrer(String slug, String telephone, int statutAttendu, String adresse)
+			throws Exception {
 		http.perform(post("/t/" + slug + "/tickets")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"telephone\": \"%s\"}".formatted(telephone)))
+						.content("{\"telephone\": \"%s\"}".formatted(telephone))
+						.with(requete -> {
+							requete.setRemoteAddr(adresse);
+							return requete;
+						}))
 				.andExpect(status().is(statutAttendu));
 	}
 
@@ -59,7 +72,11 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 		http.perform(post("/t/hlr-mort/tickets")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"telephone": "06 11 11 11 11"}"""))
+								{"telephone": "06 11 11 11 11"}""")
+						.with(requete -> {
+							requete.setRemoteAddr("10.0.0.9");
+							return requete;
+						}))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.title").value("Numéro injoignable"))
 				.andExpect(jsonPath("$.detail")
@@ -78,7 +95,7 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 		when(verificateur.verifier(anyString()))
 				.thenReturn(ResultatVerification.indetermine("absent_subscriber"));
 
-		enregistrer("hlr-inconnu", "06 11 11 11 11", 201);
+		enregistrer("hlr-inconnu", "06 11 11 11 11", 201, "10.0.0.1");
 
 		assertThat(compterNotifications(id, "TICKET"))
 				.as("et le SMS part quand même : on ne sait pas qu'il n'arrivera pas")
@@ -90,11 +107,12 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 			+ "payé — une famille avec deux animaux ne coûte pas deux HLR")
 	void leSecondTicketReutiliseLeVerdict() throws Exception {
 		creerClinique("hlr-famille", "Clinique", 2, 180);
+		when(verificateur.payant()).thenReturn(true);
 		when(verificateur.verifier(anyString()))
 				.thenReturn(ResultatVerification.joignable("live"));
 
-		enregistrer("hlr-famille", "06 11 11 11 11", 201);
-		enregistrer("hlr-famille", "06 11 11 11 11", 201);
+		enregistrer("hlr-famille", "06 11 11 11 11", 201, "10.0.0.2");
+		enregistrer("hlr-famille", "06 11 11 11 11", 201, "10.0.0.2");
 
 		verify(verificateur, times(1)).verifier("+33611111111");
 	}
@@ -107,11 +125,71 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 		when(verificateur.verifier(anyString()))
 				.thenReturn(ResultatVerification.joignable("live"));
 
-		enregistrer("hlr-plafond", "06 11 11 11 11", 201);
-		enregistrer("hlr-plafond", "06 22 22 22 22", 201);
+		enregistrer("hlr-plafond", "06 11 11 11 11", 201, "10.0.0.3");
+		enregistrer("hlr-plafond", "06 22 22 22 22", 201, "10.0.0.3");
 		org.mockito.Mockito.clearInvocations(verificateur);
 
-		enregistrer("hlr-plafond", "06 33 33 33 33", 429);
+		enregistrer("hlr-plafond", "06 33 33 33 33", 429, "10.0.0.3");
+
+		verify(verificateur, never()).verifier(anyString());
+	}
+
+	@Test
+	@DisplayName("LE trou de la première version : un numéro refusé ne crée pas "
+			+ "de ticket, donc un plafond de TICKETS ne plafonnait rien")
+	void unNumeroRefuseNEstVerifieQuUneFois() throws Exception {
+		creerClinique("hlr-oracle", "Clinique", 2, 180);
+		when(verificateur.payant()).thenReturn(true);
+		when(verificateur.verifier(anyString()))
+				.thenReturn(ResultatVerification.injoignable("line_status=dead"));
+
+		enregistrer("hlr-oracle", "06 11 11 11 11", 400, "10.0.0.5");
+		enregistrer("hlr-oracle", "06 11 11 11 11", 400, "10.0.0.5");
+		enregistrer("hlr-oracle", "06 11 11 11 11", 400, "10.0.0.5");
+
+		verify(verificateur, times(1)).verifier("+33611111111")
+				;
+	}
+
+	@Test
+	@DisplayName("budget de vérifications épuisé : on n'appelle plus, mais les "
+			+ "tickets continuent d'être émis")
+	void leBudgetEpuiseNArretePasLaSalleDAttente() throws Exception {
+		creerClinique("hlr-budget", "Clinique", 2, 300);
+		when(verificateur.payant()).thenReturn(true);
+		when(verificateur.verifier(anyString()))
+				.thenReturn(ResultatVerification.injoignable("dead"));
+
+		// Deux numéros refusés : aucun ticket créé, mais le budget de deux
+		// vérifications est consommé.
+		enregistrer("hlr-budget", "06 11 11 11 11", 400, "10.0.0.6");
+		enregistrer("hlr-budget", "06 22 22 22 22", 400, "10.0.0.7");
+		org.mockito.Mockito.clearInvocations(verificateur);
+
+		// Le troisième numéro n'est plus vérifié — et il passe.
+		enregistrer("hlr-budget", "06 33 33 33 33", 201, "10.0.0.8");
+
+		verify(verificateur, never()).verifier(anyString());
+	}
+
+	@Test
+	@DisplayName("trop de refus depuis une adresse : plus de réponse, et plus "
+			+ "d'appel payant — l'oracle se referme")
+	void lesRefusRepetesFermentLOracle() throws Exception {
+		creerClinique("hlr-refus", "Clinique", 2, 180);
+		// Vérificateur gratuit ici, à dessein : la limite sur les refus protège
+		// l'INFORMATION, le budget protège l'ARGENT. Les deux doivent tenir
+		// séparément, et ce test ne doit pas s'arrêter au budget.
+		when(verificateur.payant()).thenReturn(false);
+		when(verificateur.verifier(anyString()))
+				.thenReturn(ResultatVerification.injoignable("dead"));
+
+		for (int i = 1; i <= 5; i++) {
+			enregistrer("hlr-refus", "06 11 11 11 1" + i, 400, "10.0.0.66");
+		}
+		org.mockito.Mockito.clearInvocations(verificateur);
+
+		enregistrer("hlr-refus", "06 11 11 11 19", 429, "10.0.0.66");
 
 		verify(verificateur, never()).verifier(anyString());
 	}
@@ -123,11 +201,11 @@ class VerificationNumeroIntegrationTest extends SocleIntegration {
 		when(verificateur.verifier(anyString()))
 				.thenReturn(ResultatVerification.joignable("live"));
 
-		enregistrer("hlr-limite", "06 11 11 11 11", 201);
-		enregistrer("hlr-limite", "06 11 11 11 11", 201);
+		enregistrer("hlr-limite", "06 11 11 11 11", 201, "10.0.0.4");
+		enregistrer("hlr-limite", "06 11 11 11 11", 201, "10.0.0.4");
 		org.mockito.Mockito.clearInvocations(verificateur);
 
-		enregistrer("hlr-limite", "06 11 11 11 11", 429);
+		enregistrer("hlr-limite", "06 11 11 11 11", 429, "10.0.0.4");
 
 		verify(verificateur, never()).verifier(anyString());
 	}

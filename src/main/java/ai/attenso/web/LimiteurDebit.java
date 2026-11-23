@@ -29,6 +29,26 @@ public class LimiteurDebit {
 		this.horloge = horloge;
 	}
 
+	/**
+	 * Observe sans consommer. Sert quand le jeton ne doit être pris qu'en cas
+	 * d'échec — compter les refus, par exemple, sans pénaliser les succès.
+	 */
+	public boolean sousLaLimite(String cle, int maximum, Duration fenetre) {
+		Deque<Long> horodatages = fenetres.get(cle);
+		if (horodatages == null) {
+			return true;
+		}
+		long debut = horloge.millis() - fenetre.toMillis();
+		synchronized (horodatages) {
+			return horodatages.stream().filter(instant -> instant >= debut).count() < maximum;
+		}
+	}
+
+	/** Consomme un jeton sans vérifier la limite. */
+	public void compter(String cle) {
+		fenetres.computeIfAbsent(cle, c -> new ArrayDeque<>()).addLast(horloge.millis());
+	}
+
 	public boolean autoriser(String cle, int maximum, Duration fenetre) {
 		long maintenant = horloge.millis();
 		long debut = maintenant - fenetre.toMillis();

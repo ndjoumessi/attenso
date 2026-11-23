@@ -49,7 +49,7 @@ class VerificateurNumeroOctopushTest {
 				.baseUrl("https://api.octopush.test");
 		this.octopush = MockRestServiceServer.bindTo(constructeur).build();
 		this.verificateur = new VerificateurNumeroOctopush(constructeur.build(),
-				new ProprietesHlr("octopush", Duration.ofSeconds(3), new BigDecimal("0.5")));
+				new ProprietesHlr("octopush", Duration.ofSeconds(3), new BigDecimal("0.5"), 300));
 	}
 
 	private void repond(String lineStatus, String status, String type) {
