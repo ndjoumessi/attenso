@@ -40,7 +40,11 @@ Puis :
 | Suivi du client | `/s/{reference}` | le client, par SMS |
 | Écran du mur | `/ecran/cerisiers` | la salle d'attente |
 
-Tests : `./mvnw test`. Ils exigent Docker — les invariants de ce système sont
+Tests : `./mvnw test` lance les deux suites — serveur et écrans. Celle des
+écrans seule : `npm test`. Elle n'a aucune dépendance, le runner intégré de
+node suffit.
+
+Les tests du serveur exigent Docker — les invariants de ce système sont
 des contraintes PostgreSQL (index unique, index partiel, *row level security*),
 et une base en mémoire ne les porte pas.
 
@@ -349,6 +353,29 @@ la limite de deux tickets par numéro, tenue en base.
 ## Ce qui n'est pas fait
 
 - **Limiteur de débit partagé.** En mémoire, donc juste pour une instance.
+
+## Les tests des écrans
+
+La logique des pages vit dans des modules (`app/vue-file.js`, `app/vue-suivi.js`,
+`app/vue-ecran.js`, `app/formats.js`) et non dans des balises `<script>` : ce
+qui est enfermé dans du HTML ne se teste pas, et c'est là que des défauts se
+sont logés — la page client annonçait « 2 personnes avant vous » à quelqu'un
+qu'on venait d'appeler.
+
+Les modules s'importent **relativement** (`./formats.js`), ce qui les rend
+chargeables à l'identique par le navigateur et par node. Les pages, elles,
+importent en absolu (`/app/…`) puisque leur URL varie (`/s/abc`, `/t/slug`).
+
+**Le test qui compte le plus lit le code Java.** `vue-file.js` porte un miroir
+de règles du serveur — la liste des états ouverts, et les transitions que les
+boutons proposent. Un miroir qui dérive ment à l'ASV pendant une panne, au
+moment précis où elle n'a que lui. Le test analyse donc `Statut.java` et vérifie
+que les deux coïncident. Vérifié en le cassant exprès dans les deux sens : un
+bouton pour une transition refusée, et un changement d'état côté serveur.
+
+**Ce qui n'est pas couvert, et reste vérifié à la main :** le journal IndexedDB
+et son rejeu, et le service worker. Les deux exigent un vrai navigateur ; la
+procédure de répétition est plus haut, et elle a été jouée dans Chrome.
 
 ## Carte du code
 

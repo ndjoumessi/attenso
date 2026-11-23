@@ -42,3 +42,6 @@ build/
 # La règle n'est pas ancrée à docs/ : une copie égarée à la racine ne doit
 # pas non plus entrer dans l'historique.
 liste-cliniques-marseille.md
+
+# --- Écrans ---
+node_modules/

@@ -1,0 +1,9 @@
+{
+  "name": "attenso-ecrans",
+  "private": true,
+  "type": "module",
+  "description": "Tests des écrans. Aucune dépendance : le runner de node suffit.",
+  "scripts": {
+    "test": "node --test src/test/js/"
+  }
+}

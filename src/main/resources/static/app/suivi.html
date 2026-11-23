@@ -29,52 +29,11 @@
 </main>
 
 <script type="module">
-import { appel, flux, minutes } from '/app/attenso.js';
+import { appel, flux } from '/app/attenso.js';
+import { carte, consigne, rappelDuNumero } from '/app/vue-suivi.js';
 
 const reference = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
-
-const CONSIGNES = {
-  PREVENU: "C'est presque à vous — revenez à la clinique maintenant.",
-  APPELE: "On vous appelle. Présentez-vous à l'accueil.",
-  ABSENT: "Vous avez été appelé. Signalez-vous à l'accueil : vous repassez juste après le suivant.",
-  EN_CONSULTATION: 'Vous êtes en consultation.',
-  TERMINE: 'Consultation terminée. Bonne journée.',
-  PARTI: 'Ce passage a été clos par la clinique.',
-  ANNULE: 'Ce ticket a été annulé.',
-};
-
-/**
- * Ce que la grande carte affiche, selon l'état.
- *
- * Une file d'attente et un appel ne se racontent pas avec les mêmes mots.
- * Afficher « 2 personnes avant vous » à quelqu'un qu'on vient d'appeler est
- * faux et coûteux : sur un téléphone, c'est le grand chiffre qu'on lit en
- * premier, et le client reste assis dans sa voiture. Dès qu'il est appelé, la
- * carte montre SON numéro — celui que l'écran de la salle affiche et que l'ASV
- * annonce — et plus aucune estimation.
- */
-function carte(etat) {
-  switch (etat.statut) {
-    case 'APPELE':
-      return { etiquette: "C'est à vous", valeur: etat.numero, dessous: '', appel: true };
-    case 'EN_CONSULTATION':
-      return { etiquette: 'Votre numéro', valeur: etat.numero, dessous: '', appel: true };
-    case 'TERMINE':
-    case 'PARTI':
-    case 'ANNULE':
-      return { etiquette: 'Votre numéro', valeur: etat.numero, dessous: '', appel: false };
-    default:
-      // EN_ATTENTE, PREVENU, ABSENT : la position a un sens, et pour un
-      // absent elle en a même beaucoup — elle dit où il reprend sa place.
-      return {
-        etiquette: 'Personnes avant vous',
-        valeur: Math.max(0, etat.position - 1),
-        dessous: minutes(etat.attenteMinMinutes, etat.attenteMaxMinutes),
-        appel: etat.position <= 1,
-      };
-  }
-}
 
 async function relire() {
   try {
@@ -87,13 +46,11 @@ async function relire() {
     rang.textContent = vue.valeur;
     rang.classList.toggle('rang--cest-a-vous', vue.appel);
     el('attente').textContent = vue.dessous;
-    // Le rappel du numéro est redondant quand la carte montre déjà le numéro.
-    el('numero-ticket').textContent =
-      vue.etiquette === 'Personnes avant vous' ? `Votre numéro : ${etat.numero}` : '';
+    el('numero-ticket').textContent = rappelDuNumero(etat);
 
-    const consigne = el('consigne');
-    consigne.textContent = CONSIGNES[etat.statut] ?? '';
-    consigne.hidden = !CONSIGNES[etat.statut];
+    const message = el('consigne');
+    message.textContent = consigne(etat.statut);
+    message.hidden = !message.textContent;
     el('erreur').hidden = true;
   } catch (echec) {
     const erreur = el('erreur');

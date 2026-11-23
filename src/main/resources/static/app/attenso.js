@@ -2,7 +2,9 @@
 // client s'ouvre sur un téléphone mal capté, dans une rue, et doit s'afficher
 // avant que le réseau ait fini de réfléchir.
 
-import { acquitter, empiler, enAttente, purgerAutresJours } from '/app/journal.js';
+// Import RELATIF : le navigateur le résout depuis l'URL du module (/app/),
+// et un runner de tests depuis le disque. Le même fichier sert aux deux.
+import { acquitter, empiler, enAttente, purgerAutresJours } from './journal.js';
 
 /**
  * Appel JSON.
@@ -196,10 +198,4 @@ export function fileDActions({ jeton, jour, liaison, surEtat }) {
 
     enAttente,
   };
-}
-
-export function minutes(min, max) {
-  if (max <= 0) return "c'est votre tour";
-  if (min === 0) return `moins de ${max} min`;
-  return `${min} à ${max} min`;
 }

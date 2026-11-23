@@ -41,7 +41,8 @@
 </main>
 
 <script type="module">
-import { appel, minutes } from '/app/attenso.js';
+import { appel } from '/app/attenso.js';
+import { minutes } from '/app/formats.js';
 
 const slug = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);

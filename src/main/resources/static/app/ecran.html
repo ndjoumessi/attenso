@@ -16,6 +16,7 @@
 
 <script type="module">
 import { appel, flux } from '/app/attenso.js';
+import { appel as grandNombre, legende, prochains } from '/app/vue-ecran.js';
 
 const slug = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
@@ -24,16 +25,9 @@ async function relire() {
   try {
     const vue = await appel(`/api/ecran/${encodeURIComponent(slug)}`);
     el('clinique').textContent = vue.clinique;
-    if (vue.appeles.length > 0) {
-      el('appel').textContent = vue.appeles.join(' · ');
-      el('legende').textContent = vue.appeles.length > 1 ? 'sont appelés' : 'est appelé';
-    } else {
-      el('appel').textContent = '—';
-      el('legende').textContent = vue.prochains.length > 0
-        ? 'consultation en cours' : 'personne en salle';
-    }
-    el('prochains').textContent = vue.prochains.length > 0
-      ? `ensuite : ${vue.prochains.join(' · ')}` : '';
+    el('appel').textContent = grandNombre(vue);
+    el('legende').textContent = legende(vue);
+    el('prochains').textContent = prochains(vue);
   } catch {
     // L'écran garde son dernier affichage : un mur vide inquiète la salle plus
     // qu'un numéro de trente secondes.
