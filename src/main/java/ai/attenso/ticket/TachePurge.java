@@ -1,5 +1,6 @@
 package ai.attenso.ticket;
 
+import ai.attenso.numero.BudgetHlrDao;
 import ai.attenso.numero.VerificationDao;
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.Tenant;
@@ -30,13 +31,16 @@ public class TachePurge {
 
 	private final VerificationDao verifications;
 
+	private final BudgetHlrDao budget;
+
 	private final Clock horloge;
 
 	public TachePurge(TenantRepository tenants, TicketRepository tickets,
-			VerificationDao verifications, Clock horloge) {
+			VerificationDao verifications, BudgetHlrDao budget, Clock horloge) {
 		this.tenants = tenants;
 		this.tickets = tickets;
 		this.verifications = verifications;
+		this.budget = budget;
 		this.horloge = horloge;
 	}
 
@@ -54,6 +58,7 @@ public class TachePurge {
 		// La table des vérifications porte elle aussi des numéros : même règle,
 		// et elle est entièrement effacée puisque son rôle est journalier.
 		int verificationsPurgees = verifications.purger(tenant.id(), aujourdhui);
+		budget.purger(tenant.id(), aujourdhui);
 		if (purges > 0 || verificationsPurgees > 0) {
 			JOURNAL.info("purge RGPD pour {} : {} numéros de tickets effacés, "
 					+ "{} vérifications supprimées", tenant.slug(), purges,

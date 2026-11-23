@@ -270,6 +270,17 @@ téléphone, même règle que `ticket`.
 - `attenso.hlr.max-par-jour` (300) plafonne les appels payants par clinique.
   Au-delà, on rend « indéterminé » sans appeler — **le ticket part quand même**.
   Un plafond de dépense n'a pas à fermer la salle d'attente.
+- La réservation est **atomique** : un `UPDATE ... WHERE appels < max` sur une
+  ligne de `budget_hlr`, verrouillée par PostgreSQL le temps de la transaction.
+  Compter puis appeler — ce que faisait la version d'avant — laissait passer
+  ensemble toutes les requêtes ayant lu le compteur avant qu'aucune ne
+  l'incrémente : le plafond ne bornait plus que la latence. Un test lance
+  quarante demandes simultanées contre un plafond de dix et vérifie qu'il en
+  passe exactement dix.
+- Une réservation n'est pas rendue si l'appel échoue ensuite : un délai dépassé
+  peut correspondre à une requête que l'opérateur a reçue et facturée. Mieux
+  vaut sur-compter une dépense que la sous-compter — c'est un plafond, pas une
+  comptabilité.
 - Le cache couvre les verdicts **négatifs** aussi : repasser le même numéro
   refusé ne coûte plus rien, et n'apprend rien de neuf à qui le tenterait.
 - Le plafond de tickets et la limite par numéro restent vérifiés avant l'appel,
@@ -284,10 +295,32 @@ quelqu'un qui nettoie une liste volée dépasse le seuil immédiatement, et n'a
 alors plus ni réponse ni appel payant. Le compteur n'est alimenté que par les
 échecs, donc il ne coûte rien à personne d'honnête.
 
+Le jeton de refus est **pris avant** la vérification et rendu si
+l'enregistrement réussit. Vérifier d'abord et compter après aurait laissé
+passer d'un coup autant de requêtes qu'on peut en lancer en parallèle. Seul un
+refus de numéro retient le jeton : un plafond atteint, une panne ou une clinique
+inconnue le rendent, parce que ce n'est pas l'adresse qui est en cause.
+
 Ce n'est pas une fermeture complète : un attaquant disposant de nombreuses
 adresses peut encore sonder, borné par le budget quotidien. C'est le budget qui
 protège la clinique financièrement, et c'est la partie qui lui fait vraiment
 mal.
+
+### Un garde-fou qu'on a choisi de ne PAS poser
+
+Une revue a proposé de refuser les enregistrements une fois le budget de
+vérification épuisé, plutôt que de laisser passer sans contrôler. C'est refusé,
+et il vaut mieux l'écrire que de le redécouvrir.
+
+Le HLR n'est pas un contrôle de sécurité : c'est un attrape-faute-de-frappe et
+une économie de SMS. Fermer l'enregistrement d'une clinique entière parce qu'un
+budget de quelques euros est épuisé inverserait les priorités — la file est le
+produit, le SMS est une fonction, la vérification est une optimisation de cette
+fonction. Un plafond de dépense qui ferme la salle d'attente coûte infiniment
+plus cher que ce qu'il économise.
+
+Ce qui est retenu de ce constat, en revanche : l'épuisement du budget est
+journalisé en avertissement, nommément, pour qu'il se voie.
 
 Les deux réglages sont indépendants : on peut activer le HLR sans l'envoi réel,
 par exemple pour mesurer la qualité des numéros d'une clinique avant d'ouvrir

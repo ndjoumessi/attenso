@@ -52,7 +52,11 @@ public class VerificationDao {
 				resultat.detail());
 	}
 
-	/** Nombre d'appels payants déjà faits aujourd'hui pour cette clinique. */
+	/**
+	 * Nombre de verdicts en cache pour la journée. Ce n'est PAS le budget
+	 * consommé — celui-là est tenu par {@link BudgetHlrDao}, parce qu'un
+	 * compteur de lignes ne peut pas se réserver de façon indivisible.
+	 */
 	public long compterDuJour(UUID tenantId, LocalDate jour) {
 		Long total = jdbc.queryForObject("""
 				SELECT count(*) FROM verification_numero WHERE tenant_id = ? AND jour = ?

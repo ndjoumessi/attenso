@@ -2,6 +2,7 @@ package ai.attenso.ticket;
 
 import ai.attenso.config.ProprietesFile;
 import ai.attenso.config.ProprietesHlr;
+import ai.attenso.numero.BudgetHlrDao;
 import ai.attenso.numero.ResultatVerification;
 import ai.attenso.numero.VerificateurNumero;
 import ai.attenso.numero.VerificationDao;
@@ -39,17 +40,20 @@ public class ServiceCreationTicket {
 
 	private final VerificationDao verifications;
 
+	private final BudgetHlrDao budget;
+
 	private final ProprietesFile proprietes;
 
 	private final ProprietesHlr proprietesHlr;
 
 	public ServiceCreationTicket(InsertionTicket insertion, TicketRepository tickets,
 			VerificateurNumero verificateur, VerificationDao verifications,
-			ProprietesFile proprietes, ProprietesHlr proprietesHlr) {
+			BudgetHlrDao budget, ProprietesFile proprietes, ProprietesHlr proprietesHlr) {
 		this.insertion = insertion;
 		this.tickets = tickets;
 		this.verificateur = verificateur;
 		this.verifications = verifications;
+		this.budget = budget;
 		this.proprietes = proprietes;
 		this.proprietesHlr = proprietesHlr;
 	}
@@ -121,7 +125,10 @@ public class ServiceCreationTicket {
 		if (connu.isPresent()) {
 			return connu.get();
 		}
-		if (verifications.compterDuJour(tenant.id(), jour) >= proprietesHlr.maxParJour()) {
+		// Réservation atomique : compter puis appeler laissait passer ensemble
+		// toutes les requêtes ayant lu le compteur avant qu'aucune ne
+		// l'incrémente.
+		if (!budget.reserver(tenant.id(), jour, proprietesHlr.maxParJour())) {
 			JOURNAL.warn("budget de {} vérifications atteint pour {} : les tickets "
 					+ "continuent d'être émis, sans contrôle du numéro",
 					proprietesHlr.maxParJour(), tenant.slug());

@@ -81,15 +81,19 @@ public class ControleurPublic {
 				FENETRE)) {
 			throw new TropDeRequetes();
 		}
+		// Le jeton de refus est PRIS d'abord, et rendu si l'enregistrement
+		// réussit. Vérifier d'abord et compter après laisserait passer d'un
+		// coup autant de requêtes qu'on peut en lancer en parallèle, chacune
+		// ayant vu le compteur à zéro — la limite ne limiterait plus rien.
 		String cleRefus = "refus:" + adresses.de(requete);
-		if (!limiteur.sousLaLimite(cleRefus, REFUS_MAX, FENETRE)) {
+		if (!limiteur.autoriser(cleRefus, REFUS_MAX, FENETRE)) {
 			// Déjà trop de numéros refusés depuis cette adresse : on ne répond
 			// plus, et surtout on ne lance pas la vérification payante.
 			throw new TropDeRequetes();
 		}
 		Tenant clinique = cliniques.parSlug(slug);
 		try {
-			return ContexteTenant.avec(clinique.id(), () -> {
+			ReponseTicket reponse = ContexteTenant.avec(clinique.id(), () -> {
 				Ticket ticket = creation.creerDepuisQr(clinique, file.jourCourant(clinique),
 						demande.telephone());
 				int position = file.position(ticket);
@@ -98,10 +102,18 @@ public class ControleurPublic {
 						liens.pour(ticket), position, attente.minMinutes(),
 						attente.maxMinutes());
 			});
+			limiteur.rendre(cleRefus);
+			return reponse;
 		}
 		catch (NumeroInjoignable | NumeroInvalide refus) {
-			limiteur.compter(cleRefus);
+			// Le jeton reste pris : c'est bien un numéro refusé.
 			throw refus;
+		}
+		catch (RuntimeException autre) {
+			// Plafond atteint, panne, clinique inconnue : ce n'est pas
+			// l'adresse qui est en cause, elle récupère son jeton.
+			limiteur.rendre(cleRefus);
+			throw autre;
 		}
 	}
 }

@@ -30,23 +30,22 @@ public class LimiteurDebit {
 	}
 
 	/**
-	 * Observe sans consommer. Sert quand le jeton ne doit être pris qu'en cas
-	 * d'échec — compter les refus, par exemple, sans pénaliser les succès.
+	 * Rend un jeton pris par {@link #autoriser}.
+	 *
+	 * <p>Sert au motif « réserver puis relâcher » : quand le jeton ne doit être
+	 * retenu qu'en cas d'échec, on le prend AVANT l'opération et on le rend si
+	 * elle réussit. Vérifier d'abord et compter après laisserait une fenêtre où
+	 * plusieurs requêtes simultanées passent toutes le contrôle avant qu'aucune
+	 * n'ait incrémenté — et la limite ne limiterait plus que la latence.
 	 */
-	public boolean sousLaLimite(String cle, int maximum, Duration fenetre) {
+	public void rendre(String cle) {
 		Deque<Long> horodatages = fenetres.get(cle);
 		if (horodatages == null) {
-			return true;
+			return;
 		}
-		long debut = horloge.millis() - fenetre.toMillis();
 		synchronized (horodatages) {
-			return horodatages.stream().filter(instant -> instant >= debut).count() < maximum;
+			horodatages.pollLast();
 		}
-	}
-
-	/** Consomme un jeton sans vérifier la limite. */
-	public void compter(String cle) {
-		fenetres.computeIfAbsent(cle, c -> new ArrayDeque<>()).addLast(horloge.millis());
 	}
 
 	public boolean autoriser(String cle, int maximum, Duration fenetre) {
