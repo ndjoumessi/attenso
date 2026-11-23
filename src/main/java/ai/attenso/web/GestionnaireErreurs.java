@@ -3,6 +3,7 @@ package ai.attenso.web;
 import ai.attenso.tenant.TenantInconnu;
 import ai.attenso.ticket.LimiteNumeroAtteinte;
 import ai.attenso.ticket.NumeroInvalide;
+import ai.attenso.ticket.PlafondJournalierAtteint;
 import ai.attenso.ticket.TicketInconnu;
 import ai.attenso.ticket.TransitionInterdite;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,13 @@ public class GestionnaireErreurs {
 	ProblemDetail limiteNumero(LimiteNumeroAtteinte erreur) {
 		return probleme(HttpStatus.TOO_MANY_REQUESTS, "Déjà enregistré",
 				"Ce numéro a déjà ses tickets pour aujourd'hui. Voyez l'accueil.");
+	}
+
+	@ExceptionHandler(PlafondJournalierAtteint.class)
+	ProblemDetail plafondJournalier(PlafondJournalierAtteint erreur) {
+		return probleme(HttpStatus.TOO_MANY_REQUESTS, "Enregistrement indisponible",
+				"Le nombre de tickets du jour a atteint sa limite. "
+						+ "Adressez-vous à l'accueil.");
 	}
 
 	@ExceptionHandler(TropDeRequetes.class)

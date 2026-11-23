@@ -42,6 +42,8 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
 	long countByTenantIdAndJourAndStatut(UUID tenantId, LocalDate jour, Statut statut);
 
+	long countByTenantIdAndJour(UUID tenantId, LocalDate jour);
+
 	long countByTenantIdAndJourAndTelephoneE164(UUID tenantId, LocalDate jour, String telephone);
 
 	boolean existsByTenantIdAndJourAndOrdre(UUID tenantId, LocalDate jour, long ordre);

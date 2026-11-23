@@ -107,6 +107,35 @@ IP bloquerait les vrais clients un jour de forte affluence. La protection utile
 est **deux tickets par numéro et par jour**, tenue en base.
 → `ControleurPublic`.
 
+### 5. `navigator.onLine` est le mauvais signal dans une clinique
+
+Il dit seulement que l'appareil a une interface réseau active. Quand le routeur
+wifi de la clinique fonctionne mais que la fibre est tombée — la panne la plus
+courante — il reste à `true`, et le bandeau « hors ligne » ne se serait jamais
+affiché. L'état de la liaison est donc déduit du succès ou de l'échec des
+appels réels.
+→ `etatLiaison` dans `app/attenso.js`.
+
+### 6. Le service worker n'était jamais enregistré
+
+Le fichier existait, aucune page n'appelait `register()` : du code mort.
+Vérifié en conditions réelles, la conséquence était sévère — recharger la page
+pendant une panne ne servait rien du tout, la page mourait, et avec elle la
+boucle qui devait rejouer les gestes. Le journal survivait dans IndexedDB sans
+que rien ne puisse le lire. Le service worker sert maintenant la coquille, avec
+un repli de navigation qui reproduit les routes de `ControleurPages`.
+→ `sw.js`, et l'enregistrement dans `accueil.html` et `suivi.html`.
+
+### 7. Un absent qui se présente entre directement en consultation
+
+`ABSENT → EN_CONSULTATION` est désormais une transition permise. En salle, elle
+évite de faire refaire « j'appelle » puis « présent » à l'ASV pour quelqu'un qui
+est devant elle. Et elle ferme une course réelle : après une panne plus longue
+que le délai de grâce, le tick passe `ABSENT` un ticket au redémarrage, et le
+« présent » rejoué par la tablette aurait été refusé — alors que c'est la
+tablette qui était dans la salle, pas le serveur.
+→ `Statut`, et le test `lePresentRejoueApresUneGraceExpireeEstAccepte`.
+
 ### Au passage
 
 Les accents des SMS sont filtrés sur l'alphabet GSM 7 bits : `é à è ù` passent,
@@ -117,6 +146,58 @@ pour ça qu'on lit « presque à vous » et non « bientôt à vous ».
 
 ---
 
+## Le mode dégradé, et comment le répéter
+
+La tablette de l'accueil continue de fonctionner serveur coupé. Chaque geste
+est écrit dans IndexedDB **avant** d'être tenté, avec un UUID envoyé en
+`Idempotency-Key` ; le serveur le garde en clé primaire, donc un rejeu
+n'applique rien deux fois. Le tableau s'affiche depuis le dernier état connu,
+les rangs sont recalculés localement avec la règle du serveur, et les gestes
+pas encore partis portent une étiquette « pas encore envoyé ».
+
+Ce qui est refusé pendant la panne : insérer une urgence, parce que le numéro
+du ticket est attribué par le serveur. Le bouton se désactive et le dit.
+
+Au rejeu, un `409` ou un `404` est abandonné **en silence** : l'état a bougé
+entre-temps, et afficher une erreur par geste périmé après vingt minutes de
+panne noierait le seul message utile. Les autres refus sont montrés. Les gestes
+d'un autre jour sont jetés au démarrage, et leur nombre annoncé — la file est
+journalière.
+
+Répétition à faire avec l'ASV en semaine 1, dans cet ordre :
+
+```bash
+pkill -f spring-boot:run      # la panne
+# faire deux ou trois gestes sur la tablette, puis RECHARGER la page
+./mvnw spring-boot:run        # le retour
+```
+
+Ce qu'il faut voir : le bandeau apparaît, le tableau reste utilisable, le
+rechargement fonctionne quand même, et les gestes repartent seuls dans l'ordre
+au retour du réseau. Vérifié de bout en bout dans Chrome.
+
+**Limite connue :** le panneau navigateur intégré de certains outils bloque les
+service workers. Le mode dégradé a donc été validé dans Chrome, pas dans ce
+panneau — si une vérification future échoue à cet endroit, regarder d'abord si
+le service worker est bien enregistré.
+
+## Garde-fous
+
+- **La référence d'un lien SMS ne vaut que pour sa journée**, vérifié et non
+  supposé : la ligne `ticket` survit à la journée (c'est elle qui porte le
+  compteur de départs), donc rien n'expire tout seul.
+- **`X-Forwarded-For` se lit par la droite.** Les entrées de gauche viennent du
+  client : les croire rendrait le quota par adresse décoratif. Réglage
+  `attenso.reseau.relais-de-confiance`.
+- **Plafond de tickets par clinique et par jour** (`200` par défaut). Ce n'est
+  pas une limite métier — une clinique en fait quarante — mais un plafond de
+  dépense : chaque ticket déclenche un SMS payant et l'agrégateur n'en offre
+  aucun.
+
+Pas de CAPTCHA à l'enregistrement, et c'est un choix : il détruirait les dix
+secondes de prise de ticket qui sont tout le produit. La protection utile est
+la limite de deux tickets par numéro, tenue en base.
+
 ## Ce qui n'est pas fait
 
 - **Adaptateur Octopush.** L'interface `ExpediteurSms` est là, l'implémentation
@@ -125,11 +206,6 @@ pour ça qu'on lit « presque à vous » et non « bientôt à vous ».
   sur quel compte. Voir `docs/note-canal-sms.md`.
 - **Vérification HLR** (0,005 €) avant émission du ticket. Le contrôle de format
   est en place et attrape les fautes de saisie ; le HLR attend le même compte.
-- **Journal de commandes persistant côté client.** Le serveur est prêt
-  (en-tête `Idempotency-Key`, table `commande`, clé primaire = idempotence) et
-  la tablette empile déjà ses actions **en mémoire** : elle survit à une coupure
-  réseau de quelques minutes, pas à un rechargement de page. La version
-  IndexedDB est la suite.
 - **Limiteur de débit partagé.** En mémoire, donc juste pour une instance.
 
 ## Carte du code
@@ -143,6 +219,10 @@ pour ça qu'on lit « presque à vous » et non « bientôt à vous ».
 | `web` | routes, SSE, limiteur de débit, traduction des erreurs |
 | `journal` | journal d'accès et journal des commandes, en ajout seul |
 | `amorce` | installation de la première clinique |
+
+Côté client, `app/journal.js` porte IndexedDB (les gestes et le dernier
+tableau), `app/attenso.js` la file de rejeu et l'état de la liaison, `sw.js` la
+coquille hors réseau.
 
 Les deux migrations se lisent comme de la documentation : `V1__socle.sql` porte
 le schéma et dit pourquoi il n'y a ni colonne de rang ni table de compteurs,

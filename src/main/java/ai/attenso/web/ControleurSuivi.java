@@ -22,10 +22,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * La page « où en est mon tour ».
  *
  * <p>La référence du lien tient lieu de justificatif. Elle ne donne accès qu'à
- * une position dans une file, elle est cloisonnée à une clinique, elle meurt
- * avec la journée, et elle est courte — ce qu'un jeton signé n'est pas, et
- * c'est la contrainte qui tranche : le lien doit tenir dans un SMS d'un seul
- * segment.
+ * une position dans une file, elle est cloisonnée à une clinique, et elle est
+ * courte — ce qu'un jeton signé n'est pas, et c'est la contrainte qui tranche :
+ * le lien doit tenir dans un SMS d'un seul segment.
+ *
+ * <p><strong>Elle ne vaut que pour la journée de son ticket</strong>, et c'est
+ * vérifié ici plutôt que supposé. La ligne {@code ticket} survit à la journée —
+ * c'est elle qui porte le compteur de départs — donc rien n'expire tout seul :
+ * sans ce contrôle, le lien reçu par SMS resterait ouvert indéfiniment.
  */
 @RestController
 public class ControleurSuivi {
@@ -69,7 +73,7 @@ public class ControleurSuivi {
 				.orElseThrow(TicketInconnu::parReference);
 		Tenant clinique = cliniques.parId(tenantId);
 		return ContexteTenant.avec(tenantId, () -> {
-			Ticket ticket = parReference(reference);
+			Ticket ticket = duJour(reference, clinique);
 			int position = file.position(ticket);
 			Fourchette attente = estimation.fourchette(tenantId, position);
 			return new EtatSuivi(clinique.nom(), ticket.numeroJour(), position,
@@ -82,11 +86,19 @@ public class ControleurSuivi {
 	public SseEmitter flux(@PathVariable String reference) {
 		UUID tenantId = resolveur.tenantDe(reference)
 				.orElseThrow(TicketInconnu::parReference);
+		Tenant clinique = cliniques.parId(tenantId);
 		return ContexteTenant.avec(tenantId,
-				() -> diffusion.abonner(tenantId, parReference(reference).jour()));
+				() -> diffusion.abonner(tenantId, duJour(reference, clinique).jour()));
 	}
 
-	private Ticket parReference(String reference) {
-		return tickets.findByReference(reference).orElseThrow(TicketInconnu::parReference);
+	/**
+	 * Le ticket de cette référence, à condition qu'il soit d'aujourd'hui dans
+	 * le fuseau de la clinique. Un lien de la veille est traité exactement
+	 * comme une référence inconnue : même code, même message, rien à déduire.
+	 */
+	private Ticket duJour(String reference, Tenant clinique) {
+		return tickets.findByReference(reference)
+				.filter(ticket -> ticket.jour().equals(file.jourCourant(clinique)))
+				.orElseThrow(TicketInconnu::parReference);
 	}
 }

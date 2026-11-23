@@ -95,6 +95,8 @@ p  { margin: .4rem 0; }
 .etiquette--absent   { background: var(--alerte);    color: #fff; }
 .etiquette--urgence  { background: var(--alerte);    color: #fff; }
 .etiquette--muet     { background: #fff; border: 1px dashed var(--trait); }
+.etiquette--attente  { background: var(--attention-claire); color: var(--attention);
+                       border: 1px solid #e7cf9a; }
 
 /* --- Actions ----------------------------------------------------------- */
 .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
@@ -144,6 +146,9 @@ input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px;
   padding: .55rem 1rem; text-align: center; font-size: .9rem;
 }
 .hors-ligne[hidden] { display: none; }
+/* Journal local indisponible : plus grave que le réseau coupé, puisque là les
+   gestes ne sont pas rattrapables. */
+.hors-ligne--grave { background: var(--alerte); }
 
 /* --- Page client ------------------------------------------------------- */
 .carte-suivi { background: var(--carte); border: 1px solid var(--trait);

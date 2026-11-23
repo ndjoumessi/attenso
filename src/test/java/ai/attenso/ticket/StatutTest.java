@@ -53,6 +53,21 @@ class StatutTest {
 	}
 
 	@Test
+	@DisplayName("un absent qui se présente entre en consultation sans qu'on "
+			+ "ait à le rappeler")
+	void lAbsentPeutEntrerDirectementEnConsultation() {
+		Ticket ticket = neuf();
+		ticket.appeler(MIDI, Duration.ofMinutes(3));
+		ticket.absent();
+
+		ticket.present(MIDI.plusSeconds(240));
+
+		assertThat(ticket.statut()).isEqualTo(Statut.EN_CONSULTATION);
+		assertThat(ticket.consultationLe()).isEqualTo(MIDI.plusSeconds(240));
+		assertThat(ticket.appeleLe()).as("il avait bien été appelé").isEqualTo(MIDI);
+	}
+
+	@Test
 	@DisplayName("le parcours normal clôt le ticket")
 	void parcoursNormal() {
 		Ticket ticket = neuf();

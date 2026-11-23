@@ -75,5 +75,14 @@ relire();
 flux(`/api/suivi/${encodeURIComponent(reference)}/flux`, relire);
 setInterval(relire, 60000);
 </script>
+
+<script>
+// Enregistré ici, et pas seulement déclaré : sans cet appel le fichier sw.js
+// n'est jamais installé et la coquille n'est pas mise en cache.
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js')
+    .catch((echec) => console.warn('service worker non enregistré', echec)));
+}
+</script>
 </body>
 </html>

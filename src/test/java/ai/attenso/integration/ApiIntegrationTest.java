@@ -94,6 +94,34 @@ class ApiIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
+	@DisplayName("le lien SMS de la veille n'ouvre plus rien, et ne se "
+			+ "distingue pas d'une référence inconnue")
+	void leLienDeLaVeilleEstClos() throws Exception {
+		creerClinique("veille", "Clinique", 2, 180);
+		String corps = http.perform(post("/t/veille/tickets")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"telephone": "06 11 11 11 11"}"""))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		String reference = json.readTree(corps).get("reference").asText();
+
+		http.perform(get("/api/suivi/" + reference)).andExpect(status().isOk());
+
+		// La ligne ticket survit à la journée — c'est elle qui porte le
+		// compteur de départs — donc rien n'expire tout seul. Sans contrôle de
+		// date, le lien reçu par SMS resterait ouvert indéfiniment.
+		proprietaire.update("UPDATE ticket SET jour = jour - 1 WHERE reference = ?",
+				reference);
+
+		http.perform(get("/api/suivi/" + reference))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.title").value("Ticket introuvable"));
+		http.perform(get("/api/suivi/" + reference + "/flux"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
 	@DisplayName("le tableau de l'accueil exige un jeton, et porte le compteur de départs")
 	void tableauDeLAccueil() throws Exception {
 		UUID clinique = creerClinique("accueil", "Clinique", 2, 180);

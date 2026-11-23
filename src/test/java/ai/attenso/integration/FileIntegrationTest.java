@@ -250,6 +250,28 @@ class FileIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
+	@DisplayName("après une panne plus longue que la grâce, le « présent » "
+			+ "rejoué par la tablette est accepté")
+	void lePresentRejoueApresUneGraceExpireeEstAccepte() {
+		installer("rejeu-grace", 2, 0);
+		Ticket un = arriver("0611111111");
+		arriver("0622222222");
+
+		file.appeler(clinique, un.id(), null, null);
+		// Le serveur était coupé ; à son retour, le tick rattrape la grâce et
+		// passe le ticket ABSENT — alors que l'ASV, elle, avait vu la personne.
+		grace.tick();
+		assertThat(file.exiger(clinique.id(), un.id()).statut()).isEqualTo(Statut.ABSENT);
+
+		// La tablette rejoue son geste. Il doit passer : c'est elle qui était
+		// dans la salle, pas le serveur.
+		file.present(clinique, un.id(), null, UUID.randomUUID());
+
+		assertThat(file.exiger(clinique.id(), un.id()).statut())
+				.isEqualTo(Statut.EN_CONSULTATION);
+	}
+
+	@Test
 	@DisplayName("le tableau du jour garde les tickets clos, sans position")
 	void leTableauGardeLesTicketsClos() {
 		installer("tableau", 2, 180);

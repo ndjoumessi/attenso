@@ -54,6 +54,14 @@ public class InsertionTicket {
 	@Transactional
 	public Ticket inserer(Tenant tenant, LocalDate jour, String telephoneE164,
 			Boolean telephoneValide, short priorite, UUID parUtilisateur) {
+		// Plafond de dépense avant tout le reste : chaque ticket déclenche un
+		// SMS payant et l'agrégateur n'en offre aucun. Compté dans la
+		// transaction, donc deux enregistrements simultanés ne le franchissent
+		// pas ensemble.
+		if (tickets.countByTenantIdAndJour(tenant.id(), jour)
+				>= proprietes.ticketsMaxParJour()) {
+			throw new PlafondJournalierAtteint(proprietes.ticketsMaxParJour());
+		}
 		if (telephoneE164 != null) {
 			long deja = tickets.countByTenantIdAndJourAndTelephoneE164(tenant.id(), jour,
 					telephoneE164);

@@ -11,6 +11,15 @@ import java.util.Set;
  * déclarées ici et nulle part ailleurs : un service qui se trompe d'état se
  * heurte à {@link TransitionInterdite}, pas à une base incohérente.
  *
+ * <p>{@code ABSENT} mène directement à {@code EN_CONSULTATION}, sans repasser
+ * par {@code APPELE}, pour deux raisons qui pointent dans le même sens. En
+ * salle, quelqu'un marqué absent qui se présente au comptoir entre en
+ * consultation : lui faire refaire « j'appelle » puis « présent » est un geste
+ * pour rien. Et après une panne plus longue que le délai de grâce, le tick
+ * fait passer ABSENT un ticket que l'ASV avait vu arriver : sans cette
+ * transition, son « présent » rejoué serait refusé et elle devrait tout
+ * reprendre.
+ *
  * <p>La distinction {@link #ABSENT} / {@link #PARTI} est le point le plus
  * important de cette machine, et elle n'est pas cosmétique :
  * <ul>
@@ -49,7 +58,7 @@ public enum Statut {
 		SUIVANTS.put(EN_ATTENTE, EnumSet.of(PREVENU, APPELE, PARTI, ANNULE));
 		SUIVANTS.put(PREVENU, EnumSet.of(APPELE, PARTI));
 		SUIVANTS.put(APPELE, EnumSet.of(EN_CONSULTATION, ABSENT, PARTI));
-		SUIVANTS.put(ABSENT, EnumSet.of(APPELE, PARTI));
+		SUIVANTS.put(ABSENT, EnumSet.of(APPELE, EN_CONSULTATION, PARTI));
 		SUIVANTS.put(EN_CONSULTATION, EnumSet.of(TERMINE));
 		SUIVANTS.put(TERMINE, EnumSet.noneOf(Statut.class));
 		SUIVANTS.put(PARTI, EnumSet.noneOf(Statut.class));

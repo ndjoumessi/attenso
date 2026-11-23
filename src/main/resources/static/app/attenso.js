@@ -2,16 +2,31 @@
 // client s'ouvre sur un téléphone mal capté, dans une rue, et doit s'afficher
 // avant que le réseau ait fini de réfléchir.
 
-/** Appel JSON. Rend le détail du problème renvoyé par le serveur, pas un code. */
+import { acquitter, empiler, enAttente, purgerAutresJours } from '/app/journal.js';
+
+/**
+ * Appel JSON.
+ *
+ * <p>Distingue deux échecs que tout le reste traite différemment : une panne de
+ * liaison ({@code reseau: true}, il faut réessayer) et un refus du serveur
+ * ({@code statut}, réessayer ne changera rien).
+ */
 export async function appel(url, options = {}) {
-  const reponse = await fetch(url, {
-    ...options,
-    headers: {
-      'Accept': 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  let reponse;
+  try {
+    reponse = await fetch(url, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (panne) {
+    const erreur = new Error('serveur injoignable');
+    erreur.reseau = true;
+    throw erreur;
+  }
   if (!reponse.ok) {
     let detail = `Erreur ${reponse.status}`;
     try {
@@ -23,6 +38,30 @@ export async function appel(url, options = {}) {
     throw erreur;
   }
   return reponse.status === 204 ? null : reponse.json();
+}
+
+/**
+ * État de la liaison, déduit des appels réels.
+ *
+ * <p><strong>Et non de `navigator.onLine`.</strong> Celui-ci dit seulement que
+ * l'appareil a une interface réseau active : dans une clinique dont le routeur
+ * wifi fonctionne mais dont la fibre est tombée, il reste à `true`. Le bandeau
+ * « hors ligne » ne se serait donc jamais affiché dans le cas de panne le plus
+ * courant. Seul le succès ou l'échec d'un appel dit la vérité.
+ */
+export function etatLiaison(surChangement) {
+  let enPanne = false;
+  const poser = (valeur) => {
+    if (enPanne !== valeur) {
+      enPanne = valeur;
+      surChangement(enPanne);
+    }
+  };
+  return {
+    succes: () => poser(false),
+    echec: () => poser(true),
+    enPanne: () => enPanne,
+  };
 }
 
 /**
@@ -49,64 +88,113 @@ export function flux(url, surMaj) {
   return () => source && source.close();
 }
 
-/** Bandeau hors ligne. Jamais modal : l'accueil doit pouvoir continuer. */
-export function surveillerReseau(bandeau) {
-  const peindre = () => { bandeau.hidden = navigator.onLine; };
-  addEventListener('online', peindre);
-  addEventListener('offline', peindre);
-  peindre();
-}
+const REPRISE_MIN = 3000;
+const REPRISE_MAX = 60000;
 
 /**
- * File des actions à (re)transmettre.
+ * File persistante des actions de l'accueil.
  *
- * Chaque action porte un UUID généré ici, avant l'envoi : le serveur
- * l'enregistre en clé primaire, donc un rejeu n'applique rien deux fois. C'est
- * ce qui rend sûr de réessayer sans se demander si le premier envoi est passé.
+ * <p>Chaque action est écrite dans IndexedDB <em>avant</em> d'être tentée, avec
+ * un UUID généré ici. Le serveur enregistre cet UUID en clé primaire : rejouer
+ * n'applique donc rien deux fois, et on peut réessayer sans se demander si le
+ * premier envoi est passé. C'est ce qui rend la panne réseau survivable — y
+ * compris à un rechargement de la page, ce qu'une file en mémoire ne permettait
+ * pas.
  *
- * LIMITE CONNUE : cette file vit en mémoire. Elle survit à une coupure réseau
- * de quelques minutes, pas à un rechargement de la page. La version persistante
- * (IndexedDB) est la suite — la base et l'API, elles, sont déjà prêtes.
+ * <p>Les refus définitifs du serveur sont triés. Un 409 ou un 404 à la reprise
+ * veut dire « l'état a déjà bougé » — l'ASV a tranché autrement, ou depuis un
+ * autre poste : la commande est abandonnée <em>en silence</em>, parce que
+ * afficher une erreur par geste périmé après vingt minutes de panne noierait le
+ * seul message utile. Les autres 4xx sont montrés.
  */
-export function fileDActions(jeton, surEtat) {
-  const enAttente = [];
+export function fileDActions({ jeton, jour, liaison, surEtat }) {
   let encours = false;
+  let minuterie = null;
+  let delai = REPRISE_MIN;
+  let abandons = 0;
 
-  const vider = async () => {
-    if (encours || enAttente.length === 0) return;
-    encours = true;
-    while (enAttente.length > 0) {
-      const action = enAttente[0];
-      try {
-        await appel(action.url, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${jeton}`, 'Idempotency-Key': action.cle },
-          ...(action.corps ? { body: JSON.stringify(action.corps) } : {}),
-        });
-        enAttente.shift();
-      } catch (erreur) {
-        if (erreur.statut >= 400 && erreur.statut < 500) {
-          // Refus définitif du serveur : réessayer ne changera rien.
-          enAttente.shift();
-          surEtat({ erreur: erreur.message, restantes: enAttente.length });
-          continue;
-        }
-        break; // panne réseau ou serveur : on garde la place dans la file
-      }
-    }
-    encours = false;
-    surEtat({ restantes: enAttente.length });
+  const entete = (commande) => ({
+    'Authorization': `Bearer ${jeton}`,
+    'Idempotency-Key': commande.cle,
+  });
+
+  const programmerReprise = () => {
+    if (minuterie) return;
+    minuterie = setTimeout(() => {
+      minuterie = null;
+      vider();
+    }, delai);
+    delai = Math.min(delai * 2, REPRISE_MAX);
   };
 
-  addEventListener('online', vider);
+  async function vider() {
+    if (encours) return;
+    encours = true;
+    let interrompu = false;
+    try {
+      const commandes = (await enAttente()).sort((a, b) => a.sequence - b.sequence);
+      for (const commande of commandes) {
+        try {
+          await appel(commande.url, {
+            method: 'POST',
+            headers: entete(commande),
+            ...(commande.corps ? { body: JSON.stringify(commande.corps) } : {}),
+          });
+          await acquitter(commande.sequence);
+          liaison.succes();
+          delai = REPRISE_MIN;
+        } catch (echec) {
+          if (echec.reseau || echec.statut >= 500) {
+            liaison.echec();
+            interrompu = true;
+            break; // on garde la place dans la file, et son ordre
+          }
+          await acquitter(commande.sequence);
+          if (echec.statut === 409 || echec.statut === 404) {
+            abandons += 1;
+          } else {
+            surEtat({ erreur: echec.message });
+          }
+        }
+      }
+    } catch (panne) {
+      // Journal illisible : on ne peut rien garantir, on le dit.
+      surEtat({ erreur: `journal local indisponible : ${panne.message}` });
+    } finally {
+      encours = false;
+    }
+    if (interrompu) programmerReprise();
+    await publier();
+  }
+
+  async function publier() {
+    const restantes = await enAttente().catch(() => []);
+    surEtat({ restantes: restantes.length, abandons, commandes: restantes });
+    abandons = 0;
+  }
+
+  addEventListener('online', () => { delai = REPRISE_MIN; vider(); });
 
   return {
-    pousser(url, corps) {
-      enAttente.push({ url, corps, cle: crypto.randomUUID() });
-      surEtat({ restantes: enAttente.length });
+    /** Écrit l'action puis tente de l'envoyer. `cible` sert à l'affichage optimiste. */
+    async pousser(url, { corps = null, ticketId = null, cible = null } = {}) {
+      await empiler({
+        cle: crypto.randomUUID(), url, corps, ticketId, cible, jour,
+        creeLe: Date.now(),
+      });
+      await publier();
       return vider();
     },
-    restantes: () => enAttente.length,
+
+    /** Au démarrage : jette les gestes d'un autre jour, puis reprend le reste. */
+    async reprendre() {
+      const perimees = await purgerAutresJours(jour);
+      await publier();
+      await vider();
+      return perimees;
+    },
+
+    enAttente,
   };
 }
 

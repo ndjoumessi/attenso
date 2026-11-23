@@ -11,7 +11,12 @@
 <body>
 
 <div class="hors-ligne" id="bandeau" hidden>
-  Hors ligne — le tableau reste utilisable, les actions partiront au retour du réseau.
+  <span id="bandeau-texte">Serveur injoignable</span> — le tableau reste
+  utilisable, les actions partiront au retour du réseau.
+</div>
+<div class="hors-ligne hors-ligne--grave" id="bandeau-journal" hidden>
+  Journal local indisponible (navigation privée ?) — les actions faites hors
+  réseau seraient perdues.
 </div>
 
 <!-- Connexion -->
@@ -62,25 +67,49 @@
     <label for="tel-urgence">Mobile du propriétaire (facultatif)</label>
     <input id="tel-urgence" name="telephone" type="tel" inputmode="tel"
            placeholder="06 12 34 56 78">
-    <p><button class="b-parti b-pleine-largeur" type="submit">Insérer une urgence</button></p>
+    <p><button class="b-parti b-pleine-largeur" type="submit" id="bouton-urgence">
+      Insérer une urgence
+    </button></p>
+    <p class="discret" id="urgence-indisponible" hidden>
+      Indisponible hors réseau : le numéro du ticket est attribué par le
+      serveur. Appelez le client à la voix, et saisissez-le au retour du réseau.
+    </p>
   </form>
 
   <p><button id="deconnexion">Se déconnecter</button></p>
 </main>
 
 <script type="module">
-import { appel, flux, surveillerReseau, fileDActions } from '/app/attenso.js';
+import { appel, flux, etatLiaison, fileDActions } from '/app/attenso.js';
+import { disponible, lireEtat, poserEtat, vider as viderJournal } from '/app/journal.js';
 
 const CLE_JETON = 'attenso.jeton';
 const CLE_CLINIQUE = 'attenso.clinique';
 const CLE_SLUG = 'attenso.slug';
 
+// Miroir de Statut.OUVERTS côté serveur. Sert à recalculer les rangs quand le
+// réseau est tombé : afficher le rang figé du dernier tableau reçu mentirait à
+// l'ASV dès son premier geste. À garder aligné sur ServiceFile.
+const OUVERTS = new Set(['EN_ATTENTE', 'PREVENU', 'APPELE', 'ABSENT']);
+
+// L'état visé par chaque action, pour l'affichage optimiste.
+const CIBLES = {
+  appeler: 'APPELE', present: 'EN_CONSULTATION', termine: 'TERMINE',
+  parti: 'PARTI', annule: 'ANNULE',
+};
+
 const el = (id) => document.getElementById(id);
 let jeton = localStorage.getItem(CLE_JETON);
 let actions = null;
 let fermerFlux = null;
+let derniereVue = null;
+let commandesEnAttente = [];
+let signatureListe = null;
 
-surveillerReseau(el('bandeau'));
+const liaison = etatLiaison((enPanne) => {
+  el('bandeau').hidden = !enPanne;
+  peindre();
+});
 
 // --- Connexion ----------------------------------------------------------
 el('formulaire-connexion').addEventListener('submit', async (evenement) => {
@@ -96,6 +125,9 @@ el('formulaire-connexion').addEventListener('submit', async (evenement) => {
         motDePasse: el('mdp').value,
       }),
     });
+    // Nouveau compte : on ne garde pas le tableau ni les gestes en attente
+    // d'une autre clinique.
+    if (localStorage.getItem(CLE_SLUG) !== reponse.slug) await viderJournal();
     jeton = reponse.jeton;
     localStorage.setItem(CLE_JETON, jeton);
     localStorage.setItem(CLE_CLINIQUE, reponse.clinique);
@@ -103,12 +135,13 @@ el('formulaire-connexion').addEventListener('submit', async (evenement) => {
     el('mdp').value = '';
     demarrer();
   } catch (echec) {
-    erreur.textContent = echec.message;
+    erreur.textContent = echec.reseau ? 'Serveur injoignable.' : echec.message;
     erreur.hidden = false;
   }
 });
 
-el('deconnexion').addEventListener('click', () => {
+el('deconnexion').addEventListener('click', async () => {
+  await viderJournal();
   localStorage.removeItem(CLE_JETON);
   localStorage.removeItem(CLE_SLUG);
   localStorage.removeItem(CLE_CLINIQUE);
@@ -133,20 +166,47 @@ const LIBELLES = {
 const ACTIONS = {
   EN_ATTENTE: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
   PREVENU: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
-  ABSENT: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  ABSENT: [['present', 'Présent', 'b-principal'], ['appeler', "J'appelle", ''],
+           ['parti', 'Parti', 'b-parti']],
   APPELE: [['present', 'Présent', 'b-principal'], ['parti', 'Parti', 'b-parti']],
   EN_CONSULTATION: [['termine', 'Terminé', 'b-principal']],
 };
 
+/**
+ * Applique les gestes pas encore acquittés au tableau reçu du serveur, puis
+ * renumérote les rangs avec la règle du serveur (ordre conservé, seuls les
+ * états ouverts consomment un rang).
+ */
+function avecEnAttente(vue, commandes) {
+  const cibles = new Map();
+  for (const commande of commandes) {
+    if (commande.ticketId && commande.cible) cibles.set(commande.ticketId, commande.cible);
+  }
+  const lignes = vue.lignes.map((ligne) => cibles.has(ligne.id)
+    ? { ...ligne, statut: cibles.get(ligne.id), enAttenteEnvoi: true }
+    : { ...ligne, enAttenteEnvoi: false });
+
+  let rang = 0;
+  for (const ligne of lignes) {
+    ligne.position = OUVERTS.has(ligne.statut) ? ++rang : 0;
+  }
+  return {
+    ...vue,
+    lignes,
+    enFile: lignes.filter((l) => OUVERTS.has(l.statut)).length,
+    departs: lignes.filter((l) => l.statut === 'PARTI').length,
+  };
+}
+
 function ligne(donnees) {
   const item = document.createElement('li');
-  item.className = `ligne ${CLASSES[donnees.statut] ?? ''}` +
-    (donnees.priorite >= 10 ? ' ligne--urgence' : '');
+  item.className = `ligne ${CLASSES[donnees.statut] ?? ''}`
+    + (donnees.priorite >= 10 ? ' ligne--urgence' : '');
 
   const numero = document.createElement('div');
   numero.className = 'numero';
-  numero.innerHTML = `${donnees.numeroJour}` +
-    (donnees.position > 0 ? `<small>rang ${donnees.position}</small>` : '<small>clos</small>');
+  numero.innerHTML = `${donnees.numeroJour}`
+    + (donnees.position > 0 ? `<small>rang ${donnees.position}</small>` : '<small>clos</small>');
 
   const corps = document.createElement('div');
   const etiquettes = document.createElement('div');
@@ -165,6 +225,14 @@ function ligne(donnees) {
     urgence.textContent = 'urgence';
     etiquettes.append(urgence);
   }
+  if (donnees.enAttenteEnvoi) {
+    const attente = document.createElement('span');
+    attente.className = 'etiquette etiquette--attente';
+    attente.textContent = 'pas encore envoyé';
+    attente.title = 'Ce geste est enregistré sur la tablette et partira au '
+      + 'retour du réseau.';
+    etiquettes.append(attente);
+  }
   if (!donnees.joignable) {
     const muet = document.createElement('span');
     muet.className = 'etiquette etiquette--muet';
@@ -181,7 +249,11 @@ function ligne(donnees) {
     bouton.textContent = libelle;
     bouton.addEventListener('click', () => {
       bouton.disabled = true;
-      actions.pousser(`/api/tickets/${donnees.id}/${route}`).then(rafraichir);
+      // Le geste est écrit avant d'être tenté : il survit à la panne comme au
+      // rechargement de la page.
+      actions.pousser(`/api/tickets/${donnees.id}/${route}`,
+        { ticketId: donnees.id, cible: CIBLES[route] })
+        .then(rafraichir);
     });
     actionsDisponibles.append(bouton);
   }
@@ -191,29 +263,65 @@ function ligne(donnees) {
   return item;
 }
 
+function peindre() {
+  if (!derniereVue) return;
+  const vue = avecEnAttente(derniereVue.vue, commandesEnAttente);
+
+  el('compteur-file').textContent = vue.enFile;
+  el('compteur-departs').textContent = vue.departs;
+  el('compteur-mediane').textContent = `${vue.attenteMedianeMinutes} min`;
+  el('date-jour').textContent = new Date(vue.jour + 'T00:00:00')
+    .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // La liste n'est reconstruite que si elle a changé. Sans ce garde, le
+  // rafraîchissement de sécurité la redessine toutes les trente secondes : sur
+  // une tablette ça fait clignoter l'écran et ça reprend le focus sous le doigt
+  // de l'ASV, pour rien la plupart du temps.
+  const signature = JSON.stringify(vue.lignes.map((l) =>
+    [l.id, l.statut, l.position, l.enAttenteEnvoi, l.joignable, l.priorite]));
+  if (signature !== signatureListe) {
+    el('liste-file').replaceChildren(...vue.lignes.map(ligne));
+    signatureListe = signature;
+  }
+  el('file-vide').hidden = vue.lignes.length > 0;
+
+  const enPanne = liaison.enPanne();
+  el('bouton-urgence').disabled = enPanne;
+  el('urgence-indisponible').hidden = !enPanne;
+
+  if (enPanne) {
+    const heure = new Date(derniereVue.enregistreLe)
+      .toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const restantes = commandesEnAttente.length;
+    el('bandeau-texte').textContent = restantes > 0
+      ? `Serveur injoignable — ${restantes} geste(s) en attente, tableau de ${heure}`
+      : `Serveur injoignable — tableau de ${heure}`;
+  }
+}
+
 async function rafraichir() {
   try {
     const vue = await appel('/api/file', {
       headers: { 'Authorization': `Bearer ${jeton}` },
     });
-    el('compteur-file').textContent = vue.enFile;
-    el('compteur-departs').textContent = vue.departs;
-    el('compteur-mediane').textContent = `${vue.attenteMedianeMinutes} min`;
-    el('date-jour').textContent = new Date(vue.jour + 'T00:00:00')
-      .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-    const liste = el('liste-file');
-    liste.replaceChildren(...vue.lignes.map(ligne));
-    el('file-vide').hidden = vue.lignes.length > 0;
+    liaison.succes();
+    derniereVue = { vue, enregistreLe: Date.now() };
+    await poserEtat('file', vue).catch(() => { /* journal indisponible : déjà signalé */ });
     el('erreur-file').hidden = true;
+    peindre();
   } catch (echec) {
     if (echec.statut === 401) {
       localStorage.removeItem(CLE_JETON);
       location.reload();
       return;
     }
+    if (echec.reseau || echec.statut >= 500) {
+      liaison.echec();
+      peindre();
+      return;
+    }
     const erreur = el('erreur-file');
-    erreur.textContent = `${echec.message} — dernier état conservé à l'écran.`;
+    erreur.textContent = echec.message;
     erreur.hidden = false;
   }
 }
@@ -231,27 +339,58 @@ el('formulaire-urgence').addEventListener('submit', async (evenement) => {
     rafraichir();
   } catch (echec) {
     const erreur = el('erreur-file');
-    erreur.textContent = echec.message;
+    erreur.textContent = echec.reseau
+      ? "Serveur injoignable : l'urgence ne peut pas être enregistrée hors réseau."
+      : echec.message;
     erreur.hidden = false;
   }
 });
 
-function demarrer() {
+function annoncer({ restantes, abandons, erreur, commandes }) {
+  if (commandes) commandesEnAttente = commandes;
+  if (erreur) {
+    const zone = el('erreur-file');
+    zone.textContent = erreur;
+    zone.hidden = false;
+  }
+  const info = el('info-file');
+  const messages = [];
+  if (restantes > 0) messages.push(`${restantes} geste(s) en attente d'envoi.`);
+  if (abandons > 0) {
+    messages.push(`${abandons} geste(s) abandonné(s) : le ticket avait déjà `
+      + `changé d'état entre-temps.`);
+  }
+  info.textContent = messages.join(' ');
+  info.hidden = messages.length === 0;
+  peindre();
+}
+
+async function demarrer() {
   el('vue-connexion').hidden = true;
   el('vue-file').hidden = false;
   el('nom-clinique').textContent = localStorage.getItem(CLE_CLINIQUE) ?? 'Attenso';
 
-  actions = fileDActions(jeton, ({ restantes, erreur }) => {
-    const info = el('info-file');
-    if (erreur) {
-      const zone = el('erreur-file');
-      zone.textContent = erreur;
-      zone.hidden = false;
-    }
-    info.textContent = restantes > 0
-      ? `${restantes} action(s) en attente d'envoi.` : '';
-    info.hidden = restantes === 0;
-  });
+  // Le journal n'est pas garanti : en navigation privée, IndexedDB échoue. On
+  // le dit plutôt que de laisser croire que les gestes sont protégés.
+  el('bandeau-journal').hidden = await disponible();
+
+  // D'abord l'écran, ensuite le réseau : la tablette affiche le dernier
+  // tableau connu avant même d'avoir réussi un appel.
+  const cache = await lireEtat('file').catch(() => null);
+  if (cache) {
+    derniereVue = { vue: cache.valeur, enregistreLe: cache.enregistreLe };
+    peindre();
+  }
+
+  const jour = cache?.valeur?.jour ?? new Date().toISOString().slice(0, 10);
+  actions = fileDActions({ jeton, jour, liaison, surEtat: annoncer });
+  const perimees = await actions.reprendre();
+  if (perimees > 0) {
+    const zone = el('erreur-file');
+    zone.textContent = `${perimees} geste(s) d'un autre jour ont été abandonnés : `
+      + `la file est journalière.`;
+    zone.hidden = false;
+  }
 
   if (fermerFlux) fermerFlux();
   // Le flux SSE ne transporte AUCUNE donnée : il dit « ça a bougé », et on
@@ -266,6 +405,15 @@ function demarrer() {
 }
 
 if (jeton) { demarrer(); } else { el('vue-connexion').hidden = false; }
+</script>
+
+<script>
+// Enregistré ici, et pas seulement déclaré : sans cet appel le fichier sw.js
+// n'est jamais installé et la coquille n'est pas mise en cache.
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js')
+    .catch((echec) => console.warn('service worker non enregistré', echec)));
+}
 </script>
 </body>
 </html>
