@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salle d'attente</title>
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="mur">
+  <p class="mur-clinique" id="clinique">—</p>
+  <p class="mur-appel" id="appel">—</p>
+  <p class="mur-legende" id="legende">en attente</p>
+  <p class="mur-prochains" id="prochains"></p>
+</main>
+
+<script type="module">
+import { appel, flux } from '/app/attenso.js';
+
+const slug = location.pathname.split('/').filter(Boolean)[1];
+const el = (id) => document.getElementById(id);
+
+async function relire() {
+  try {
+    const vue = await appel(`/api/ecran/${encodeURIComponent(slug)}`);
+    el('clinique').textContent = vue.clinique;
+    if (vue.appeles.length > 0) {
+      el('appel').textContent = vue.appeles.join(' · ');
+      el('legende').textContent = vue.appeles.length > 1 ? 'sont appelés' : 'est appelé';
+    } else {
+      el('appel').textContent = '—';
+      el('legende').textContent = vue.prochains.length > 0
+        ? 'consultation en cours' : 'personne en salle';
+    }
+    el('prochains').textContent = vue.prochains.length > 0
+      ? `ensuite : ${vue.prochains.join(' · ')}` : '';
+  } catch {
+    // L'écran garde son dernier affichage : un mur vide inquiète la salle plus
+    // qu'un numéro de trente secondes.
+  }
+}
+
+relire();
+flux(`/api/ecran/${encodeURIComponent(slug)}/flux`, relire);
+setInterval(relire, 20000);
+</script>
+</body>
+</html>

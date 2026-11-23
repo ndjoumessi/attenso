@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b">
+<title>Mon tour</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite">
+  <p class="discret" id="clinique">—</p>
+
+  <div class="carte-suivi">
+    <p class="discret">Personnes avant vous</p>
+    <p class="rang" id="rang">—</p>
+    <p class="attente" id="attente">chargement…</p>
+  </div>
+
+  <div class="message message--info" id="consigne" hidden></div>
+  <div class="message message--erreur" id="erreur" hidden></div>
+
+  <p class="discret" id="numero-ticket"></p>
+  <p class="discret">
+    Cette page se met à jour toute seule. Vous pouvez la garder ouverte,
+    la fermer et revenir : le lien reste valable aujourd'hui.
+  </p>
+</main>
+
+<script type="module">
+import { appel, flux, minutes } from '/app/attenso.js';
+
+const reference = location.pathname.split('/').filter(Boolean)[1];
+const el = (id) => document.getElementById(id);
+
+const CONSIGNES = {
+  PREVENU: "C'est presque à vous — revenez à la clinique maintenant.",
+  APPELE: "On vous appelle. Présentez-vous à l'accueil.",
+  ABSENT: "Vous avez été appelé. Signalez-vous à l'accueil : vous repassez juste après le suivant.",
+  EN_CONSULTATION: 'Vous êtes en consultation.',
+  TERMINE: 'Consultation terminée. Bonne journée.',
+  PARTI: 'Ce passage a été clos par la clinique.',
+  ANNULE: 'Ce ticket a été annulé.',
+};
+
+async function relire() {
+  try {
+    const etat = await appel(`/api/suivi/${encodeURIComponent(reference)}`);
+    el('clinique').textContent = etat.clinique;
+    el('numero-ticket').textContent = `Votre numéro : ${etat.numero}`;
+
+    const rang = el('rang');
+    const devant = Math.max(0, etat.position - 1);
+    const cestAVous = etat.position <= 1 || etat.statut === 'APPELE';
+    rang.textContent = etat.position === 0 ? '—' : devant;
+    rang.classList.toggle('rang--cest-a-vous', cestAVous);
+    el('attente').textContent = etat.position === 0
+      ? '' : minutes(etat.attenteMinMinutes, etat.attenteMaxMinutes);
+
+    const consigne = el('consigne');
+    consigne.textContent = CONSIGNES[etat.statut] ?? '';
+    consigne.hidden = !CONSIGNES[etat.statut];
+    el('erreur').hidden = true;
+  } catch (echec) {
+    const erreur = el('erreur');
+    erreur.textContent = echec.statut === 404
+      ? "Ce lien n'est plus valable. Adressez-vous à l'accueil."
+      : `${echec.message} — dernier état affiché.`;
+    erreur.hidden = false;
+  }
+}
+
+relire();
+flux(`/api/suivi/${encodeURIComponent(reference)}/flux`, relire);
+setInterval(relire, 60000);
+</script>
+</body>
+</html>

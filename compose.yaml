@@ -1,0 +1,23 @@
+# Postgres local. Deux rôles, et c'est délibéré :
+#  - postgres (propriétaire)  : Flyway migre, et n'est PAS soumis au RLS.
+#  - attenso_app (applicatif) : l'application tourne avec, et EST soumise au RLS.
+# Un seul rôle propriétaire rendrait les politiques RLS inertes (§2 de la spec).
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: attenso-db
+    environment:
+      POSTGRES_DB: attenso
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-attenso_dev}
+    ports:
+      - "5434:5432"
+    volumes:
+      - attenso-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d attenso"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  attenso-db:

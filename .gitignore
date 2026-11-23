@@ -1,0 +1,44 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+# --- Attenso ---
+.env
+*.log
+
+# Liste de prospection : noms et adresses de praticiens venant d'un registre
+# public. Utile pour la phase terrain, mais hors du dépôt — on s'était engagé à
+# l'effacer après les visites, et un commit la rend quasi ineffaçable.
+# La règle n'est pas ancrée à docs/ : une copie égarée à la racine ne doit
+# pas non plus entrer dans l'historique.
+liste-cliniques-marseille.md

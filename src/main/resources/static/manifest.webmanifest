@@ -1,0 +1,11 @@
+{
+  "name": "Attenso",
+  "short_name": "Attenso",
+  "description": "Suivez votre tour sans attendre en salle.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfbfa",
+  "theme_color": "#1b5e4b",
+  "lang": "fr",
+  "icons": []
+}

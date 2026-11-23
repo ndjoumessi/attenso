@@ -1,0 +1,172 @@
+/* Attenso — feuille unique.
+   Trois contraintes gouvernent ce fichier, et aucune n'est esthétique :
+   1. Le tableau de l'accueil est lu au doigt, sur une tablette, par-dessus un
+      comptoir : cibles de 56 px minimum, contrastes élevés.
+   2. L'écran du mur est lu à quatre mètres : tout y est démesuré, exprès.
+   3. La page client est ouverte sur un téléphone, souvent dehors, souvent en
+      plein soleil, souvent sur un réseau médiocre : rien à charger. */
+
+:root {
+  --encre: #15181d;
+  --encre-douce: #5c6472;
+  --papier: #fbfbfa;
+  --carte: #ffffff;
+  --trait: #e2e4e8;
+  --accent: #1b5e4b;
+  --accent-clair: #e8f2ee;
+  --alerte: #a8321e;
+  --alerte-claire: #fbeae6;
+  --attention: #8a5a00;
+  --attention-claire: #fdf3df;
+  --rayon: 10px;
+  --ombre: 0 1px 2px rgb(21 24 29 / 6%), 0 4px 12px rgb(21 24 29 / 4%);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--papier);
+  color: var(--encre);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.enveloppe { max-width: 56rem; margin: 0 auto; padding: 1.25rem; }
+.enveloppe--etroite { max-width: 26rem; }
+
+h1 { font-size: 1.35rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+h2 { font-size: 1rem; margin: 1.75rem 0 .6rem; color: var(--encre-douce);
+     text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+p  { margin: .4rem 0; }
+.discret { color: var(--encre-douce); font-size: .9rem; }
+
+/* --- Barre de tête ----------------------------------------------------- */
+.tete {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--trait);
+  padding-bottom: .9rem; margin-bottom: .5rem;
+}
+
+/* --- Compteurs. Les départs sont en tête parce que c'est le chiffre qui
+       justifie l'abonnement : il doit être sous les yeux du gérant. --- */
+.compteurs { display: flex; gap: .5rem; flex-wrap: wrap; }
+.compteur {
+  background: var(--carte); border: 1px solid var(--trait);
+  border-radius: var(--rayon); padding: .5rem .8rem; min-width: 6.5rem;
+}
+.compteur dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+               color: var(--encre-douce); margin: 0; }
+.compteur dd { margin: .1rem 0 0; font-size: 1.5rem; font-weight: 650;
+               font-variant-numeric: tabular-nums; }
+.compteur--depart dd { color: var(--alerte); }
+
+/* --- Lignes de file ---------------------------------------------------- */
+.file { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+
+.ligne {
+  background: var(--carte); border: 1px solid var(--trait);
+  border-left: 4px solid var(--trait);
+  border-radius: var(--rayon); box-shadow: var(--ombre);
+  padding: .75rem .9rem;
+  display: grid; grid-template-columns: 3.6rem 1fr; gap: .9rem; align-items: center;
+}
+.ligne--appele       { border-left-color: var(--accent);    background: var(--accent-clair); }
+.ligne--prevenu      { border-left-color: var(--attention); }
+.ligne--absent       { border-left-color: var(--alerte); background: var(--alerte-claire); }
+.ligne--urgence      { border-left-color: var(--alerte); border-left-width: 8px; }
+.ligne--clos         { opacity: .5; }
+
+.numero { font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums;
+          text-align: center; line-height: 1; }
+.numero small { display: block; font-size: .62rem; font-weight: 600;
+                text-transform: uppercase; letter-spacing: .05em;
+                color: var(--encre-douce); margin-top: .2rem; }
+
+.etiquettes { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .55rem;
+              align-items: center; }
+.etiquette {
+  font-size: .72rem; font-weight: 650; text-transform: uppercase;
+  letter-spacing: .04em; padding: .18rem .45rem; border-radius: 5px;
+  background: var(--trait); color: var(--encre-douce);
+}
+.etiquette--appele   { background: var(--accent);    color: #fff; }
+.etiquette--prevenu  { background: var(--attention); color: #fff; }
+.etiquette--absent   { background: var(--alerte);    color: #fff; }
+.etiquette--urgence  { background: var(--alerte);    color: #fff; }
+.etiquette--muet     { background: #fff; border: 1px dashed var(--trait); }
+
+/* --- Actions ----------------------------------------------------------- */
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+button {
+  font: inherit; font-weight: 600; cursor: pointer;
+  min-height: 56px; padding: 0 1.1rem;
+  border: 1px solid var(--trait); border-radius: 8px;
+  background: var(--carte); color: var(--encre);
+  touch-action: manipulation;
+}
+button:hover:not(:disabled) { border-color: var(--encre-douce); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.b-principal { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* « Parti » n'a jamais la même forme qu'une action ordinaire : le confondre
+   avec « absent » fausserait le compteur de retour sur investissement. */
+.b-parti { border-color: var(--alerte); color: var(--alerte); border-width: 2px; }
+.b-pleine-largeur { width: 100%; }
+
+/* --- Formulaires ------------------------------------------------------- */
+label { display: block; font-weight: 600; margin: 1rem 0 .35rem; }
+input {
+  font: inherit; width: 100%; min-height: 56px; padding: 0 .85rem;
+  border: 1px solid var(--trait); border-radius: 8px; background: var(--carte);
+  color: var(--encre);
+}
+input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px;
+                      border-color: var(--accent); }
+
+/* --- Messages ---------------------------------------------------------- */
+.message { border-radius: var(--rayon); padding: .7rem .9rem; margin: .9rem 0;
+           font-size: .93rem; }
+.message--erreur { background: var(--alerte-claire); color: var(--alerte);
+                   border: 1px solid #f0cbc2; }
+.message--info   { background: var(--accent-clair); color: var(--accent);
+                   border: 1px solid #c6dfd6; }
+.message[hidden] { display: none; }
+
+/* --- Bandeau hors ligne. Toujours visible, jamais modal : l'ASV doit
+       pouvoir continuer à travailler pendant la panne. --- */
+.hors-ligne {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--attention); color: #fff; font-weight: 650;
+  padding: .55rem 1rem; text-align: center; font-size: .9rem;
+}
+.hors-ligne[hidden] { display: none; }
+
+/* --- Page client ------------------------------------------------------- */
+.carte-suivi { background: var(--carte); border: 1px solid var(--trait);
+               border-radius: 14px; box-shadow: var(--ombre);
+               padding: 1.6rem 1.25rem; text-align: center; }
+.rang { font-size: 4.5rem; font-weight: 750; line-height: 1;
+        font-variant-numeric: tabular-nums; }
+.rang--cest-a-vous { color: var(--accent); }
+.attente { font-size: 1.05rem; color: var(--encre-douce); margin-top: .5rem; }
+
+/* --- Écran du mur : lu à quatre mètres -------------------------------- */
+.mur { min-height: 100vh; display: flex; flex-direction: column;
+       justify-content: center; align-items: center; text-align: center;
+       padding: 2rem; background: var(--encre); color: #fff; }
+.mur-clinique { font-size: 1.5rem; opacity: .65; letter-spacing: .02em; }
+.mur-appel { font-size: clamp(5rem, 22vw, 16rem); font-weight: 800; line-height: .95;
+             font-variant-numeric: tabular-nums; margin: .4rem 0; }
+.mur-legende { font-size: clamp(1.1rem, 3vw, 2rem); text-transform: uppercase;
+               letter-spacing: .12em; opacity: .8; }
+.mur-prochains { font-size: clamp(1.3rem, 4vw, 2.6rem); opacity: .6;
+                 margin-top: 2.5rem; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .mur-appel { animation: apparition .5s ease-out; }
+  @keyframes apparition { from { opacity: 0; transform: scale(.94); } }
+}

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b">
+<title>Attenso — accueil</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+
+<div class="hors-ligne" id="bandeau" hidden>
+  Hors ligne — le tableau reste utilisable, les actions partiront au retour du réseau.
+</div>
+
+<!-- Connexion -->
+<section class="enveloppe enveloppe--etroite" id="vue-connexion" hidden>
+  <h1>Attenso</h1>
+  <p class="discret">Tableau de l'accueil.</p>
+  <form id="formulaire-connexion">
+    <label for="slug">Clinique</label>
+    <input id="slug" name="slug" autocomplete="organization" required>
+    <label for="email">Adresse</label>
+    <input id="email" name="email" type="email" autocomplete="username" required>
+    <label for="mdp">Mot de passe</label>
+    <input id="mdp" name="mdp" type="password" autocomplete="current-password" required>
+    <div class="message message--erreur" id="erreur-connexion" hidden></div>
+    <p><button class="b-principal b-pleine-largeur" type="submit">Entrer</button></p>
+  </form>
+</section>
+
+<!-- Tableau -->
+<main class="enveloppe" id="vue-file" hidden>
+  <div class="tete">
+    <div>
+      <h1 id="nom-clinique">—</h1>
+      <p class="discret" id="date-jour"></p>
+    </div>
+    <dl class="compteurs">
+      <div class="compteur"><dt>En salle</dt><dd id="compteur-file">0</dd></div>
+      <div class="compteur compteur--depart">
+        <dt>Partis sans être vus</dt><dd id="compteur-departs">0</dd>
+      </div>
+      <div class="compteur"><dt>Consultation médiane</dt><dd id="compteur-mediane">—</dd></div>
+    </dl>
+  </div>
+
+  <div class="message message--erreur" id="erreur-file" hidden></div>
+  <div class="message message--info" id="info-file" hidden></div>
+
+  <h2>File du jour</h2>
+  <ul class="file" id="liste-file"></ul>
+  <p id="file-vide" class="discret" hidden>Personne en salle pour le moment.</p>
+
+  <h2>Urgence</h2>
+  <p class="discret">
+    Passe devant tout le monde. Les personnes déjà prévenues reçoivent
+    automatiquement un message leur annonçant le délai supplémentaire.
+  </p>
+  <form id="formulaire-urgence">
+    <label for="tel-urgence">Mobile du propriétaire (facultatif)</label>
+    <input id="tel-urgence" name="telephone" type="tel" inputmode="tel"
+           placeholder="06 12 34 56 78">
+    <p><button class="b-parti b-pleine-largeur" type="submit">Insérer une urgence</button></p>
+  </form>
+
+  <p><button id="deconnexion">Se déconnecter</button></p>
+</main>
+
+<script type="module">
+import { appel, flux, surveillerReseau, fileDActions } from '/app/attenso.js';
+
+const CLE_JETON = 'attenso.jeton';
+const CLE_CLINIQUE = 'attenso.clinique';
+const CLE_SLUG = 'attenso.slug';
+
+const el = (id) => document.getElementById(id);
+let jeton = localStorage.getItem(CLE_JETON);
+let actions = null;
+let fermerFlux = null;
+
+surveillerReseau(el('bandeau'));
+
+// --- Connexion ----------------------------------------------------------
+el('formulaire-connexion').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const erreur = el('erreur-connexion');
+  erreur.hidden = true;
+  try {
+    const reponse = await appel('/api/connexion', {
+      method: 'POST',
+      body: JSON.stringify({
+        slug: el('slug').value.trim(),
+        email: el('email').value.trim(),
+        motDePasse: el('mdp').value,
+      }),
+    });
+    jeton = reponse.jeton;
+    localStorage.setItem(CLE_JETON, jeton);
+    localStorage.setItem(CLE_CLINIQUE, reponse.clinique);
+    localStorage.setItem(CLE_SLUG, reponse.slug);
+    el('mdp').value = '';
+    demarrer();
+  } catch (echec) {
+    erreur.textContent = echec.message;
+    erreur.hidden = false;
+  }
+});
+
+el('deconnexion').addEventListener('click', () => {
+  localStorage.removeItem(CLE_JETON);
+  localStorage.removeItem(CLE_SLUG);
+  localStorage.removeItem(CLE_CLINIQUE);
+  location.reload();
+});
+
+// --- Rendu --------------------------------------------------------------
+const CLASSES = {
+  APPELE: 'ligne--appele', PREVENU: 'ligne--prevenu', ABSENT: 'ligne--absent',
+  TERMINE: 'ligne--clos', PARTI: 'ligne--clos', ANNULE: 'ligne--clos',
+  EN_CONSULTATION: '',
+};
+const LIBELLES = {
+  EN_ATTENTE: 'en attente', PREVENU: 'prévenu', APPELE: 'appelé',
+  ABSENT: 'absent, revient', EN_CONSULTATION: 'en consultation',
+  TERMINE: 'terminé', PARTI: 'parti sans être vu', ANNULE: 'annulé',
+};
+
+// Les actions proposées sont exactement les transitions permises par la
+// machine à états côté serveur : un bouton qui apparaît est un bouton qui
+// marche. « Parti » garde sa propre forme partout où il apparaît.
+const ACTIONS = {
+  EN_ATTENTE: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  PREVENU: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  ABSENT: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  APPELE: [['present', 'Présent', 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  EN_CONSULTATION: [['termine', 'Terminé', 'b-principal']],
+};
+
+function ligne(donnees) {
+  const item = document.createElement('li');
+  item.className = `ligne ${CLASSES[donnees.statut] ?? ''}` +
+    (donnees.priorite >= 10 ? ' ligne--urgence' : '');
+
+  const numero = document.createElement('div');
+  numero.className = 'numero';
+  numero.innerHTML = `${donnees.numeroJour}` +
+    (donnees.position > 0 ? `<small>rang ${donnees.position}</small>` : '<small>clos</small>');
+
+  const corps = document.createElement('div');
+  const etiquettes = document.createElement('div');
+  etiquettes.className = 'etiquettes';
+
+  const etat = document.createElement('span');
+  etat.className = 'etiquette ' + ({
+    APPELE: 'etiquette--appele', PREVENU: 'etiquette--prevenu', ABSENT: 'etiquette--absent',
+  }[donnees.statut] ?? '');
+  etat.textContent = LIBELLES[donnees.statut] ?? donnees.statut;
+  etiquettes.append(etat);
+
+  if (donnees.priorite >= 10) {
+    const urgence = document.createElement('span');
+    urgence.className = 'etiquette etiquette--urgence';
+    urgence.textContent = 'urgence';
+    etiquettes.append(urgence);
+  }
+  if (!donnees.joignable) {
+    const muet = document.createElement('span');
+    muet.className = 'etiquette etiquette--muet';
+    muet.textContent = 'pas de SMS';
+    muet.title = 'Aucun numéro joignable : à appeler à la voix.';
+    etiquettes.append(muet);
+  }
+
+  const actionsDisponibles = document.createElement('div');
+  actionsDisponibles.className = 'actions';
+  for (const [route, libelle, classe] of ACTIONS[donnees.statut] ?? []) {
+    const bouton = document.createElement('button');
+    bouton.className = classe;
+    bouton.textContent = libelle;
+    bouton.addEventListener('click', () => {
+      bouton.disabled = true;
+      actions.pousser(`/api/tickets/${donnees.id}/${route}`).then(rafraichir);
+    });
+    actionsDisponibles.append(bouton);
+  }
+
+  corps.append(etiquettes, actionsDisponibles);
+  item.append(numero, corps);
+  return item;
+}
+
+async function rafraichir() {
+  try {
+    const vue = await appel('/api/file', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    el('compteur-file').textContent = vue.enFile;
+    el('compteur-departs').textContent = vue.departs;
+    el('compteur-mediane').textContent = `${vue.attenteMedianeMinutes} min`;
+    el('date-jour').textContent = new Date(vue.jour + 'T00:00:00')
+      .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const liste = el('liste-file');
+    liste.replaceChildren(...vue.lignes.map(ligne));
+    el('file-vide').hidden = vue.lignes.length > 0;
+    el('erreur-file').hidden = true;
+  } catch (echec) {
+    if (echec.statut === 401) {
+      localStorage.removeItem(CLE_JETON);
+      location.reload();
+      return;
+    }
+    const erreur = el('erreur-file');
+    erreur.textContent = `${echec.message} — dernier état conservé à l'écran.`;
+    erreur.hidden = false;
+  }
+}
+
+el('formulaire-urgence').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const champ = el('tel-urgence');
+  try {
+    await appel('/api/tickets/urgence', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      body: JSON.stringify({ telephone: champ.value.trim() || null }),
+    });
+    champ.value = '';
+    rafraichir();
+  } catch (echec) {
+    const erreur = el('erreur-file');
+    erreur.textContent = echec.message;
+    erreur.hidden = false;
+  }
+});
+
+function demarrer() {
+  el('vue-connexion').hidden = true;
+  el('vue-file').hidden = false;
+  el('nom-clinique').textContent = localStorage.getItem(CLE_CLINIQUE) ?? 'Attenso';
+
+  actions = fileDActions(jeton, ({ restantes, erreur }) => {
+    const info = el('info-file');
+    if (erreur) {
+      const zone = el('erreur-file');
+      zone.textContent = erreur;
+      zone.hidden = false;
+    }
+    info.textContent = restantes > 0
+      ? `${restantes} action(s) en attente d'envoi.` : '';
+    info.hidden = restantes === 0;
+  });
+
+  if (fermerFlux) fermerFlux();
+  // Le flux SSE ne transporte AUCUNE donnée : il dit « ça a bougé », et on
+  // relit par l'API authentifiée. On s'abonne donc au flux public de la
+  // clinique plutôt qu'à un flux protégé — EventSource ne sait pas poser
+  // d'en-tête Authorization, et un jeton passé en paramètre d'URL finirait
+  // dans les journaux d'accès du serveur et des proxys.
+  const slug = localStorage.getItem(CLE_SLUG);
+  fermerFlux = flux(`/api/ecran/${encodeURIComponent(slug)}/flux`, rafraichir);
+  rafraichir();
+  setInterval(rafraichir, 30000); // filet de sécurité si le SSE meurt sans le dire
+}
+
+if (jeton) { demarrer(); } else { el('vue-connexion').hidden = false; }
+</script>
+</body>
+</html>
