@@ -43,5 +43,12 @@ build/
 # pas non plus entrer dans l'historique.
 liste-cliniques-marseille.md
 
+# Notes de conception et de stratégie : périmètre, modèle économique, analyse
+# des concurrents, argumentaire de vente, et la note de nommage qui documente
+# un risque de marque. Le dépôt est public ; ces documents n'y gagnent rien, et
+# la note de nommage y perdrait beaucoup. Elles ont été retirées de
+# l'historique, pas seulement du dernier commit.
+docs/
+
 # --- Écrans ---
 node_modules/

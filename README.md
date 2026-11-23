@@ -2,11 +2,15 @@
 
 File d'attente virtuelle pour cabinets à flux libre. **V0 : la file seule.**
 
-Le périmètre, les décisions et les critères d'arrêt sont dans
-[`docs/cahier-des-charges.md`](docs/cahier-des-charges.md) ; la conception de
-ce V0 dans [`docs/spec-v0-file-attente.md`](docs/spec-v0-file-attente.md).
-Ce fichier-ci ne dit que comment le faire tourner, et quelles décisions du code
-diffèrent de la spec.
+Ce fichier dit comment le faire tourner, et surtout **pourquoi le code est
+écrit comme il l'est** : chaque décision non évidente est expliquée ici ou en
+commentaire à l'endroit où elle s'applique.
+
+> Les notes de conception et de stratégie — périmètre, critères d'arrêt,
+> modèle économique, choix du canal SMS — ne sont pas publiées. Les décisions
+> qui en découlent et qui touchent le code le sont toutes, ci-dessous. Les
+> renvois à `docs/…` que tu croiseras dans les commentaires désignent ces
+> notes ; elles ne sont pas dans ce dépôt.
 
 ---
 
