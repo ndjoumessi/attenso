@@ -36,6 +36,14 @@ public class Tenant {
 	@Column(name = "seuil_prevenir", nullable = false)
 	private int seuilPrevenir;
 
+	/**
+	 * Nom affiché comme expéditeur des SMS de cette clinique, 3 à 11
+	 * caractères alphanumériques. {@code null} tant qu'il n'est pas enregistré
+	 * auprès des opérateurs — auquel cas aucun SMS ne part pour elle.
+	 */
+	@Column(name = "expediteur_sms")
+	private String expediteurSms;
+
 	@Column(nullable = false)
 	private boolean actif;
 
@@ -78,6 +86,14 @@ public class Tenant {
 
 	public int seuilPrevenir() {
 		return seuilPrevenir;
+	}
+
+	public String expediteurSms() {
+		return expediteurSms;
+	}
+
+	public boolean peutEnvoyerDesSms() {
+		return NomExpediteur.valide(expediteurSms);
 	}
 
 	public boolean actif() {

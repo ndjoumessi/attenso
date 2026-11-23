@@ -34,7 +34,8 @@ public class ServiceCreationTicket {
 	public Ticket creerDepuisQr(Tenant tenant, LocalDate jour, String telephoneBrut) {
 		String e164 = NumeroTelephone.normaliser(telephoneBrut)
 				.orElseThrow(NumeroInvalide::new);
-		return avecReprise(tenant, jour, e164, Boolean.TRUE, Priorite.NORMALE, null);
+		return avecReprise(tenant, jour, e164, Boolean.TRUE, Priorite.NORMALE, null,
+				Origine.COMPTOIR);
 	}
 
 	/** Urgence saisie par l'accueil : passe devant, numéro facultatif. */
@@ -43,15 +44,16 @@ public class ServiceCreationTicket {
 		String e164 = (telephoneBrut == null || telephoneBrut.isBlank()) ? null
 				: NumeroTelephone.normaliser(telephoneBrut).orElseThrow(NumeroInvalide::new);
 		return avecReprise(tenant, jour, e164, e164 == null ? null : Boolean.TRUE,
-				Priorite.URGENCE, parUtilisateur);
+				Priorite.URGENCE, parUtilisateur, Origine.ACCUEIL);
 	}
 
 	private Ticket avecReprise(Tenant tenant, LocalDate jour, String e164, Boolean valide,
-			short priorite, UUID parUtilisateur) {
+			short priorite, UUID parUtilisateur, Origine origine) {
 		DataIntegrityViolationException dernier = null;
 		for (int essai = 1; essai <= TENTATIVES; essai++) {
 			try {
-				return insertion.inserer(tenant, jour, e164, valide, priorite, parUtilisateur);
+				return insertion.inserer(tenant, jour, e164, valide, priorite, parUtilisateur,
+						origine);
 			}
 			catch (DataIntegrityViolationException conflit) {
 				dernier = conflit;

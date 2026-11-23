@@ -9,6 +9,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class InsertionTicket {
+
+	private static final Logger JOURNAL = LoggerFactory.getLogger(InsertionTicket.class);
 
 	private static final int ESPACE_ORDRE_MAX = 1000;
 
@@ -53,13 +57,22 @@ public class InsertionTicket {
 
 	@Transactional
 	public Ticket inserer(Tenant tenant, LocalDate jour, String telephoneE164,
-			Boolean telephoneValide, short priorite, UUID parUtilisateur) {
-		// Plafond de dépense avant tout le reste : chaque ticket déclenche un
-		// SMS payant et l'agrégateur n'en offre aucun. Compté dans la
-		// transaction, donc deux enregistrements simultanés ne le franchissent
-		// pas ensemble.
-		if (tickets.countByTenantIdAndJour(tenant.id(), jour)
-				>= proprietes.ticketsMaxParJour()) {
+			Boolean telephoneValide, short priorite, UUID parUtilisateur, Origine origine) {
+		// Plafond de dépense : chaque ticket déclenche un SMS payant et
+		// l'agrégateur n'en offre aucun. Compté dans la transaction, donc deux
+		// enregistrements simultanés ne le franchissent pas ensemble.
+		//
+		// Tous les tickets COMPTENT — c'est la mesure honnête de la dépense —
+		// mais seul l'enregistrement anonyme est BLOQUÉ. L'accueil passe
+		// toujours : sinon un script tapant sur l'endpoint public empêcherait
+		// l'ASV d'insérer une urgence, ce qui est bien pire que la facture
+		// qu'on cherche à éviter.
+		if (origine.soumiseAuPlafond()
+				&& tickets.countByTenantIdAndJour(tenant.id(), jour)
+						>= proprietes.ticketsMaxParJour()) {
+			JOURNAL.warn("plafond de {} tickets atteint pour {} : l'enregistrement "
+					+ "public est fermé pour la journée, l'accueil reste ouvert",
+					proprietes.ticketsMaxParJour(), tenant.slug());
 			throw new PlafondJournalierAtteint(proprietes.ticketsMaxParJour());
 		}
 		if (telephoneE164 != null) {

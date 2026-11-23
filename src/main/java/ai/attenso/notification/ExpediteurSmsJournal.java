@@ -28,13 +28,14 @@ public class ExpediteurSmsJournal implements ExpediteurSms {
 	}
 
 	@Override
-	public ResultatEnvoi envoyer(String destinataire, String corps) {
-		int segments = CompteurSegments.segments(corps);
+	public ResultatEnvoi envoyer(MessageSms message) {
+		int segments = CompteurSegments.segments(message.corps());
 		BigDecimal cout = proprietes.coutCentimesParSegment()
 				.multiply(BigDecimal.valueOf(segments));
-		JOURNAL.info("SMS [journal] vers {} — {} segment(s), {} centimes, {} caractères : {}",
-				masquer(destinataire), segments, cout, corps.length(), corps);
-		return ResultatEnvoi.reussi("journal-" + UUID.randomUUID(), cout);
+		JOURNAL.info("SMS [journal] de « {} » vers {} — {} segment(s), {} centimes, "
+				+ "{} caractères : {}", message.expediteur(), masquer(message.destinataire()),
+				segments, cout, message.corps().length(), message.corps());
+		return ResultatEnvoi.reussi("journal-" + UUID.randomUUID(), cout, null);
 	}
 
 	/** Le numéro complet n'a rien à faire dans un journal applicatif. */

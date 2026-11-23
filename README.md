@@ -181,6 +181,52 @@ service workers. Le mode dégradé a donc été validé dans Chrome, pas dans ce
 panneau — si une vérification future échoue à cet endroit, regarder d'abord si
 le service worker est bien enregistré.
 
+## Les SMS
+
+Deux expéditeurs, choisis par `attenso.sms.expediteur` :
+
+| Valeur | Effet |
+| --- | --- |
+| `journal` (défaut) | rien ne part, tout est journalisé, le coût est calculé pour de vrai |
+| `octopush` | envoi réel ; exige `ATTENSO_OCTOPUSH_LOGIN` et `ATTENSO_OCTOPUSH_CLE` |
+
+**L'expéditeur affiché est le nom de la clinique**, pas celui de l'éditeur : le
+SMS « revenez » n'a de valeur que s'il est lu, et il est lu parce qu'il vient du
+vétérinaire. Conséquence, et elle est lourde : ce n'est pas une configuration
+unique mais **un enregistrement par clinique**, avec autorisation écrite et
+validation opérateur de plusieurs jours (réglementation du 1er mars 2026).
+
+Le nom vit dans `tenant.expediteur_sms`, 3 à 11 caractères alphanumériques sans
+accent — « Clinique des Cerisiers » ne rentre pas, « Cerisiers » oui. Tant qu'il
+est vide, **la clinique fonctionne sans SMS** : la file, l'écran et la page de
+suivi marchent, les notifications sont abandonnées avec un motif lisible plutôt
+que réessayées pendant des jours, et le démarrage journalise un avertissement
+nommant la clinique. C'est ce qui rend une installation progressive possible.
+
+Trois détails de l'adaptateur viennent de la documentation de l'API et
+n'auraient pas pu être devinés :
+
+- **`request_id`** porte l'identifiant de la notification, ce qui donne 24 h
+  d'idempotence côté Octopush. Sans lui, une coupure survenant *après*
+  l'acceptation du message ferait repartir le réessai — et payer le SMS deux
+  fois. La boucle de réessai créait elle-même la fuite.
+- **L'expéditeur est validé avant l'appel.** L'API, devant un paramètre mal
+  formé, le « corrige » en supprimant les caractères interdits au lieu de le
+  refuser : un SMS partirait sous un expéditeur que personne n'a enregistré.
+- **`purpose = alert`** (transactionnel) : ni mention STOP, ni restriction
+  horaire. Déclarer « wholesale » ferait refuser les messages (code 121) et
+  interdirait le dimanche, jour où les cliniques de garde travaillent.
+
+`attenso.octopush.simulation=true` utilise le mode bac à sable de l'API : la
+requête est validée, rien n'est envoyé ni facturé. C'est le mode de la
+répétition avant le pilote.
+
+**Question ouverte qui touche le prix :** l'unité du champ `total_cost` renvoyé
+par l'API n'est pas documentée (l'exemple officiel montre `5.005` pour un seul
+contact). Le chiffre brut est donc enregistré dans
+`notification.cout_fournisseur`, à côté de notre estimation dans
+`cout_centimes`. La première facture réelle tranchera.
+
 ## Garde-fous
 
 - **La référence d'un lien SMS ne vaut que pour sa journée**, vérifié et non
@@ -192,7 +238,10 @@ le service worker est bien enregistré.
 - **Plafond de tickets par clinique et par jour** (`200` par défaut). Ce n'est
   pas une limite métier — une clinique en fait quarante — mais un plafond de
   dépense : chaque ticket déclenche un SMS payant et l'agrégateur n'en offre
-  aucun.
+  aucun. Tous les tickets **comptent**, seul l'enregistrement anonyme est
+  **bloqué** : l'accueil passe toujours. Un plafond qui empêcherait l'ASV
+  d'insérer une urgence parce qu'un script a épuisé le quota coûterait plus
+  cher que la facture qu'il évite.
 
 Pas de CAPTCHA à l'enregistrement, et c'est un choix : il détruirait les dix
 secondes de prise de ticket qui sont tout le produit. La protection utile est
@@ -200,12 +249,9 @@ la limite de deux tickets par numéro, tenue en base.
 
 ## Ce qui n'est pas fait
 
-- **Adaptateur Octopush.** L'interface `ExpediteurSms` est là, l'implémentation
-  de développement journalise et calcule le coût réel. L'adaptateur attend deux
-  décisions qui ne sont pas prises : quel nom d'expéditeur affiche le SMS, et
-  sur quel compte. Voir `docs/note-canal-sms.md`.
 - **Vérification HLR** (0,005 €) avant émission du ticket. Le contrôle de format
-  est en place et attrape les fautes de saisie ; le HLR attend le même compte.
+  est en place et attrape les fautes de saisie ; le HLR attend l'ouverture du
+  compte agrégateur.
 - **Limiteur de débit partagé.** En mémoire, donc juste pour une instance.
 
 ## Carte du code
@@ -219,6 +265,9 @@ la limite de deux tickets par numéro, tenue en base.
 | `web` | routes, SSE, limiteur de débit, traduction des erreurs |
 | `journal` | journal d'accès et journal des commandes, en ajout seul |
 | `amorce` | installation de la première clinique |
+
+L'expéditeur SMS d'une clinique se règle à l'installation
+(`--attenso.amorce.expediteur-sms=Cerisiers`) ou en base ensuite.
 
 Côté client, `app/journal.js` porte IndexedDB (les gestes et le dernier
 tableau), `app/attenso.js` la file de rejeu et l'état de la liaison, `sw.js` la

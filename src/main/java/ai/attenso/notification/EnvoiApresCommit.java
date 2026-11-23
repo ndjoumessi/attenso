@@ -36,22 +36,20 @@ public class EnvoiApresCommit {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void surFileModifiee(EvenementFileModifiee evenement) {
-		envoyer(evenement.tenantId());
+		tenants.findById(evenement.tenantId()).ifPresent(this::envoyer);
 	}
 
 	@Scheduled(fixedDelayString = "${attenso.sms.periode-balayage:60000}")
 	public void balayer() {
-		for (Tenant tenant : tenants.findAllByActifTrue()) {
-			envoyer(tenant.id());
-		}
+		tenants.findAllByActifTrue().forEach(this::envoyer);
 	}
 
-	private void envoyer(java.util.UUID tenantId) {
+	private void envoyer(Tenant tenant) {
 		try {
-			ContexteTenant.executer(tenantId, () -> notifications.envoyerEnAttente(tenantId));
+			ContexteTenant.executer(tenant.id(), () -> notifications.envoyerEnAttente(tenant));
 		}
 		catch (RuntimeException panne) {
-			JOURNAL.error("envoi des notifications en échec pour {} : {}", tenantId,
+			JOURNAL.error("envoi des notifications en échec pour {} : {}", tenant.slug(),
 					panne.getMessage());
 		}
 	}

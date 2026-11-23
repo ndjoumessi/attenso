@@ -85,15 +85,36 @@ public class ServiceNotification {
 		}
 	}
 
-	/** Vide la file d'envoi d'un tenant. Hors transaction de transition. */
+	/**
+	 * Vide la file d'envoi d'une clinique. Hors transaction de transition.
+	 *
+	 * <p>Une clinique dont l'expéditeur n'est pas encore enregistré auprès des
+	 * opérateurs n'envoie rien, et ses notifications sont abandonnées tout de
+	 * suite plutôt que réessayées : la validation opérateur prend des jours, et
+	 * un « c'est presque à vous » délivré le lendemain serait pire que pas de
+	 * SMS du tout. La file, l'écran et la page de suivi, eux, continuent de
+	 * fonctionner.
+	 */
 	@Transactional
-	public int envoyerEnAttente(UUID tenantId) {
-		List<ANotifier> lot = dao.enAttente(tenantId, LOT_ENVOI);
+	public int envoyerEnAttente(Tenant tenant) {
+		if (!tenant.peutEnvoyerDesSms()) {
+			List<ANotifier> bloques = dao.enAttente(tenant.id(), LOT_ENVOI);
+			if (!bloques.isEmpty()) {
+				JOURNAL.warn("clinique « {} » sans expéditeur SMS enregistré : {} "
+						+ "notification(s) abandonnée(s). La file reste opérationnelle.",
+						tenant.slug(), bloques.size());
+				dao.abandonner(tenant.id(), "expéditeur SMS non enregistré pour cette clinique");
+			}
+			return 0;
+		}
+
+		List<ANotifier> lot = dao.enAttente(tenant.id(), LOT_ENVOI);
 		int envoyes = 0;
 		for (ANotifier aNotifier : lot) {
 			ResultatEnvoi resultat;
 			try {
-				resultat = expediteur.envoyer(aNotifier.destinataire(), aNotifier.corps());
+				resultat = expediteur.envoyer(new MessageSms(aNotifier.id(),
+						aNotifier.destinataire(), tenant.expediteurSms(), aNotifier.corps()));
 			}
 			catch (RuntimeException panne) {
 				JOURNAL.warn("envoi {} en échec : {}", aNotifier.id(), panne.getMessage());
@@ -102,7 +123,7 @@ public class ServiceNotification {
 			}
 			if (resultat.reussi()) {
 				dao.marquerEnvoye(aNotifier.id(), resultat.fournisseurId(),
-						resultat.coutCentimes(), horloge.instant());
+						resultat.coutCentimes(), resultat.coutFournisseur(), horloge.instant());
 				envoyes++;
 			}
 			else {

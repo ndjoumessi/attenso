@@ -103,15 +103,40 @@ public abstract class SocleIntegration {
 				""");
 	}
 
+	/** Clinique dont l'expéditeur SMS est enregistré : le cas normal. */
 	protected UUID creerClinique(String slug, String nom, int seuilPrevenir,
 			int delaiGraceSecondes) {
+		return creerClinique(slug, nom, seuilPrevenir, delaiGraceSecondes, "Attenso");
+	}
+
+	/**
+	 * @param expediteurSms {@code null} pour une clinique dont le nom n'est pas
+	 *        encore validé par les opérateurs — état réel pendant toute
+	 *        l'installation d'un nouveau client.
+	 */
+	protected UUID creerClinique(String slug, String nom, int seuilPrevenir,
+			int delaiGraceSecondes, String expediteurSms) {
 		UUID id = UUID.randomUUID();
 		proprietaire.update("""
 				INSERT INTO tenant (id, slug, nom, fuseau, delai_grace_secondes,
-				                    seuil_prevenir, actif)
-				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true)
-				""", id, slug, nom, delaiGraceSecondes, seuilPrevenir);
+				                    seuil_prevenir, actif, expediteur_sms)
+				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?)
+				""", id, slug, nom, delaiGraceSecondes, seuilPrevenir, expediteurSms);
 		return id;
+	}
+
+	protected String statutNotification(UUID tenantId, String type) {
+		return proprietaire.queryForObject("""
+				SELECT statut FROM notification WHERE tenant_id = ? AND type = ?
+				ORDER BY cree_le DESC LIMIT 1
+				""", String.class, tenantId, type);
+	}
+
+	protected String erreurNotification(UUID tenantId) {
+		return proprietaire.queryForObject("""
+				SELECT erreur FROM notification WHERE tenant_id = ?
+				ORDER BY cree_le DESC LIMIT 1
+				""", String.class, tenantId);
 	}
 
 	protected UUID creerUtilisateur(UUID tenantId, String email, String motDePasse, Role role) {

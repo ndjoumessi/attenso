@@ -1,6 +1,7 @@
 package ai.attenso.amorce;
 
 import ai.attenso.tenant.ContexteTenant;
+import ai.attenso.tenant.NomExpediteur;
 import ai.attenso.tenant.TenantRepository;
 import ai.attenso.utilisateur.Role;
 import java.util.UUID;
@@ -55,14 +56,21 @@ public class AmorceClinique implements ApplicationRunner {
 			return;
 		}
 
+		String expediteur = proprietes.expediteurSms();
+		if (expediteur != null && !NomExpediteur.valide(expediteur)) {
+			throw new IllegalArgumentException(("expéditeur SMS « %s » non conforme : 3 à 11 "
+					+ "caractères alphanumériques sans accent. Proposition : « %s »")
+					.formatted(expediteur, NomExpediteur.proposerDepuis(proprietes.nom())));
+		}
+
 		UUID tenantId = UUID.randomUUID();
 		jdbc.update("""
 				INSERT INTO tenant (id, slug, nom, fuseau, delai_grace_secondes,
-				                    seuil_prevenir, actif)
-				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true)
+				                    seuil_prevenir, actif, expediteur_sms)
+				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?)
 				""", tenantId, proprietes.slug(), proprietes.nom(),
 				proprietes.delaiGraceSecondes() == null ? 180 : proprietes.delaiGraceSecondes(),
-				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir());
+				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir(), expediteur);
 
 		// La table « utilisateur » EST soumise au RLS : sans tenant lié, la
 		// politique refuserait l'insertion (WITH CHECK compare à NULL). Il faut

@@ -52,13 +52,27 @@ public class NotificationDao {
 				tenantId, TENTATIVES_MAX, limite);
 	}
 
-	public void marquerEnvoye(UUID id, String fournisseurId, BigDecimal cout, Instant quand) {
+	public void marquerEnvoye(UUID id, String fournisseurId, BigDecimal cout,
+			BigDecimal coutFournisseur, Instant quand) {
 		jdbc.update("""
 				UPDATE notification
-				SET statut = 'ENVOYE', fournisseur_id = ?, cout_centimes = ?, envoye_le = ?,
-				    tentatives = tentatives + 1, erreur = NULL
+				SET statut = 'ENVOYE', fournisseur_id = ?, cout_centimes = ?,
+				    cout_fournisseur = ?, envoye_le = ?, tentatives = tentatives + 1,
+				    erreur = NULL
 				WHERE id = ?
-				""", fournisseurId, cout, java.sql.Timestamp.from(quand), id);
+				""", fournisseurId, cout, coutFournisseur, java.sql.Timestamp.from(quand), id);
+	}
+
+	/**
+	 * Abandon définitif, sans compter de tentative : sert au cas « clinique
+	 * sans expéditeur enregistré », où réessayer ne servirait à rien tant que
+	 * la validation opérateur n'est pas faite.
+	 */
+	public void abandonner(UUID tenantId, String motif) {
+		jdbc.update("""
+				UPDATE notification SET statut = 'ECHEC', erreur = ?
+				WHERE tenant_id = ? AND statut = 'EN_ATTENTE'
+				""", motif, tenantId);
 	}
 
 	public void marquerEchec(UUID id, String erreur) {
