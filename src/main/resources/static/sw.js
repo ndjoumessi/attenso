@@ -11,13 +11,18 @@
 // « 2 personnes devant vous » alors que c'est le tour du client depuis dix
 // minutes est pire que pas d'écran du tout.
 
-const CACHE = 'attenso-coquille-v3';
+const CACHE = 'attenso-coquille-v4';
 
 const COQUILLE = [
+  '/app/jetons.css',
   '/app/attenso.css',
   '/app/attenso.js',
   '/app/journal.js',
   '/app/accueil.html',
+  '/app/vue-file.js',
+  '/app/vue-suivi.js',
+  '/app/vue-ecran.js',
+  '/app/formats.js',
   '/app/suivi.html',
   '/app/comptoir.html',
   '/app/ecran.html',
@@ -30,7 +35,9 @@ const COQUILLE = [
  * hors réseau échoue alors que la page est pourtant là.
  */
 function pagePour(chemin) {
-  if (chemin === '/' || chemin === '/index.html') return '/app/accueil.html';
+  // La vitrine n'est pas mise en cache : un prospect hors réseau n'existe pas,
+  // et elle charge des polices distantes qu'on ne veut pas y enfermer.
+  if (chemin === '/accueil') return '/app/accueil.html';
   if (chemin.startsWith('/s/')) return '/app/suivi.html';
   if (chemin.startsWith('/t/')) return '/app/comptoir.html';
   if (chemin.startsWith('/ecran/')) return '/app/ecran.html';

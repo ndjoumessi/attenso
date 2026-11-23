@@ -28,8 +28,9 @@ public class ConfigurationSecurite {
 				.authorizeHttpRequests(acces -> acces
 						// Parcours client : la référence du lien tient lieu de
 						// justificatif, limité en débit par IP.
-						.requestMatchers("/", "/index.html", "/s/**", "/t/**", "/ecran/**",
-								"/manifest.webmanifest", "/sw.js", "/app/**", "/favicon.ico")
+						.requestMatchers("/", "/index.html", "/accueil", "/s/**", "/t/**",
+								"/ecran/**", "/manifest.webmanifest", "/sw.js", "/app/**",
+								"/favicon.ico")
 						.permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/suivi/**", "/api/ecran/**").permitAll()

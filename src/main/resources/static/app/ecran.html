@@ -3,11 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Salle d'attente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
-<main class="mur">
+<main class="mur" aria-live="polite" aria-atomic="true">
   <p class="mur-clinique" id="clinique">—</p>
   <p class="mur-appel" id="appel">—</p>
   <p class="mur-legende" id="legende">en attente</p>

@@ -1,177 +1,256 @@
-/* Attenso — feuille unique.
-   Trois contraintes gouvernent ce fichier, et aucune n'est esthétique :
-   1. Le tableau de l'accueil est lu au doigt, sur une tablette, par-dessus un
-      comptoir : cibles de 56 px minimum, contrastes élevés.
-   2. L'écran du mur est lu à quatre mètres : tout y est démesuré, exprès.
-   3. La page client est ouverte sur un téléphone, souvent dehors, souvent en
-      plein soleil, souvent sur un réseau médiocre : rien à charger. */
+/* Attenso — feuille des quatre écrans applicatifs.
+ *
+ * Aucune valeur brute ici : tout vient de jetons.css. Trois contraintes
+ * gouvernent ce fichier, et aucune n'est esthétique.
+ *   1. Le tableau de l'accueil est lu au doigt, sur une tablette, par-dessus
+ *      un comptoir, par quelqu'un qui tient un animal de l'autre main.
+ *   2. L'écran du mur est lu à quatre mètres.
+ *   3. La page client s'ouvre sur un téléphone, souvent dehors, souvent en
+ *      plein soleil, souvent sur un réseau médiocre.
+ */
 
-:root {
-  --encre: #15181d;
-  --encre-douce: #5c6472;
-  --papier: #fbfbfa;
-  --carte: #ffffff;
-  --trait: #e2e4e8;
-  --accent: #1b5e4b;
-  --accent-clair: #e8f2ee;
-  --alerte: #a8321e;
-  --alerte-claire: #fbeae6;
-  --attention: #8a5a00;
-  --attention-claire: #fdf3df;
-  --rayon: 10px;
-  --ombre: 0 1px 2px rgb(21 24 29 / 6%), 0 4px 12px rgb(21 24 29 / 4%);
-}
+@import url('/app/jetons.css');
 
-* { box-sizing: border-box; }
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--papier);
-  color: var(--encre);
-  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-text-size-adjust: 100%;
+  background: var(--fond);
+  color: var(--sur-fond);
+  font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, sans-serif;
+  font-size: var(--txt-base);
+  line-height: var(--interligne-corps);
+  font-synthesis-weight: none;
 }
 
-.enveloppe { max-width: 56rem; margin: 0 auto; padding: 1.25rem; }
+/* Le lien d'évitement : le tableau est long, et une personne au clavier ne
+   doit pas traverser quinze tickets pour atteindre le formulaire d'urgence. */
+.evitement {
+  position: absolute;
+  left: var(--pas-2);
+  top: calc(var(--pas-2) * -10);
+  z-index: var(--plan-dialogue);
+  padding: var(--pas-3) var(--pas-4);
+  background: var(--accent);
+  color: var(--sur-accent);
+  border-radius: var(--rayon);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--duree-courte) var(--courbe-entree);
+}
+.evitement:focus { top: var(--pas-2); }
+
+.enveloppe { max-width: 56rem; margin: 0 auto; padding: var(--pas-4); }
 .enveloppe--etroite { max-width: 26rem; }
 
-h1 { font-size: 1.35rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
-h2 { font-size: 1rem; margin: 1.75rem 0 .6rem; color: var(--encre-douce);
-     text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
-p  { margin: .4rem 0; }
-.discret { color: var(--encre-douce); font-size: .9rem; }
+/* Gouttières plus larges dès qu'il y a la place : un texte collé au bord
+   d'un écran de tablette se lit mal. */
+@media (min-width: 768px) {
+  .enveloppe { padding: var(--pas-8); }
+}
+
+/* Lexend sur les titres et surtout sur les CHIFFRES : il est dessiné pour la
+   lisibilité, et ses chiffres tabulaires évitent que la file tressaute quand
+   un rang passe de 9 à 10. */
+h1, h2, .numero, .rang, .mur-appel, .compteur dd {
+  font-family: Lexend, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               sans-serif;
+}
+
+h1 { font-size: var(--txt-xl); line-height: var(--interligne-serre);
+     margin: 0 0 var(--pas-1); letter-spacing: -0.01em; font-weight: 650; }
+h2 { font-size: var(--txt-sm); margin: var(--pas-8) 0 var(--pas-3);
+     color: var(--sur-fond-doux); text-transform: uppercase;
+     letter-spacing: 0.06em; font-weight: 600; }
+p  { margin: var(--pas-2) 0; }
+.discret { color: var(--sur-fond-doux); font-size: var(--txt-sm); }
 
 /* --- Barre de tête ----------------------------------------------------- */
 .tete {
   display: flex; align-items: baseline; justify-content: space-between;
-  gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--trait);
-  padding-bottom: .9rem; margin-bottom: .5rem;
+  gap: var(--pas-4); flex-wrap: wrap;
+  border-bottom: 1px solid var(--bordure-douce);
+  padding-bottom: var(--pas-4); margin-bottom: var(--pas-2);
 }
 
-/* --- Compteurs. Les départs sont en tête parce que c'est le chiffre qui
-       justifie l'abonnement : il doit être sous les yeux du gérant. --- */
-.compteurs { display: flex; gap: .5rem; flex-wrap: wrap; }
+/* --- Compteurs ---------------------------------------------------------
+   Les départs sont au même niveau que « en salle », et non dans un rapport :
+   c'est le seul chiffre qui justifie l'abonnement. */
+.compteurs { display: flex; gap: var(--pas-2); flex-wrap: wrap; }
 .compteur {
-  background: var(--carte); border: 1px solid var(--trait);
-  border-radius: var(--rayon); padding: .5rem .8rem; min-width: 6.5rem;
+  background: var(--surface); border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon); padding: var(--pas-2) var(--pas-3);
+  min-width: 7rem;
 }
-.compteur dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
-               color: var(--encre-douce); margin: 0; }
-.compteur dd { margin: .1rem 0 0; font-size: 1.5rem; font-weight: 650;
-               font-variant-numeric: tabular-nums; }
+.compteur dt { font-size: var(--txt-xs); text-transform: uppercase;
+               letter-spacing: 0.05em; color: var(--sur-fond-doux); margin: 0; }
+.compteur dd { margin: var(--pas-1) 0 0; font-size: var(--txt-2xl);
+               font-weight: 650; font-variant-numeric: tabular-nums;
+               line-height: var(--interligne-serre); }
 .compteur--depart dd { color: var(--alerte); }
 
-/* --- Lignes de file ---------------------------------------------------- */
-.file { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+/* --- Lignes de file ----------------------------------------------------- */
+.file { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--pas-3); }
 
 .ligne {
-  background: var(--carte); border: 1px solid var(--trait);
-  border-left: 4px solid var(--trait);
-  border-radius: var(--rayon); box-shadow: var(--ombre);
-  padding: .75rem .9rem;
-  display: grid; grid-template-columns: 3.6rem 1fr; gap: .9rem; align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--bordure-douce);
+  border-left: 4px solid var(--bordure-douce);
+  border-radius: var(--rayon); box-shadow: var(--ombre-1);
+  padding: var(--pas-3) var(--pas-4);
+  display: grid; grid-template-columns: 3.75rem 1fr; gap: var(--pas-4);
+  align-items: center;
 }
-.ligne--appele       { border-left-color: var(--accent);    background: var(--accent-clair); }
-.ligne--prevenu      { border-left-color: var(--attention); }
-.ligne--absent       { border-left-color: var(--alerte); background: var(--alerte-claire); }
-.ligne--urgence      { border-left-color: var(--alerte); border-left-width: 8px; }
-.ligne--clos         { opacity: .5; }
+.ligne--appele   { border-left-color: var(--accent);    background: var(--accent-voile); }
+.ligne--prevenu  { border-left-color: var(--attention); }
+.ligne--absent   { border-left-color: var(--alerte);    background: var(--alerte-voile); }
+.ligne--urgence  { border-left-color: var(--alerte);    border-left-width: 8px; }
+.ligne--clos     { opacity: 0.55; }
 
-.numero { font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums;
-          text-align: center; line-height: 1; }
-.numero small { display: block; font-size: .62rem; font-weight: 600;
-                text-transform: uppercase; letter-spacing: .05em;
-                color: var(--encre-douce); margin-top: .2rem; }
+.numero { font-size: var(--txt-2xl); font-weight: 700;
+          font-variant-numeric: tabular-nums; text-align: center;
+          line-height: var(--interligne-serre); }
+.numero small { display: block; font-size: var(--txt-xs); font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.05em;
+                color: var(--sur-fond-doux); margin-top: var(--pas-1); }
 
-.etiquettes { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .55rem;
-              align-items: center; }
+.etiquettes { display: flex; gap: var(--pas-1); flex-wrap: wrap;
+              margin-bottom: var(--pas-3); align-items: center; }
 .etiquette {
-  font-size: .72rem; font-weight: 650; text-transform: uppercase;
-  letter-spacing: .04em; padding: .18rem .45rem; border-radius: 5px;
-  background: var(--trait); color: var(--encre-douce);
+  display: inline-flex; align-items: center; gap: var(--pas-1);
+  font-size: var(--txt-xs); font-weight: 650; text-transform: uppercase;
+  letter-spacing: 0.04em; padding: var(--pas-1) var(--pas-2);
+  border-radius: var(--rayon-sm);
+  background: var(--surface-douce); color: var(--sur-fond-doux);
 }
-.etiquette--appele   { background: var(--accent);    color: #fff; }
-.etiquette--prevenu  { background: var(--attention); color: #fff; }
-.etiquette--absent   { background: var(--alerte);    color: #fff; }
-.etiquette--urgence  { background: var(--alerte);    color: #fff; }
-.etiquette--muet     { background: #fff; border: 1px dashed var(--trait); }
-.etiquette--attente  { background: var(--attention-claire); color: var(--attention);
-                       border: 1px solid #e7cf9a; }
+/* Chaque étiquette porte un pictogramme en plus de sa couleur : la couleur
+   seule ne doit jamais être le seul porteur d'information. */
+.etiquette::before { font-weight: 700; }
+.etiquette--appele   { background: var(--accent);    color: var(--sur-accent); }
+.etiquette--appele::before   { content: "\2192"; }   /* flèche */
+.etiquette--prevenu  { background: var(--attention); color: var(--sur-attention); }
+.etiquette--prevenu::before  { content: "\25CF"; }   /* point plein */
+.etiquette--absent   { background: var(--alerte);    color: var(--sur-alerte); }
+.etiquette--absent::before   { content: "\21BA"; }   /* flèche de retour */
+.etiquette--urgence  { background: var(--alerte);    color: var(--sur-alerte); }
+.etiquette--urgence::before  { content: "\0021"; }
+.etiquette--attente  { background: var(--attention-voile); color: var(--attention);
+                       border: 1px solid var(--attention); }
+.etiquette--attente::before  { content: "\2191"; }
+.etiquette--muet     { background: var(--surface);
+                       border: 1px dashed var(--bordure-controle); }
+.etiquette--muet::before     { content: "\2298"; }
 
-/* --- Actions ----------------------------------------------------------- */
-.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+/* --- Actions ------------------------------------------------------------ */
+.actions { display: flex; gap: var(--pas-2); flex-wrap: wrap; }
 
-button {
+button, .bouton {
   font: inherit; font-weight: 600; cursor: pointer;
-  min-height: 56px; padding: 0 1.1rem;
-  border: 1px solid var(--trait); border-radius: 8px;
-  background: var(--carte); color: var(--encre);
-  touch-action: manipulation;
+  min-height: var(--cible); padding: 0 var(--pas-4);
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--pas-2);
+  border: 1px solid var(--bordure-controle); border-radius: var(--rayon-sm);
+  background: var(--surface); color: var(--sur-fond);
+  text-decoration: none; touch-action: manipulation;
+  transition: background var(--duree-courte) var(--courbe-entree),
+              border-color var(--duree-courte) var(--courbe-entree),
+              opacity var(--duree-courte) var(--courbe-entree);
 }
-button:hover:not(:disabled) { border-color: var(--encre-douce); }
-button:active:not(:disabled) { transform: translateY(1px); }
-button:disabled { opacity: .4; cursor: not-allowed; }
-button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:hover:not(:disabled), .bouton:hover { background: var(--surface-douce); }
+/* Retour au doigt sans déplacer la mise en page : un bouton qui bouge sous
+   le doigt décale ses voisins et fait rater la cible suivante. */
+button:active:not(:disabled), .bouton:active { background: var(--bordure-douce); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:focus-visible, .bouton:focus-visible, a:focus-visible, input:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--anneau); outline-offset: 2px;
+}
 
-.b-principal { background: var(--accent); border-color: var(--accent); color: #fff; }
-/* « Parti » n'a jamais la même forme qu'une action ordinaire : le confondre
-   avec « absent » fausserait le compteur de retour sur investissement. */
-.b-parti { border-color: var(--alerte); color: var(--alerte); border-width: 2px; }
+.b-principal { background: var(--accent); border-color: var(--accent);
+               color: var(--sur-accent); }
+.b-principal:hover:not(:disabled) { background: var(--accent); filter: brightness(1.1); }
+/* « Parti » n'a jamais la forme d'une action ordinaire, et n'est jamais le
+   bouton principal : le confondre avec « absent » fausserait le compteur de
+   départs, donc l'argument de vente. */
+.b-parti { border-color: var(--alerte); color: var(--alerte); border-width: 2px;
+           background: transparent; }
+.b-parti:hover:not(:disabled) { background: var(--alerte-voile); }
 .b-pleine-largeur { width: 100%; }
 
-/* --- Formulaires ------------------------------------------------------- */
-label { display: block; font-weight: 600; margin: 1rem 0 .35rem; }
+/* --- Formulaires -------------------------------------------------------- */
+label { display: block; font-weight: 600; margin: var(--pas-4) 0 var(--pas-2); }
 input {
-  font: inherit; width: 100%; min-height: 56px; padding: 0 .85rem;
-  border: 1px solid var(--trait); border-radius: 8px; background: var(--carte);
-  color: var(--encre);
+  font: inherit; width: 100%; min-height: var(--cible);
+  padding: 0 var(--pas-3);
+  border: 1px solid var(--bordure-controle); border-radius: var(--rayon-sm);
+  background: var(--surface); color: var(--sur-fond);
 }
-input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px;
+input::placeholder { color: var(--sur-fond-doux); opacity: 1; }
+input:focus-visible { outline: 3px solid var(--anneau); outline-offset: 1px;
                       border-color: var(--accent); }
+input[aria-invalid="true"] { border-color: var(--alerte); border-width: 2px; }
 
-/* --- Messages ---------------------------------------------------------- */
-.message { border-radius: var(--rayon); padding: .7rem .9rem; margin: .9rem 0;
-           font-size: .93rem; }
-.message--erreur { background: var(--alerte-claire); color: var(--alerte);
-                   border: 1px solid #f0cbc2; }
-.message--info   { background: var(--accent-clair); color: var(--accent);
-                   border: 1px solid #c6dfd6; }
+/* --- Messages ----------------------------------------------------------- */
+.message { border-radius: var(--rayon); padding: var(--pas-3) var(--pas-4);
+           margin: var(--pas-4) 0; font-size: var(--txt-sm);
+           display: flex; gap: var(--pas-2); align-items: flex-start; }
+.message::before { font-weight: 700; flex: none; }
+.message--erreur { background: var(--alerte-voile); color: var(--alerte);
+                   border: 1px solid var(--alerte); }
+.message--erreur::before { content: "\26A0"; }
+.message--info   { background: var(--accent-voile); color: var(--accent);
+                   border: 1px solid var(--accent); }
+.message--info::before { content: "\2139"; }
 .message[hidden] { display: none; }
 
-/* --- Bandeau hors ligne. Toujours visible, jamais modal : l'ASV doit
-       pouvoir continuer à travailler pendant la panne. --- */
+/* --- Bandeau de panne ---------------------------------------------------
+   Collé en haut, jamais modal : l'ASV doit pouvoir continuer à travailler
+   pendant la panne, c'est tout l'objet du mode dégradé. */
 .hors-ligne {
-  position: sticky; top: 0; z-index: 10;
-  background: var(--attention); color: #fff; font-weight: 650;
-  padding: .55rem 1rem; text-align: center; font-size: .9rem;
+  position: sticky; top: 0; z-index: var(--plan-bandeau);
+  background: var(--attention); color: var(--sur-attention);
+  font-weight: 650; padding: var(--pas-2) var(--pas-4);
+  text-align: center; font-size: var(--txt-sm);
 }
+.hors-ligne--grave { background: var(--alerte); color: var(--sur-alerte); }
 .hors-ligne[hidden] { display: none; }
-/* Journal local indisponible : plus grave que le réseau coupé, puisque là les
-   gestes ne sont pas rattrapables. */
-.hors-ligne--grave { background: var(--alerte); }
 
-/* --- Page client ------------------------------------------------------- */
-.carte-suivi { background: var(--carte); border: 1px solid var(--trait);
-               border-radius: 14px; box-shadow: var(--ombre);
-               padding: 1.6rem 1.25rem; text-align: center; }
-.rang { font-size: 4.5rem; font-weight: 750; line-height: 1;
-        font-variant-numeric: tabular-nums; }
+/* --- Page client --------------------------------------------------------- */
+.carte-suivi {
+  background: var(--surface); border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-lg); box-shadow: var(--ombre-1);
+  padding: var(--pas-8) var(--pas-4); text-align: center;
+}
+.rang { font-size: var(--txt-4xl); font-weight: 750;
+        line-height: 1; font-variant-numeric: tabular-nums;
+        margin: var(--pas-2) 0; }
+@media (min-width: 420px) { .rang { font-size: 4.5rem; } }
 .rang--cest-a-vous { color: var(--accent); }
-.attente { font-size: 1.05rem; color: var(--encre-douce); margin-top: .5rem; }
+.attente { font-size: var(--txt-lg); color: var(--sur-fond-doux);
+           margin-top: var(--pas-2); }
 
-/* --- Écran du mur : lu à quatre mètres -------------------------------- */
-.mur { min-height: 100vh; display: flex; flex-direction: column;
-       justify-content: center; align-items: center; text-align: center;
-       padding: 2rem; background: var(--encre); color: #fff; }
-.mur-clinique { font-size: 1.5rem; opacity: .65; letter-spacing: .02em; }
-.mur-appel { font-size: clamp(5rem, 22vw, 16rem); font-weight: 800; line-height: .95;
-             font-variant-numeric: tabular-nums; margin: .4rem 0; }
-.mur-legende { font-size: clamp(1.1rem, 3vw, 2rem); text-transform: uppercase;
-               letter-spacing: .12em; opacity: .8; }
-.mur-prochains { font-size: clamp(1.3rem, 4vw, 2.6rem); opacity: .6;
-                 margin-top: 2.5rem; font-variant-numeric: tabular-nums; }
+/* --- Écran du mur : lu à quatre mètres ---------------------------------- */
+.mur {
+  min-height: 100dvh; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+  padding: var(--pas-8);
+  background: var(--mur-fond); color: var(--mur-encre);
+}
+.mur-clinique { font-size: clamp(1.1rem, 2.5vw, 1.75rem); color: var(--mur-encre-douce);
+                letter-spacing: 0.02em; margin: 0; }
+.mur-appel { font-size: clamp(5rem, 24vw, 18rem); font-weight: 800; line-height: 0.95;
+             font-variant-numeric: tabular-nums; margin: var(--pas-2) 0; }
+.mur-legende { font-size: clamp(1.1rem, 3.5vw, 2.25rem); text-transform: uppercase;
+               letter-spacing: 0.12em; color: var(--mur-encre-douce); margin: 0; }
+.mur-prochains { font-size: clamp(1.3rem, 4.5vw, 2.75rem); color: var(--mur-encre-douce);
+                 margin-top: var(--pas-12); font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .mur-appel { animation: apparition .5s ease-out; }
-  @keyframes apparition { from { opacity: 0; transform: scale(.94); } }
+  .mur-appel { animation: apparition var(--duree) var(--courbe-entree); }
+  @keyframes apparition { from { opacity: 0; transform: scale(0.94); } }
 }

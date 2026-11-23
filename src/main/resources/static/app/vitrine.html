@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<title>Attenso — vos clients attendent où ils veulent</title>
+<meta name="description" content="File d'attente virtuelle pour cliniques vétérinaires. Vos clients attendent dans leur voiture et reçoivent un SMS quand c'est bientôt à eux. Mesure les départs sans consultation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="/app/vitrine.css">
+</head>
+<body>
+
+<a class="evitement" href="#contenu">Aller au contenu</a>
+
+<header class="entete">
+  <div class="colonne">
+    <span class="marque">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7v5l3 2"></path>
+      </svg>
+      Attenso
+    </span>
+  </div>
+</header>
+
+<main id="contenu">
+
+  <!-- Hero : une promesse, un appel à l'action, rien d'autre. -->
+  <section class="bande hero">
+    <div class="colonne">
+      <h1>Vos clients attendent où ils veulent.<br>Pas entassés dans votre salle.</h1>
+      <p class="chapeau mesure">
+        Ils scannent un QR code en arrivant, vont attendre dans leur voiture, et
+        reçoivent un SMS quand c'est bientôt à eux. Votre accueil garde la main
+        sur l'ordre de passage.
+      </p>
+      <div class="duo">
+        <a class="appel" href="#pilote">
+          Devenir clinique pilote
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+        <a class="appel appel--discret" href="#comment">Voir comment ça marche</a>
+      </div>
+      <p class="sous-appel">Gratuit pendant le pilote. Sans engagement, sans installation.</p>
+    </div>
+  </section>
+
+  <!-- Le problème, chiffré. C'est la seule chose à retenir de la page. -->
+  <section class="bande" aria-labelledby="titre-probleme">
+    <div class="colonne">
+      <h2 id="titre-probleme">Ce que l'attente vous coûte</h2>
+      <div class="chiffre">
+        <span class="chiffre-valeur">400 €</span>
+        <p class="chiffre-libelle">
+          perdus chaque mois pour deux clients par semaine qui repartent
+          sans être vus.
+        </p>
+      </div>
+      <p class="mesure" style="margin-top: var(--pas-6); color: var(--sur-fond-doux);">
+        Personne ne les compte aujourd'hui : ils partent sans rien dire. Attenso
+        les compte, et c'est le premier chiffre que vous verrez sur votre tableau.
+      </p>
+    </div>
+  </section>
+
+  <!-- Trois bénéfices. Pas quatre. -->
+  <section class="bande" aria-labelledby="titre-benefices" style="background: var(--surface-douce);">
+    <div class="colonne">
+      <h2 id="titre-benefices">Ce que ça change</h2>
+      <ul class="benefices">
+        <li class="benefice">
+          <h3>
+            <span class="pastille" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h4l3-8 4 16 3-8h4"></path></svg>
+            </span>
+            Une salle calme
+          </h3>
+          <p>
+            Moins de monde assis, moins de chiens qui se croisent, moins de
+            tension au comptoir. Ceux qui préfèrent rester le peuvent toujours.
+          </p>
+        </li>
+        <li class="benefice">
+          <h3>
+            <span class="pastille" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </span>
+            Un SMS, au bon moment
+          </h3>
+          <p>
+            « C'est presque à vous, merci de revenir. » Envoyé au nom de votre
+            clinique, pas au nôtre. Deux messages par visite, pas davantage.
+          </p>
+        </li>
+        <li class="benefice">
+          <h3>
+            <span class="pastille" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path><path d="M7 15l4-5 3 3 5-7"></path></svg>
+            </span>
+            Les départs, comptés
+          </h3>
+          <p>
+            Un bouton « parti sans être vu » distinct de « absent ». À la fin du
+            mois, vous savez ce que l'attente vous a réellement coûté.
+          </p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Le déroulé, du point de vue de la clinique. -->
+  <section class="bande" id="comment" aria-labelledby="titre-comment">
+    <div class="colonne">
+      <h2 id="titre-comment">Une journée avec Attenso</h2>
+      <ol class="etapes">
+        <li class="etape">
+          <div>
+            <h3>Le client arrive et scanne</h3>
+            <p>Un QR code imprimé sur votre comptoir. Il laisse son mobile,
+               reçoit son numéro. Pas de compte, pas de mot de passe.</p>
+          </div>
+        </li>
+        <li class="etape">
+          <div>
+            <h3>Il attend où il veut</h3>
+            <p>Dans sa voiture, dehors, ou dans la salle s'il préfère. Une page
+               lui montre son rang, qui se met à jour toute seule.</p>
+          </div>
+        </li>
+        <li class="etape">
+          <div>
+            <h3>Votre accueil fait avancer la file</h3>
+            <p>Une tablette, de gros boutons. Une urgence passe devant en un
+               geste, et les personnes déjà prévenues en sont informées.</p>
+          </div>
+        </li>
+        <li class="etape">
+          <div>
+            <h3>L'écran et la voix appellent</h3>
+            <p>Un numéro en grand sur un écran de la salle. Et si le réseau
+               tombe, la tablette continue de fonctionner.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Ce qui est vrai aujourd'hui, et ce qui ne l'est pas encore. -->
+  <section class="bande bande--contraste" aria-labelledby="titre-etat">
+    <div class="colonne">
+      <h2 id="titre-etat">Où en est Attenso</h2>
+      <p class="mesure">
+        Le produit fonctionne et cherche ses premières cliniques. Il n'y a pas
+        encore de client à citer, donc vous n'en verrez pas sur cette page :
+        vous seriez l'un des premiers, et c'est précisément ce qu'on propose.
+      </p>
+      <p class="mesure" style="margin-top: var(--pas-4);">
+        Pendant le pilote, l'outil est gratuit. En échange, on mesure ensemble
+        une chose simple : combien de clients repartaient sans être vus avant,
+        et combien après.
+      </p>
+    </div>
+  </section>
+
+  <!-- Tarifs, à l'usage et non au praticien. -->
+  <section class="bande" aria-labelledby="titre-tarifs">
+    <div class="colonne">
+      <h2 id="titre-tarifs">Ensuite, selon votre volume</h2>
+      <ul class="tarifs">
+        <li class="tarif">
+          <p class="tarif-nom">Cabinet</p>
+          <p class="tarif-prix">69 €<small> / mois</small></p>
+          <p class="tarif-detail">Jusqu'à 400 visites par mois</p>
+        </li>
+        <li class="tarif tarif--mis-en-avant">
+          <p class="tarif-nom">Clinique</p>
+          <p class="tarif-prix">149 €<small> / mois</small></p>
+          <p class="tarif-detail">Jusqu'à 1 000 visites par mois</p>
+        </li>
+        <li class="tarif">
+          <p class="tarif-nom">Centre</p>
+          <p class="tarif-prix">239 €<small> / mois</small></p>
+          <p class="tarif-detail">Au-delà, SMS inclus</p>
+        </li>
+      </ul>
+      <p class="discret" style="margin-top: var(--pas-4);">
+        Au volume, pas au nombre de vétérinaires : une clinique à trois
+        praticiens qui voit peu de monde ne paie pas pour ses confrères.
+        SMS compris dans tous les paliers.
+      </p>
+    </div>
+  </section>
+
+  <!-- L'appel à l'action, une seule fois de plus, à la fin. -->
+  <section class="bande" id="pilote" aria-labelledby="titre-pilote"
+           style="background: var(--accent-voile);">
+    <div class="colonne" style="text-align: center;">
+      <h2 id="titre-pilote">Essayer dans votre clinique</h2>
+      <p class="mesure" style="margin: 0 auto var(--pas-8);">
+        Une visite de vingt minutes, à l'heure creuse. On regarde votre salle
+        d'attente, et on vous dit honnêtement si Attenso vous servirait.
+      </p>
+      <a class="appel" href="mailto:contact@attenso.fr?subject=Clinique%20pilote%20Attenso">
+        Écrire pour en parler
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+          <path d="M4 4h16v16H4z"></path><path d="m4 7 8 6 8-6"></path></svg>
+      </a>
+      <p class="sous-appel">Réponse sous deux jours ouvrés.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="colonne">
+    <p>
+      Attenso — file d'attente virtuelle pour cabinets à flux libre.
+      Les numéros de téléphone servent à prévenir le client le jour même,
+      et sont effacés le lendemain.
+    </p>
+    <ul>
+      <li><a href="/accueil">Accès clinique</a></li>
+      <li><a href="https://github.com/ndjoumessi/attenso">Code source</a></li>
+    </ul>
+  </div>
+</footer>
+
+</body>
+</html>

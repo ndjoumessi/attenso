@@ -29,7 +29,18 @@ public class ControleurPages {
 		return "forward:/app/ecran.html";
 	}
 
+	/** La vitrine publique. */
 	@GetMapping("/")
+	String vitrine() {
+		return "forward:/app/vitrine.html";
+	}
+
+	/**
+	 * Le tableau de l'accueil, déplacé de la racine pour laisser la place à la
+	 * vitrine. L'ASV le met en favori une fois ; le client, lui, n'arrive
+	 * jamais par là.
+	 */
+	@GetMapping("/accueil")
 	String accueil() {
 		return "forward:/app/accueil.html";
 	}

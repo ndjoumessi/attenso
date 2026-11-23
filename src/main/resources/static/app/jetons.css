@@ -1,0 +1,164 @@
+/* Attenso — jetons de design.
+ *
+ * Un seul endroit où les couleurs, les tailles et les rythmes sont décidés.
+ * Les feuilles qui suivent n'écrivent plus de valeur brute : elles nomment un
+ * rôle. C'est ce qui permet au mode sombre d'exister sans dupliquer une règle,
+ * et à un contraste de se corriger en un point plutôt qu'en trente.
+ *
+ * Les valeurs de couleur ne sont pas choisies à l'œil : chaque paire
+ * texte/fond a été mesurée. Les ratios sont en commentaire, et un test les
+ * revérifie.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* --- Rythme d'espacement, base 4 ------------------------------------ */
+  --pas-1: 0.25rem;   /*  4px */
+  --pas-2: 0.5rem;    /*  8px */
+  --pas-3: 0.75rem;   /* 12px */
+  --pas-4: 1rem;      /* 16px */
+  --pas-6: 1.5rem;    /* 24px */
+  --pas-8: 2rem;      /* 32px */
+  --pas-12: 3rem;     /* 48px */
+  --pas-16: 4rem;     /* 64px */
+  --pas-24: 6rem;     /* 96px */
+
+  /* --- Échelle typographique ------------------------------------------ */
+  --txt-xs: 0.75rem;   /* 12px — étiquettes seulement */
+  --txt-sm: 0.875rem;  /* 14px */
+  --txt-base: 1rem;    /* 16px — plancher du corps de texte */
+  --txt-lg: 1.125rem;  /* 18px */
+  --txt-xl: 1.375rem;  /* 22px */
+  --txt-2xl: 1.75rem;  /* 28px */
+  --txt-3xl: 2.25rem;  /* 36px */
+  --txt-4xl: 3rem;     /* 48px */
+
+  --interligne-serre: 1.2;
+  --interligne-corps: 1.6;
+
+  /* --- Formes --------------------------------------------------------- */
+  --rayon-sm: 6px;
+  --rayon: 10px;
+  --rayon-lg: 16px;
+  --rayon-plein: 999px;
+
+  /* Deux niveaux d'élévation, pas plus : une échelle d'ombres improvisée
+     est le signe le plus sûr d'une interface assemblée au fil de l'eau. */
+  --ombre-1: 0 1px 2px rgb(21 24 29 / 6%), 0 4px 12px rgb(21 24 29 / 4%);
+  --ombre-2: 0 2px 4px rgb(21 24 29 / 8%), 0 12px 32px rgb(21 24 29 / 10%);
+
+  /* --- Cible tactile ---------------------------------------------------
+     56px, au-dessus des 44 d'Apple et des 48 de Material. Justifié : le
+     tableau est touché au doigt, sur une tablette posée sur un comptoir,
+     par quelqu'un qui tient un animal de l'autre main. */
+  --cible: 56px;
+  --cible-min: 44px;
+
+  /* --- Mouvement ------------------------------------------------------- */
+  --duree-courte: 150ms;
+  --duree: 220ms;
+  --sortie: 140ms;              /* une sortie plus rapide qu'une entrée */
+  --courbe-entree: cubic-bezier(0.2, 0, 0, 1);
+  --courbe-sortie: cubic-bezier(0.4, 0, 1, 1);
+
+  /* --- Plans ----------------------------------------------------------- */
+  --plan-contenu: 0;
+  --plan-colle: 10;
+  --plan-bandeau: 20;
+  --plan-dialogue: 40;
+
+  /* --- Couleurs, mode clair -------------------------------------------
+     Chaque ratio mesuré contre son fond d'usage. */
+  --fond: #fbfbfa;
+  --surface: #ffffff;
+  --surface-douce: #f4f5f7;
+  --sur-fond: #15181d;            /* 17.18:1 sur --fond */
+  --sur-fond-doux: #5c6472;       /*  5.76:1 sur --fond */
+
+  /* Bordure de CONTRÔLE : doit atteindre 3:1 (WCAG 1.4.11). L'ancienne
+     valeur était à 1,23:1 — un champ de saisie sans contour visible. */
+  --bordure-controle: #89919e;    /*  3.07:1 sur --fond */
+  /* Séparation DÉCORATIVE : ne porte aucune information, le ratio ne
+     s'applique pas. La distinguer évite d'alourdir toute l'interface. */
+  --bordure-douce: #e2e4e8;
+
+  --accent: #1b5e4b;              /* blanc dessus : 7.64:1 */
+  --sur-accent: #ffffff;
+  --accent-voile: #e8f2ee;
+
+  --alerte: #a8321e;              /* 6.46:1 sur --fond ; blanc dessus 6.69:1 */
+  --sur-alerte: #ffffff;
+  --alerte-voile: #fbeae6;
+
+  --attention: #8a5a00;           /* 5.72:1 sur --fond ; blanc dessus 5.93:1 */
+  --sur-attention: #ffffff;
+  --attention-voile: #fdf3df;
+
+  --anneau: var(--accent);
+
+  /* Bande de rupture : une section qui doit trancher avec le reste de la
+     page. En mode clair elle est sombre ; en mode sombre elle doit être plus
+     CLAIRE que le fond, sinon elle disparaît. Une inversion naïve ferait
+     exactement l'inverse de ce qu'on veut. */
+  --bande-contraste: #15181d;
+  --sur-bande-contraste: #ffffff;        /* 17.79:1 */
+  --sur-bande-contraste-doux: #c9cdd4;   /* 10.2:1  */
+
+  /* Le mur de la salle d'attente garde son fond sombre dans les deux
+     modes : il est lu à quatre mètres, et un fond clair y éblouit. */
+  --mur-fond: #15181d;
+  --mur-encre: #ffffff;           /* 17.79:1 */
+  --mur-encre-douce: #c9cdd4;     /* 10.2:1  — remplace une opacité, qui
+                                     ne garantit aucun contraste */
+}
+
+/* --- Mode sombre -------------------------------------------------------
+   Variantes désaturées et éclaircies, pas une inversion : un vert foncé
+   lisible sur papier tombe à 2,16:1 sur fond sombre. Chaque accent a donc
+   sa propre valeur, mesurée. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #1b1f26;
+    --surface: #232831;
+    --surface-douce: #2b313b;
+    --sur-fond: #f2f4f7;          /* 15.00:1 */
+    --sur-fond-doux: #a8b1be;     /*  7.63:1 */
+
+    --bordure-controle: #646d7b;  /*  3.16:1 */
+    --bordure-douce: #333a45;
+
+    --accent: #4ea88a;            /*  5.74:1 */
+    --sur-accent: #10231c;
+    --accent-voile: #1d3a31;
+
+    --alerte: #ef8a76;            /*  6.74:1 */
+    --sur-alerte: #3a1109;
+    --alerte-voile: #3a211c;
+
+    --attention: #e0a93c;         /*  7.80:1 */
+    --sur-attention: #2b1f00;
+    --attention-voile: #352a12;
+
+    --bande-contraste: #2b313b;          /* 1.4:1 de séparation avec --fond */
+    --sur-bande-contraste: #f2f4f7;      /* 11.76:1 */
+    --sur-bande-contraste-doux: #a8b1be; /*  5.98:1 */
+
+    --ombre-1: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px rgb(0 0 0 / 30%);
+    --ombre-2: 0 2px 4px rgb(0 0 0 / 50%), 0 12px 32px rgb(0 0 0 / 40%);
+  }
+}
+
+/* --- Mouvement réduit ---------------------------------------------------
+   Appliqué globalement, et non écran par écran : une personne qui a demandé
+   moins d'animation l'a demandé partout. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

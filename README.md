@@ -41,7 +41,8 @@ Puis :
 
 | Écran | URL | Qui |
 | --- | --- | --- |
-| Tableau de l'accueil | `/` | l'ASV, sur tablette |
+| Vitrine publique | `/` | le gérant, avant de signer |
+| Tableau de l'accueil | `/accueil` | l'ASV, sur tablette |
 | QR du comptoir | `/t/cerisiers` | le client, à l'arrivée |
 | Suivi du client | `/s/{reference}` | le client, par SMS |
 | Écran du mur | `/ecran/cerisiers` | la salle d'attente |
@@ -363,6 +364,45 @@ la limite de deux tickets par numéro, tenue en base.
 ## Ce qui n'est pas fait
 
 - **Limiteur de débit partagé.** En mémoire, donc juste pour une instance.
+
+## Le design, et ce qu'il refuse
+
+Cinq écrans, un seul socle : `app/jetons.css`. Aucune feuille n'écrit de valeur
+brute — elles nomment un rôle. C'est ce qui permet au mode sombre d'exister
+sans dupliquer une règle, et à un contraste de se corriger en un point plutôt
+qu'en trente.
+
+**Les couleurs ne sont pas choisies à l'œil.** Chaque paire texte/fond est
+mesurée, le ratio est en commentaire à côté de la valeur, et
+`src/test/js/jetons.test.js` les revérifie à chaque `./mvnw test`. L'audit
+initial a trouvé une vraie faute : la bordure des champs de saisie était à
+**1,23:1** contre les 3:1 qu'exige WCAG 1.4.11 — un contour invisible pour une
+vue faible. Les bordures de *contrôle* et les séparations *décoratives* sont
+désormais deux jetons distincts, parce que la règle ne s'applique qu'aux
+premières.
+
+**Le mode sombre n'est pas une inversion.** Un vert foncé lisible sur papier
+tombe à 2,16:1 sur fond sombre : chaque accent a donc sa propre valeur, mesurée
+à part. Et une surface qui doit trancher avec le fond doit y être plus
+*claire*, pas plus foncée — le premier jet faisait l'inverse et la bande
+disparaissait. Un test le garde maintenant dans les deux sens.
+
+**La couleur n'est jamais seule à porter l'information.** Chaque étiquette de
+la file a un pictogramme en plus de sa teinte : une flèche pour « appelé », un
+point pour « prévenu », une flèche de retour pour « absent ». Un daltonien lit
+la même file que les autres.
+
+**Ce que le système de design a recommandé et que j'ai refusé.** Le motif
+proposé pour une vitrine réclame témoignages, logos clients et preuve sociale.
+Attenso n'a aucun client : les inventer serait fabriquer des preuves. La page
+dit donc ce qui est vrai — le produit cherche ses premières cliniques — et
+cadre l'appel à l'action sur le pilote. En pré-lancement, c'est aussi ce qui
+convertit.
+
+Les cibles tactiles sont à 56 px, au-dessus des 44 d'Apple et des 48 de
+Material. Ce n'est pas du zèle : le tableau est touché au doigt, sur une
+tablette posée sur un comptoir, par quelqu'un qui tient un animal de l'autre
+main.
 
 ## Les tests des écrans
 

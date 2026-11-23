@@ -3,18 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1b5e4b">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Attenso — accueil</title>
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
 
-<div class="hors-ligne" id="bandeau" hidden>
+<a class="evitement" href="#vue-file">Aller au tableau</a>
+
+<div class="hors-ligne" id="bandeau" role="status" hidden>
   <span id="bandeau-texte">Serveur injoignable</span> — le tableau reste
   utilisable, les actions partiront au retour du réseau.
 </div>
-<div class="hors-ligne hors-ligne--grave" id="bandeau-journal" hidden>
+<div class="hors-ligne hors-ligne--grave" id="bandeau-journal" role="alert" hidden>
   Journal local indisponible (navigation privée ?) — les actions faites hors
   réseau seraient perdues.
 </div>
@@ -30,7 +36,7 @@
     <input id="email" name="email" type="email" autocomplete="username" required>
     <label for="mdp">Mot de passe</label>
     <input id="mdp" name="mdp" type="password" autocomplete="current-password" required>
-    <div class="message message--erreur" id="erreur-connexion" hidden></div>
+    <div class="message message--erreur" id="erreur-connexion" role="alert" hidden></div>
     <p><button class="b-principal b-pleine-largeur" type="submit">Entrer</button></p>
   </form>
 </section>
@@ -51,11 +57,11 @@
     </dl>
   </div>
 
-  <div class="message message--erreur" id="erreur-file" hidden></div>
-  <div class="message message--info" id="info-file" hidden></div>
+  <div class="message message--erreur" id="erreur-file" role="alert" hidden></div>
+  <div class="message message--info" id="info-file" role="status" hidden></div>
 
   <h2>File du jour</h2>
-  <ul class="file" id="liste-file"></ul>
+  <ul class="file" id="liste-file" aria-live="polite" aria-relevant="additions text"></ul>
   <p id="file-vide" class="discret" hidden>Personne en salle pour le moment.</p>
 
   <h2>Urgence</h2>
