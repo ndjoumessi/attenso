@@ -2,6 +2,7 @@ package ai.attenso.web;
 
 import ai.attenso.tenant.TenantInconnu;
 import ai.attenso.ticket.LimiteNumeroAtteinte;
+import ai.attenso.ticket.NumeroInjoignable;
 import ai.attenso.ticket.NumeroInvalide;
 import ai.attenso.ticket.PlafondJournalierAtteint;
 import ai.attenso.ticket.TicketInconnu;
@@ -53,6 +54,12 @@ public class GestionnaireErreurs {
 	ProblemDetail limiteNumero(LimiteNumeroAtteinte erreur) {
 		return probleme(HttpStatus.TOO_MANY_REQUESTS, "Déjà enregistré",
 				"Ce numéro a déjà ses tickets pour aujourd'hui. Voyez l'accueil.");
+	}
+
+	@ExceptionHandler(NumeroInjoignable.class)
+	ProblemDetail numeroInjoignable(NumeroInjoignable erreur) {
+		return probleme(HttpStatus.BAD_REQUEST, "Numéro injoignable",
+				"Ce numéro ne reçoit pas de SMS. Vérifiez-le, ou voyez l'accueil.");
 	}
 
 	@ExceptionHandler(PlafondJournalierAtteint.class)

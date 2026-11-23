@@ -227,6 +227,46 @@ contact). Le chiffre brut est donc enregistré dans
 `notification.cout_fournisseur`, à côté de notre estimation dans
 `cout_centimes`. La première facture réelle tranchera.
 
+## La vérification du numéro
+
+Deux vérificateurs, choisis par `attenso.hlr.verificateur` :
+
+| Valeur | Effet |
+| --- | --- |
+| `format` (défaut) | contrôle de forme seul ; le verdict est « indéterminé » |
+| `octopush` | interrogation HLR réelle, ~0,005 € l'appel, même compte que les SMS |
+
+L'intérêt n'est pas d'économiser 4,5 centimes : c'est d'attraper la faute de
+frappe **pendant que le client est encore au comptoir** et peut la corriger. Un
+chiffre inversé, et il attend dans sa voiture un message qui ne viendra jamais —
+exactement la promesse rompue que tout ce produit cherche à éviter.
+
+**Trois verdicts et non deux**, parce que les deux erreurs n'ont pas le même
+prix : refuser à tort renvoie un client qui est venu, accepter à tort coûte
+4,5 centimes. On ne refuse donc que sur un négatif **certain** — ligne morte,
+fixe, format illisible, SIM sans messagerie. Tout le reste laisse entrer.
+
+Le cas qui décide de tout : `absent_subscriber` veut dire que la SIM existe mais
+que le téléphone est éteint ou hors couverture. C'est la situation la plus
+banale d'une salle d'attente, et le SMS arrivera au rallumage. Le confondre avec
+`dead` reviendrait à renvoyer du comptoir quelqu'un dont le portable dort dans
+sa poche.
+
+Une panne de l'agrégateur ou un dépassement de délai donnent aussi
+« indéterminé » : le ticket est émis sans vérification plutôt que de faire
+attendre. Le délai de lecture est court et assumé (3 s), contre 15 s pour
+l'envoi de SMS qui, lui, tourne en arrière-plan.
+
+**Les garde-fous passent avant l'appel payant.** Le plafond du jour et la limite
+de deux tickets par numéro sont vérifiés *avant* le HLR : sans cet ordre, un
+script brûlerait des crédits sans même créer de ticket. Et le deuxième ticket
+d'un même numéro dans la journée réutilise le verdict déjà payé — une famille
+avec deux animaux ne coûte pas deux vérifications.
+
+Les deux réglages sont indépendants : on peut activer le HLR sans l'envoi réel,
+par exemple pour mesurer la qualité des numéros d'une clinique avant d'ouvrir
+les SMS.
+
 ## Garde-fous
 
 - **La référence d'un lien SMS ne vaut que pour sa journée**, vérifié et non
@@ -249,9 +289,6 @@ la limite de deux tickets par numéro, tenue en base.
 
 ## Ce qui n'est pas fait
 
-- **Vérification HLR** (0,005 €) avant émission du ticket. Le contrôle de format
-  est en place et attrape les fautes de saisie ; le HLR attend l'ouverture du
-  compte agrégateur.
 - **Limiteur de débit partagé.** En mémoire, donc juste pour une instance.
 
 ## Carte du code
@@ -264,6 +301,7 @@ la limite de deux tickets par numéro, tenue en base.
 | `securite` | référence du lien client, jeton du personnel |
 | `web` | routes, SSE, limiteur de débit, traduction des erreurs |
 | `journal` | journal d'accès et journal des commandes, en ajout seul |
+| `numero` | vérification HLR et interprétation des verdicts |
 | `amorce` | installation de la première clinique |
 
 L'expéditeur SMS d'une clinique se règle à l'installation

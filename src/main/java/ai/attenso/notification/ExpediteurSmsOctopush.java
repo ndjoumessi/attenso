@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -53,9 +54,9 @@ public class ExpediteurSmsOctopush implements ExpediteurSms {
 
 	private final ProprietesSms sms;
 
-	public ExpediteurSmsOctopush(RestClient clientOctopush, ProprietesOctopush octopush,
-			ProprietesSms sms) {
-		this.client = clientOctopush;
+	public ExpediteurSmsOctopush(@Qualifier("clientOctopushSms") RestClient client,
+			ProprietesOctopush octopush, ProprietesSms sms) {
+		this.client = client;
 		this.octopush = octopush;
 		this.sms = sms;
 	}

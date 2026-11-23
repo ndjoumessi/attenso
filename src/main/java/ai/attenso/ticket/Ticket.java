@@ -186,6 +186,10 @@ public class Ticket {
 		return telephoneE164;
 	}
 
+	public Boolean telephoneValide() {
+		return telephoneValide;
+	}
+
 	public boolean joignable() {
 		return telephoneE164 != null && !Boolean.FALSE.equals(telephoneValide);
 	}
