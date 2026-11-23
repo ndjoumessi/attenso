@@ -44,6 +44,10 @@ Tests : `./mvnw test` lance les deux suites — serveur et écrans. Celle des
 écrans seule : `npm test`. Elle n'a aucune dépendance, le runner intégré de
 node suffit.
 
+Sur GitHub, `.github/workflows/ci.yml` lance exactement la même commande à
+chaque poussée et sur chaque pull request — une CI qui fait autre chose que le
+développeur finit par diverger de lui, et c'est elle qu'on croit.
+
 Les tests du serveur exigent Docker — les invariants de ce système sont
 des contraintes PostgreSQL (index unique, index partiel, *row level security*),
 et une base en mémoire ne les porte pas.
