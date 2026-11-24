@@ -23,6 +23,7 @@ const ici = import.meta.dirname;
 const PAGES = [
   { nom: 'vitrine', composant: 'Vitrine', source: 'src/vitrine.jsx', hydrate: false },
   { nom: 'comptoir', composant: 'Comptoir', source: 'src/comptoir.jsx', hydrate: true },
+  { nom: 'suivi', composant: 'Suivi', source: 'src/suivi.jsx', hydrate: true },
 ];
 
 // configFile FAUX : sans ça, cette construction hérite des entrées HTML du
