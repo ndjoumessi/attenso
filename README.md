@@ -747,6 +747,18 @@ plus de raisonnement sur les arrondis — et les tests n'ont plus besoin de
 manipuler l'horloge. La date du changement reste en base, mais comme
 information : ce n'est plus elle qui ferme les sessions.
 
+**Un piège de MIGRATION s'y cachait, et il méritait mieux qu'une valeur par
+défaut.** Les jetons émis avant la mise à jour ne portent pas la revendication,
+donc le code la lit comme zéro — ce qui les laisse valables jusqu'à leur
+expiration, et c'est voulu : déconnecter toutes les cliniques au milieu de leurs
+consultations pour installer une mise à jour serait une drôle de façon
+d'améliorer la sécurité. Mais partir TOUT LE MONDE à zéro ressusciterait les
+sessions qu'un correctif précédent avait déjà révoquées : un compte réinitialisé
+entre les deux versions verrait le jeton de son voleur redevenir valable. La
+migration part donc à 1 les comptes dont le mot de passe a déjà changé. C'est
+une ligne, et c'est la différence entre un correctif et un correctif qui en
+annule un autre.
+
 **Un piège rencontré pour la troisième fois dans ce dépôt**, et désormais
 nommé dans le code : `@Transactional` ouvre la connexion AVANT que l'on sache de
 quelle clinique on parle, donc lier le `ThreadLocal` ne suffit pas — les
