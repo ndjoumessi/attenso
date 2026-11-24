@@ -8,6 +8,12 @@
  * s'en aperçoive — il lit le fichier, pas la page. */
 @import "../../src/main/resources/static/app/jetons.css";
 
+/* Le sombre d'Attenso suit le système (jetons.css : prefers-color-scheme), pas
+ * une classe `.dark` posée à la main. Les classes `dark:` que shadcn écrit dans
+ * ses composants doivent donc suivre la même condition, sans quoi elles ne
+ * s'appliqueraient jamais. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
 @theme inline {
   --color-fond: var(--fond);
   --color-surface: var(--surface);
@@ -42,6 +48,18 @@
 
   --shadow-1: var(--ombre-1);
   --shadow-2: var(--ombre-2);
+  /* Les noms que shadcn attend de sa barre latérale, branchés sur les jetons
+   * MESURÉS de la barre (--barre*). Aucune couleur n'est redéclarée : les
+   * valeurs hsl() que `shadcn add sidebar` posait ici, jamais mesurées, ont été
+   * retirées. La barre n'a qu'un aplat d'état, d'où accent et primary jumeaux. */
+  --color-sidebar: var(--barre);
+  --color-sidebar-foreground: var(--sur-barre);
+  --color-sidebar-primary: var(--barre-active);
+  --color-sidebar-primary-foreground: var(--sur-barre-active);
+  --color-sidebar-accent: var(--barre-active);
+  --color-sidebar-accent-foreground: var(--sur-barre-active);
+  --color-sidebar-border: var(--barre-bordure);
+  --color-sidebar-ring: var(--accent);
 }
 
 /* La cible tactile du produit : 56 px, au-dessus des 44 d'Apple et des 48 de
