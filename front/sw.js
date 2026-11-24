@@ -33,7 +33,12 @@ function pagePour(chemin) {
   // La vitrine n'est pas mise en cache : un prospect hors réseau n'existe pas.
   // (Le second motif d'origine — ses polices distantes — a disparu avec
   // elles ; la décision tient sur le premier seul.)
-  if (chemin === '/accueil') return '/app/accueil.html';
+  // /accueil ET /connexion servent la même page côté serveur, et c'est
+  // /connexion que porte le lien « Se connecter » de la vitrine — donc l'URL
+  // la plus probable dans le favori d'une tablette. L'oublier ici laissait un
+  // rechargement hors réseau sur une erreur, exactement ce que ce fichier
+  // existe pour empêcher. coquille.test.js impose désormais le miroir.
+  if (chemin === '/accueil' || chemin === '/connexion') return '/app/accueil.html';
   if (chemin.startsWith('/s/')) return '/app/suivi.html';
   if (chemin.startsWith('/t/')) return '/app/comptoir.html';
   if (chemin.startsWith('/ecran/')) return '/app/ecran.html';
