@@ -161,6 +161,45 @@ empêche de le remettre par mégarde. Ne pas pouvoir envoyer un courriel de
 réinitialisation n'est pas une panne du service : c'est une fonction
 indisponible, et le démarrage le dit déjà en clair.
 
+### Déployé sur Railway, et ce que la mise en ligne a appris
+
+Le produit tourne sur Railway : `attenso-production.up.railway.app`, service et
+Postgres en **`europe-west4`** (Amsterdam). La région n'est pas un détail de
+confort — Railway crée tout en `us-east4` par défaut, et ENF-04 exige l'UE ; la
+base a donc été déplacée avant d'y écrire la première ligne. Le dépôt GitHub est
+la source : un `push` sur `main` reconstruit et redéploie. TLS, domaine et
+certificat viennent du bord de Railway, ce qui remplace le proxy inverse que
+`compose.deploiement.yaml` laissait à poser.
+
+**Une limite de débit qui ne limitait rien.** Douze tentatives de connexion
+d'affilée passaient toutes, là où la onzième doit être refusée. Ni erreur, ni
+trace : l'application lit `X-Forwarded-For` depuis la droite en retirant *un*
+maillon, ce qui est juste derrière un proxy inverse sur l'hôte — et faux
+derrière Railway, qui en insère **deux**. L'adresse lue était donc une adresse
+interne qui change à chaque requête, chaque appelant avait son propre compteur,
+et la connexion, l'oubli de mot de passe, l'auto-enregistrement et
+l'inscription n'étaient plus limités du tout. Avec
+`ATTENSO_RESEAU_RELAIS_DE_CONFIANCE=2`, la onzième tentative rend bien `429`.
+Vérifié aussi qu'on ne peut pas s'en échapper : en annonçant soi-même un
+`X-Forwarded-For`, d'une entrée ou de deux, le compte reste sur l'adresse
+réelle. Compter par la droite tient ; il fallait juste le bon nombre.
+
+**Ce que la mise en ligne ne donne pas.** La base est vide et le restera :
+l'inscription en ligne répond `503` tant que Stripe n'est pas configuré, et
+l'amorce d'une première clinique est éteinte. Le service sert donc la vitrine,
+les pages légales et les tarifs, et rien d'autre n'est atteignable. Les
+mentions légales s'affichent « à compléter » — y compris le champ *hébergeur*,
+qui doit maintenant nommer Railway.
+
+**Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18** là où la CI
+teste sur 16 : les vingt et une migrations passent et Hibernate valide le
+schéma, mais la suite ne s'exécute jamais sur la version de production. Et le
+domaine `*.up.railway.app` fait 56 caractères dans un SMS contre 33 pour
+`attenso.fr` : les cinq modèles tiennent encore en un segment, mais le message
+correctif atteint **exactement 160 caractères**, c'est-à-dire zéro marge. Un
+nom de clinique plus long le fait basculer en deux segments, et double son
+coût. Un domaine court n'est pas une coquetterie.
+
 ### Ce que ce fichier ne peut pas garantir : ENF-04
 
 L'exigence demande un hébergement en France ou dans l'Union européenne. Aucun
@@ -1061,7 +1100,11 @@ Le SMS de rappel ne nomme **ni l'animal ni le vaccin** : il s'affiche sur un
   compteur de départs), donc rien n'expire tout seul.
 - **`X-Forwarded-For` se lit par la droite.** Les entrées de gauche viennent du
   client : les croire rendrait le quota par adresse décoratif. Réglage
-  `attenso.reseau.relais-de-confiance`.
+  `attenso.reseau.relais-de-confiance` — **et ce nombre dépend de
+  l'hébergeur**. S'y tromper ne casse rien de visible : l'adresse lue change à
+  chaque requête, chaque appelant obtient son propre compteur, et toutes les
+  limites cessent de limiter en silence. C'est arrivé au premier déploiement
+  Railway (voir plus bas).
 - **Plafond de tickets par clinique et par jour** (`200` par défaut). Ce n'est
   pas une limite métier — une clinique en fait quarante — mais un plafond de
   dépense : chaque ticket déclenche un SMS payant et l'agrégateur n'en offre
