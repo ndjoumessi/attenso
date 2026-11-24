@@ -798,6 +798,47 @@ La consommation d'un jeton exige en plus que le compte soit actif : la première
 barrière suffit, la seconde est là pour le futur chemin de désactivation qui
 oublierait la première.
 
+### Son propre compte : savoir qui l'on est, et s'en aller
+
+Trois manques sur la même tablette de comptoir, et ils se tiennent.
+
+**Rien ne disait qui était connecté.** Sur un poste partagé par plusieurs
+personnes, c'est la question qui précède toutes les autres. La ligne est
+maintenant en haut du tableau : adresse et rôle, servis par `/api/compte`.
+
+**Changer son mot de passe demandait de prétendre l'avoir oublié** : se
+déconnecter, demander un lien, attendre un courriel. Ce détour suffisait à ne
+jamais le faire — or c'est le geste qu'on veut facile le jour où quelqu'un
+quitte la clinique en connaissant le mot de passe. Le formulaire est désormais
+dans le tableau.
+
+Deux décisions y sont enfouies. **Le mot de passe actuel est exigé bien que
+l'appelant soit déjà authentifié** : le jeton prouve qu'une session est
+ouverte, pas que c'est la bonne personne qui tient la tablette — et elle reste
+ouverte douze heures. Et le refus est un **403, pas un 401** : un 401 sur une
+route authentifiée dit à la page « ta session a expiré », elle renverrait vers
+l'écran de connexion, et la personne croirait avoir été déconnectée alors
+qu'elle a seulement mal retapé son mot de passe.
+
+Le changement incrémente le compteur de version du jeton, donc ferme toutes
+les sessions du compte — **y compris celle qui le demande**. La réponse rend
+donc un jeton neuf, et la page recharge : le flux d'événements et la file de
+rejeu portent l'ancien jeton dans leurs fermetures, et les laisser tourner
+donnerait des refus inexplicables au premier geste hors réseau.
+
+**La déconnexion existait, mais elle jetait les gestes en attente sans un
+mot.** Elle vide le journal local — ce qui est voulu, on ne laisse pas le
+tableau d'une clinique sur une tablette qu'on rend — et pendant une panne
+réseau ce journal contient des gestes qui ne sont jamais arrivés au serveur.
+Un garde les compte et demande un second clic. Le bouton a remonté du bas de
+la page vers l'en-tête : au bout d'un tableau qu'il faut faire défiler debout,
+il n'était pas une sortie.
+
+L'écriture d'un mot de passe est passée dans un `MotDePasseDao` qui n'a que
+cela à faire. Deux chemins y mènent maintenant — le lien reçu par courriel et
+le changement volontaire — et séparés, l'un des deux aurait fini par oublier
+de fermer les sessions ouvertes.
+
 ### Récupération de mot de passe
 
 Sans elle, une clinique qui perd son mot de passe est enfermée dehors

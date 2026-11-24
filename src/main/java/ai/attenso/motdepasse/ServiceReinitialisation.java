@@ -54,6 +54,8 @@ public class ServiceReinitialisation {
 
 	private final ReinitialisationDao dao;
 
+	private final MotDePasseDao motsDePasseDao;
+
 	private final ServiceCourriel courriels;
 
 	private final GenerateurReference jetons;
@@ -71,12 +73,14 @@ public class ServiceReinitialisation {
 	private final TransactionTemplate transaction;
 
 	public ServiceReinitialisation(TenantRepository tenants, ReinitialisationDao dao,
+			MotDePasseDao motsDePasseDao,
 			ServiceCourriel courriels, GenerateurReference jetons,
 			PasswordEncoder motsDePasse, Clock horloge, JdbcTemplate jdbc,
 			TravailDiffere differe, TransactionTemplate transaction,
 			@Value("${attenso.lien.base}") String baseUrl) {
 		this.tenants = tenants;
 		this.dao = dao;
+		this.motsDePasseDao = motsDePasseDao;
 		this.courriels = courriels;
 		this.jetons = jetons;
 		this.motsDePasse = motsDePasse;
@@ -214,7 +218,7 @@ public class ServiceReinitialisation {
 		lier(tenantId);
 		return ContexteTenant.avec(tenantId, () ->
 				dao.consommer(empreinte, horloge.instant()).map(utilisateurId -> {
-					dao.poserLeMotDePasse(utilisateurId,
+					motsDePasseDao.poserLeMotDePasse(utilisateurId,
 							motsDePasse.encode(nouveauMotDePasse), horloge.instant());
 					JOURNAL.info("mot de passe réinitialisé pour un compte de la "
 							+ "clinique {}", tenantId);

@@ -151,6 +151,24 @@ public class GestionnaireErreurs {
 				"Patientez quelques instants avant de réessayer.");
 	}
 
+	@ExceptionHandler(ai.attenso.compte.MotDePasseActuelFaux.class)
+	ProblemDetail motDePasseActuelFaux(ai.attenso.compte.MotDePasseActuelFaux erreur) {
+		// 403 et NON 401. Un 401 sur une route authentifiée dit à la page « ta
+		// session a expiré » : elle renverrait vers l'écran de connexion, et la
+		// personne croirait avoir été déconnectée alors qu'elle a juste mal
+		// retapé son mot de passe actuel.
+		return probleme(HttpStatus.FORBIDDEN, "Mot de passe actuel incorrect",
+				"Le mot de passe actuel ne correspond pas. Votre mot de passe "
+						+ "n'a pas été changé.");
+	}
+
+	@ExceptionHandler(ai.attenso.compte.MotDePasseInchange.class)
+	ProblemDetail motDePasseInchange(ai.attenso.compte.MotDePasseInchange erreur) {
+		return probleme(HttpStatus.BAD_REQUEST, "Mot de passe inchangé",
+				"Le nouveau mot de passe est identique à l'actuel. Choisissez-en "
+						+ "un autre.");
+	}
+
 	@ExceptionHandler(IdentifiantsRefuses.class)
 	ProblemDetail identifiantsRefuses(IdentifiantsRefuses erreur) {
 		return probleme(HttpStatus.UNAUTHORIZED, "Connexion refusée",

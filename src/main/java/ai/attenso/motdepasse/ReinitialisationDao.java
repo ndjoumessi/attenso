@@ -96,20 +96,4 @@ public class ReinitialisationDao {
 				String.class, utilisateurId);
 	}
 
-	/**
-	 * Pose le mot de passe ET la date du changement.
-	 *
-	 * <p>Les trois dans le MÊME ordre SQL : séparés, une panne entre deux
-	 * laisserait un mot de passe changé sans que les sessions ouvertes soient
-	 * fermées — exactement le cas où l'on change son mot de passe parce qu'on
-	 * le croit volé. La date sert d'information ; c'est le compteur de version
-	 * qui ferme réellement les sessions.
-	 */
-	public void poserLeMotDePasse(UUID utilisateurId, String empreinte, Instant quand) {
-		jdbc.update("""
-				UPDATE utilisateur
-				SET mdp_hash = ?, mdp_change_le = ?, jeton_version = jeton_version + 1
-				WHERE id = ?
-				""", empreinte, java.sql.Timestamp.from(quand), utilisateurId);
-	}
 }

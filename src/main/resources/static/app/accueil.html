@@ -55,6 +55,15 @@
     <div>
       <h1 id="nom-clinique">—</h1>
       <p class="discret" id="date-jour"></p>
+      <!-- Sur une tablette de comptoir partagée, « qui suis-je » précède
+           « comment je m'en vais » : les deux sont ici, en haut, et non au
+           bout d'un tableau qu'il faudrait faire défiler debout. -->
+      <p class="discret">
+        <span id="identite">—</span>
+        <button type="button" class="b-lien" id="bouton-deconnexion">
+          Se déconnecter
+        </button>
+      </p>
     </div>
     <dl class="compteurs">
       <div class="compteur"><dt>En salle</dt><dd id="compteur-file">0</dd></div>
@@ -67,6 +76,10 @@
 
   <div class="message message--erreur" id="erreur-file" role="alert" hidden></div>
   <div class="message message--info" id="info-file" role="status" hidden></div>
+  <!-- Son propre bandeau, et non « info-file » : celui-là appartient à la file
+       de rejeu, qui le réécrit entièrement à chaque publication. La
+       confirmation d'un changement de mot de passe y a vécu deux secondes. -->
+  <div class="message message--info" id="info-compte" role="status" hidden></div>
 
   <h2>File du jour</h2>
   <ul class="file" id="liste-file" aria-live="polite" aria-relevant="additions text"></ul>
@@ -208,6 +221,22 @@
     </p>
   </section>
 
+  <h2>Mon mot de passe</h2>
+  <form id="formulaire-mdp">
+    <label for="mdp-actuel">Mot de passe actuel</label>
+    <input id="mdp-actuel" type="password" autocomplete="current-password" required
+           maxlength="200">
+    <label for="mdp-nouveau">Nouveau mot de passe</label>
+    <input id="mdp-nouveau" type="password" autocomplete="new-password" required
+           minlength="12" maxlength="200" aria-describedby="aide-mdp">
+    <p class="discret" id="aide-mdp">
+      Douze caractères au minimum. Changer votre mot de passe ferme vos autres
+      sessions — les autres tablettes devront se reconnecter.
+    </p>
+    <div class="message message--erreur" id="erreur-mdp" role="alert" hidden></div>
+    <p><button type="submit" id="bouton-mdp">Changer mon mot de passe</button></p>
+  </form>
+
   <h2>Mesure du pilote</h2>
   <p class="discret">
     Combien de personnes sont entrées dans la clinique aujourd'hui, ticket ou
@@ -235,8 +264,6 @@
   </dl>
   <p class="message" id="mesure-zone" role="status" hidden></p>
   <p><button id="bouton-export">Télécharger l'historique (CSV)</button></p>
-
-  <p><button id="deconnexion">Se déconnecter</button></p>
 </main>
 
 <script type="module">
@@ -252,6 +279,9 @@ import {
 const CLE_JETON = 'attenso.jeton';
 const CLE_CLINIQUE = 'attenso.clinique';
 const CLE_SLUG = 'attenso.slug';
+// Survit au rechargement qui suit un changement de mot de passe, et à lui
+// seul : sans ça, la confirmation disparaîtrait avec la page qui l'a demandée.
+const CLE_MDP_CHANGE = 'attenso.mdp-change';
 
 const el = (id) => document.getElementById(id);
 let jeton = localStorage.getItem(CLE_JETON);
@@ -323,12 +353,68 @@ el('formulaire-connexion').addEventListener('submit', async (evenement) => {
   }
 });
 
-el('deconnexion').addEventListener('click', async () => {
+// La déconnexion VIDE le journal local, gestes en attente compris. C'est
+// voulu — laisser le tableau de la clinique sur une tablette qu'on rend n'est
+// pas une bonne idée — mais pendant une panne réseau, cela jette des gestes
+// qui ne sont jamais arrivés au serveur. Ils partaient sans un mot. D'où ce
+// garde : on dit combien, et on demande un second clic.
+//
+// On retient le NOMBRE averti, pas un simple « déjà averti » : sinon, une
+// personne avertie une fois puis qui continue de travailler hors réseau
+// repartirait plus tard sans un mot, en abandonnant des gestes plus récents
+// que l'avertissement qu'elle a lu.
+let gestesAvertis = -1;
+el('bouton-deconnexion').addEventListener('click', async () => {
+  const restantes = commandesEnAttente.length;
+  if (restantes > 0 && restantes !== gestesAvertis) {
+    gestesAvertis = restantes;
+    const zone = el('erreur-file');
+    // Tournure sans accord sur le nombre : « 1 geste(s) ne sont pas » se lit
+    // mal, et le reste de la page contourne déjà le problème de la même façon.
+    zone.textContent = `Des gestes ne sont pas encore arrivés au serveur `
+      + `(${restantes}). Vous déconnecter maintenant les abandonne. Cliquez à `
+      + `nouveau pour partir quand même.`;
+    zone.hidden = false;
+    return;
+  }
   await viderJournal();
   localStorage.removeItem(CLE_JETON);
   localStorage.removeItem(CLE_SLUG);
   localStorage.removeItem(CLE_CLINIQUE);
   location.reload();
+});
+
+// Changer son mot de passe depuis le tableau. Jusqu'ici il fallait prétendre
+// l'avoir oublié : se déconnecter, demander un lien, attendre un courriel. Sur
+// un poste partagé, ce détour suffisait à ne jamais le faire.
+el('formulaire-mdp').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const bouton = el('bouton-mdp');
+  const zone = el('erreur-mdp');
+  zone.hidden = true;
+  bouton.disabled = true;
+  try {
+    const reponse = await appel('/api/compte/mot-de-passe', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      body: JSON.stringify({
+        actuel: el('mdp-actuel').value,
+        nouveau: el('mdp-nouveau').value,
+      }),
+    });
+    // Le changement a fermé toutes les sessions du compte, y compris celle-ci
+    // : le serveur rend donc un jeton neuf. La page RECHARGE, parce que le
+    // flux d'événements et la file de rejeu portent encore l'ancien jeton dans
+    // leurs fermetures — les laisser tourner donnerait des refus inexplicables
+    // au premier geste hors réseau.
+    localStorage.setItem(CLE_JETON, reponse.jeton);
+    sessionStorage.setItem(CLE_MDP_CHANGE, '1');
+    location.reload();
+  } catch (echec) {
+    zone.textContent = echec.reseau ? 'Serveur injoignable.' : echec.message;
+    zone.hidden = false;
+    bouton.disabled = false;
+  }
 });
 
 // --- Rendu --------------------------------------------------------------
@@ -971,6 +1057,22 @@ function signaler(echec, messageReseau, zone = el('erreur-file')) {
   zone.hidden = false;
 }
 
+async function relireIdentite() {
+  try {
+    const compte = await appel('/api/compte', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    el('identite').textContent = `${compte.email} · `
+      + (compte.role === 'GERANT' ? 'gérant' : 'accueil');
+  } catch {
+    // Silencieux, et c'est le seul endroit de cette page qui le soit : une
+    // ligne « connecté : — » dit déjà tout ce qu'un message dirait, et un
+    // bandeau d'erreur pour une étiquette d'identité ferait croire à une
+    // panne du tableau.
+    el('identite').textContent = '';
+  }
+}
+
 function annoncer({ restantes, abandons, erreur, commandes }) {
   if (commandes) commandesEnAttente = commandes;
   if (erreur) {
@@ -994,6 +1096,18 @@ async function demarrer() {
   el('vue-connexion').hidden = true;
   el('vue-file').hidden = false;
   el('nom-clinique').textContent = localStorage.getItem(CLE_CLINIQUE) ?? 'Attenso';
+
+  if (sessionStorage.getItem(CLE_MDP_CHANGE)) {
+    sessionStorage.removeItem(CLE_MDP_CHANGE);
+    const info = el('info-compte');
+    info.textContent = 'Mot de passe changé. Vos autres sessions ont été '
+      + 'fermées : les autres tablettes devront se reconnecter.';
+    info.hidden = false;
+  }
+
+  // Qui est connecté. Pas bloquant : le tableau doit s'afficher même si cet
+  // appel échoue, c'est une information de confort et non la file du jour.
+  relireIdentite();
 
   // Le journal n'est pas garanti : en navigation privée, IndexedDB échoue. On
   // le dit plutôt que de laisser croire que les gestes sont protégés.
