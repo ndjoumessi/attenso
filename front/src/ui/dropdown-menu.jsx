@@ -68,7 +68,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-surface-douce focus:text-sur-fond data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-alerte data-[variant=destructive]:focus:bg-alerte/10 data-[variant=destructive]:focus:text-alerte dark:data-[variant=destructive]:focus:bg-alerte/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-sur-fond-doux data-[variant=destructive]:*:[svg]:text-destructive!",
+        "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-surface-douce focus:text-sur-fond data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-alerte data-[variant=destructive]:focus:bg-alerte/10 data-[variant=destructive]:focus:text-alerte dark:data-[variant=destructive]:focus:bg-alerte/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-sur-fond-doux data-[variant=destructive]:*:[svg]:text-alerte!",
         className
       )}
       {...props}

@@ -10,7 +10,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-accent text-sur-accent hover:bg-accent/90",
         destructive:
-          "bg-alerte text-white hover:bg-alerte/90 focus-visible:ring-alerte/20 dark:bg-alerte/60 dark:focus-visible:ring-alerte/40",
+          "bg-alerte text-sur-alerte hover:bg-alerte/90 focus-visible:ring-alerte/20 dark:focus-visible:ring-alerte/40",
         outline:
           "border bg-fond shadow-xs hover:bg-surface-douce hover:text-sur-fond dark:border-bordure-controle dark:bg-bordure-controle/30 dark:hover:bg-bordure-controle/50",
         secondary:

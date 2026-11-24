@@ -112,3 +112,15 @@ html {
     height: 100mm !important;
   }
 }
+
+/* Tailwind 4 peint par défaut les bordures en `currentColor` : chaque `border`
+ * nu d'un composant shadcn tracerait un filet couleur-texte, à pleine force.
+ * `shadcn init` règle cela par un `border-border` global ; il n'a pas tourné
+ * ici. La règle est BORNÉE aux composants shadcn (ils portent tous data-slot) :
+ * un `*` global changerait aussi les `border` nus des pages des clients. */
+@layer base {
+  [data-slot],
+  [data-slot] * {
+    border-color: var(--bordure-douce);
+  }
+}

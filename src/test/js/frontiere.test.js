@@ -35,8 +35,15 @@ function specificateurs(source) {
   return motifs.flatMap((m) => [...source.matchAll(m)].map((x) => x[1]));
 }
 
-/** Les paquets du tableau : une page client ne les importe pas directement non plus. */
-const PAQUETS_PERSONNEL = ['radix-ui', '@radix-ui/', 'lucide-react', 'class-variance-authority'];
+/**
+ * LISTE BLANCHE des paquets qu'une page client peut atteindre. Volontairement
+ * étroite : un `clsx`, un `vaul` ou un `cmdk` passait la liste noire d'avant.
+ * L'élargir est une décision, pas l'effet de bord d'une installation.
+ */
+const PAQUETS_CLIENT = ['react', 'react-dom'];
+
+const nomDuPaquet = (spec) =>
+  spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0];
 
 /** Un spécificateur relatif ou en alias `@/` devient un fichier ; un paquet reste nu. */
 function resoudre(depuis, spec) {
@@ -95,8 +102,9 @@ describe('frontière entre le tableau du personnel et les pages des clients', ()
       const fautifs = atteints.filter((c) => c.startsWith(UI));
       const paquets = atteints.filter((f) => /\.jsx?$/.test(f)).flatMap((f) =>
         specificateurs(readFileSync(f, 'utf8'))
-          .filter((spec) => PAQUETS_PERSONNEL.some((p) => spec.startsWith(p))));
-      assert.deepEqual(paquets, [], `${page} importe un paquet du tableau directement`);
+          .filter((spec) => !spec.startsWith('.') && !spec.startsWith('@/') && !spec.startsWith('node:'))
+          .filter((spec) => !PAQUETS_CLIENT.includes(nomDuPaquet(spec))));
+      assert.deepEqual(paquets, [], `${page} importe un paquet hors liste blanche`);
       assert.deepEqual(fautifs.map((c) => c.slice(RACINE.length + 1)), [],
         `${page} atteint front/src/ui/ : Radix partirait sur le téléphone d'un client`);
     }

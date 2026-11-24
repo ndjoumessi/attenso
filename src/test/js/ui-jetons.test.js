@@ -29,7 +29,7 @@ function couleursDeclarees() {
 
 /** Les couleurs utilisées par les classes d'un composant : bg-x, text-x/50, ring-offset-x... */
 function couleursUtilisees(source) {
-  const motif = /(?<![\w-])(?:ring-offset|bg|text|border|ring|outline|fill|stroke|decoration|caret|divide)-([a-z]+(?:-[a-z]+)*)(?=[\s/"'\]:)`]|$)/g;
+  const motif = /(?<![\w-])(?:inset-ring|ring-offset|bg|text|border|ring|outline|fill|stroke|decoration|caret|divide|shadow|accent|placeholder|from|via|to)-([a-z]+(?:-[a-z]+)*)(?=[\s/!"'\]:)`]|$)/g;
   return [...source.matchAll(motif)].map((m) => m[1]).filter((n) => !PAS_UNE_COULEUR.has(n));
 }
 

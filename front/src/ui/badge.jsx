@@ -12,7 +12,7 @@ const badgeVariants = cva(
         secondary:
           "bg-surface-douce text-sur-fond [a&]:hover:bg-surface-douce/90",
         destructive:
-          "bg-alerte text-white focus-visible:ring-alerte/20 dark:bg-alerte/60 dark:focus-visible:ring-alerte/40 [a&]:hover:bg-alerte/90",
+          "bg-alerte text-sur-alerte focus-visible:ring-alerte/20 dark:focus-visible:ring-alerte/40 [a&]:hover:bg-alerte/90",
         outline:
           "border-bordure-douce text-sur-fond [a&]:hover:bg-surface-douce [a&]:hover:text-sur-fond",
         ghost: "[a&]:hover:bg-surface-douce [a&]:hover:text-sur-fond",
