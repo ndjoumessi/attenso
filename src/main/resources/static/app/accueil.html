@@ -141,6 +141,16 @@
   </dl>
   <p class="discret" id="bloc-abonnement"></p>
   <p class="message message--info" id="conseil-palier" role="status" hidden></p>
+  <!-- Les CGV promettent une résiliation « à tout moment » : ce bouton est ce
+       qui rend la promesse vraie. Masqué tant qu'il n'y a pas d'abonnement en
+       ligne à gérer. -->
+  <p id="bloc-espace-client" hidden>
+    <button id="bouton-espace-client">Gérer mon abonnement</button>
+    <span class="discret">
+      Changer de formule, mettre à jour le moyen de paiement, télécharger les
+      factures, résilier.
+    </span>
+  </p>
   <p><button id="bouton-export-complet">Exporter toutes mes données (ZIP)</button></p>
   <p class="discret">
     Ces données sont les vôtres. L'export s'ouvre dans un tableur, et rien
@@ -706,6 +716,7 @@ async function relireExploitation() {
 
   try {
     const facturation = await appel('/api/facturation', entete);
+    el('bloc-espace-client').hidden = !facturation.gerable;
     el('bloc-abonnement').textContent = facturation.palier === null
       ? 'Pilote : aucun abonnement en cours.'
       : `Formule ${nomPalier(facturation.palier)} — ${facturation.visitesDuMois} `
@@ -722,6 +733,23 @@ async function relireExploitation() {
     conseil.hidden = !facturation.palierConseille;
   } catch { /* à-côté */ }
 }
+
+el('bouton-espace-client').addEventListener('click', async () => {
+  const bouton = el('bouton-espace-client');
+  bouton.disabled = true;
+  try {
+    const espace = await appel('/api/facturation/espace-client', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    // Remplacement et non nouvel onglet : la personne part gérer son
+    // abonnement et revient ici par le bouton de retour du prestataire.
+    location.href = espace.url;
+  } catch (echec) {
+    signaler(echec, "Impossible d'ouvrir la gestion de l'abonnement.");
+    bouton.disabled = false;
+  }
+});
 
 el('bouton-export-complet').addEventListener('click', async () => {
   const bouton = el('bouton-export-complet');

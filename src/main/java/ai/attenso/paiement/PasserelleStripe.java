@@ -91,6 +91,29 @@ public class PasserelleStripe implements PasserellePaiement {
 		}
 	}
 
+	@Override
+	public String ouvrirEspaceClient(String clientStripe) {
+		if (stripe == null) {
+			throw new SouscriptionIndisponible(
+					"la gestion de l'abonnement n'est pas configurée sur ce serveur");
+		}
+		try {
+			return stripe.billingPortal().sessions().create(
+					com.stripe.param.billingportal.SessionCreateParams.builder()
+							.setCustomer(clientStripe)
+							.setLocale(com.stripe.param.billingportal.SessionCreateParams
+									.Locale.FR)
+							.setReturnUrl(baseUrl + "/accueil")
+							.build())
+					.getUrl();
+		}
+		catch (StripeException panne) {
+			JOURNAL.error("ouverture de l'espace client en échec : {}", panne.getMessage());
+			throw new SouscriptionIndisponible(
+					"le prestataire de paiement n'a pas répondu", panne);
+		}
+	}
+
 	private SessionCreateParams parametres(UUID tenantId, Palier palier, String email,
 			String nomClinique) {
 		return SessionCreateParams.builder()

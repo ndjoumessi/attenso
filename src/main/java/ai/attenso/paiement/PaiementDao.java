@@ -116,6 +116,23 @@ public class PaiementDao {
 				""", tenantId, tenantId, jour) > 0;
 	}
 
+	/**
+	 * L'identifiant client Stripe de la clinique, s'il existe.
+	 *
+	 * <p>Absent dans deux cas : une clinique créée avant la mise en vente, et
+	 * une inscription dont le paiement n'a jamais abouti. Dans les deux cas il
+	 * n'y a pas d'espace client à ouvrir, et le dire vaut mieux que de rediriger
+	 * vers une page d'erreur du prestataire.
+	 */
+	public Optional<String> clientStripeDe(UUID tenantId) {
+		return jdbc.query("""
+				SELECT stripe_client_id FROM abonnement
+				WHERE tenant_id = ? AND stripe_client_id IS NOT NULL
+				ORDER BY debut DESC LIMIT 1
+				""", ligne -> ligne.next() ? Optional.ofNullable(ligne.getString(1))
+						: Optional.<String>empty(), tenantId);
+	}
+
 	public Optional<String> statutCourant(UUID tenantId) {
 		return jdbc.query("""
 				SELECT statut FROM abonnement WHERE tenant_id = ? AND fin IS NULL

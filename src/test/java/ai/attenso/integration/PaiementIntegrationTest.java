@@ -38,6 +38,9 @@ class PaiementIntegrationTest extends SocleIntegration {
 	MockMvc http;
 
 	@Autowired
+	tools.jackson.databind.ObjectMapper json;
+
+	@Autowired
 	ServiceInscription inscriptions;
 
 	@Autowired
@@ -173,6 +176,75 @@ class PaiementIntegrationTest extends SocleIntegration {
 				.andExpect(status().isServiceUnavailable())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString(
 						"contact@attenso.fr")));
+	}
+
+	// --- Gestion de l'abonnement ----------------------------------------
+
+	/**
+	 * Se connecte comme l'accueil de la clinique.
+	 *
+	 * <p>Par la vraie route de connexion : l'espace client est une route du
+	 * personnel, et vérifier qu'elle l'est vraiment demande un jeton obtenu
+	 * comme le ferait une ASV.
+	 */
+	private String connecter(String slug, String email, String motDePasse)
+			throws Exception {
+		String corps = http.perform(post("/api/connexion")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"slug":"%s","email":"%s","motDePasse":"%s"}
+								""".formatted(slug, email, motDePasse)))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		return json.readTree(corps).get("jeton").asText();
+	}
+
+	@Test
+	@DisplayName("une clinique abonnée ouvre son espace de gestion")
+	void lEspaceClientSOuvre() throws Exception {
+		ReponseInscription reponse = inscriptions.inscrire(new DemandeInscription(
+				"Clinique Gerante", "gerante@c.fr", "un-mot-de-passe-assez-long",
+				Palier.COMPTOIR.name(), false, true));
+		UUID tenantId = tenantDe(reponse.slug());
+		envoyer(evenement("evt_g1", "checkout.session.completed",
+				session(tenantId, "sub_gerante")));
+		String jeton = connecter(reponse.slug(), "gerante@c.fr",
+				"un-mot-de-passe-assez-long");
+
+		String corps = http.perform(post("/api/facturation/espace-client")
+						.header("Authorization", "Bearer " + jeton))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+
+		assertThat(corps).contains(PasserelleFausse.URL_ESPACE);
+		// L'identifiant client passé au prestataire est bien celui que le
+		// webhook avait retenu : sans ça, on ouvrirait l'espace de quelqu'un
+		// d'autre — ou de personne.
+		assertThat(passerelle.espacesOuverts()).containsExactly("cus_test");
+	}
+
+	@Test
+	@DisplayName("sans abonnement en ligne, l'espace client est refusé proprement")
+	void sansAbonnementPasDEspace() throws Exception {
+		// Le cas d'une clinique créée avant la mise en vente, ou dont le
+		// paiement n'a jamais abouti : il n'y a rien à gérer, et le dire vaut
+		// mieux que de rediriger vers une page d'erreur du prestataire.
+		UUID tenantId = creerClinique("sans-abonnement", "Sans abonnement", 2, 180);
+		creerUtilisateur(tenantId, "a@sa.fr", "un-mot-de-passe-assez-long",
+				ai.attenso.utilisateur.Role.ACCUEIL);
+		String jeton = connecter("sans-abonnement", "a@sa.fr",
+				"un-mot-de-passe-assez-long");
+
+		http.perform(post("/api/facturation/espace-client")
+						.header("Authorization", "Bearer " + jeton))
+				.andExpect(status().isServiceUnavailable());
+	}
+
+	@Test
+	@DisplayName("l'espace client exige un jeton du personnel")
+	void lEspaceClientExigeUnJeton() throws Exception {
+		http.perform(post("/api/facturation/espace-client"))
+				.andExpect(status().isUnauthorized());
 	}
 
 	// --- Webhook --------------------------------------------------------

@@ -645,10 +645,23 @@ rejoue à la moindre réponse lente, et la réservation de l'identifiant vit dan
 la MÊME transaction que le traitement, pour qu'un échec rende l'événement à son
 rejeu au lieu de le perdre.
 
+**La clinique gère son abonnement elle-même**, depuis l'espace client hébergé
+par le prestataire : changer de formule, mettre à jour le moyen de paiement,
+télécharger ses factures, résilier. Quatre écrans que le prestataire sait déjà
+faire, avec l'authentification forte qui va avec, contre quatre écrans à écrire,
+tester et tenir à jour. Surtout, les conditions générales promettent une
+résiliation « à tout moment » : sans ce bouton, la clause serait un mensonge.
+
+Le bouton n'apparaît que s'il y a vraiment quelque chose à gérer — une clinique
+créée avant la mise en vente n'a pas d'abonnement chez le prestataire, et mieux
+vaut cacher le bouton que d'en afficher un qui s'excuse.
+
 **Ce qui reste à faire de ton côté**, et que du code ne peut pas faire : créer
 le compte Stripe, y définir trois tarifs mensuels, poser les cinq variables
 `ATTENSO_STRIPE_*`, et déclarer le point de terminaison
-`https://<domaine>/api/paiement/webhook`. Vérifie aussi que la **version d'API**
+`https://<domaine>/api/paiement/webhook`, et activer le portail client dans le
+tableau de bord Stripe (c'est un réglage à cocher, sans quoi l'espace de gestion
+rend une erreur). Vérifie aussi que la **version d'API**
 du compte correspond à celle du SDK (`2026-10-28.endive` pour stripe-java
 34.1.0) : sinon les charges arrivent illisibles, et le symptôme serait « les
 abonnements ne s'activent plus », découvert par une clinique qui a payé. Le code

@@ -23,6 +23,21 @@ public interface PasserellePaiement {
 	 */
 	Souscription ouvrir(UUID tenantId, Palier palier, String email, String nomClinique);
 
+	/**
+	 * Ouvre l'espace de gestion de l'abonnement et rend son adresse.
+	 *
+	 * <p>Une page hébergée, là encore, et pour une raison de fond : changer de
+	 * formule, mettre à jour une carte, résilier et télécharger ses factures
+	 * sont quatre écrans à écrire, à tester et à tenir à jour, pour des gestes
+	 * que le prestataire sait déjà faire — avec l'authentification forte et la
+	 * conformité qui vont avec. Les CGV promettent une résiliation « à tout
+	 * moment » : c'est ce bouton qui rend la promesse vraie.
+	 *
+	 * @throws SouscriptionIndisponible si Stripe n'est pas configuré ou ne
+	 *         répond pas.
+	 */
+	String ouvrirEspaceClient(String clientStripe);
+
 	/** Vrai si la souscription en ligne peut aboutir. */
 	boolean disponible();
 

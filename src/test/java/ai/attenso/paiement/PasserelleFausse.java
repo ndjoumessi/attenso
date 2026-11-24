@@ -27,6 +27,8 @@ public class PasserelleFausse implements PasserellePaiement {
 
 	private final List<Demande> demandes = new ArrayList<>();
 
+	private final List<String> espacesOuverts = new ArrayList<>();
+
 	private boolean enPanne;
 
 	@Override
@@ -37,6 +39,21 @@ public class PasserelleFausse implements PasserellePaiement {
 		}
 		demandes.add(new Demande(tenantId, palier, email, nomClinique));
 		return new Souscription(URL, "cus_factice");
+	}
+
+	public static final String URL_ESPACE = "https://paiement.test/espace/factice";
+
+	@Override
+	public String ouvrirEspaceClient(String clientStripe) {
+		if (enPanne) {
+			throw new SouscriptionIndisponible("panne simulée du prestataire");
+		}
+		espacesOuverts.add(clientStripe);
+		return URL_ESPACE;
+	}
+
+	public List<String> espacesOuverts() {
+		return List.copyOf(espacesOuverts);
 	}
 
 	@Override
@@ -55,6 +72,7 @@ public class PasserelleFausse implements PasserellePaiement {
 	public void reparer() {
 		this.enPanne = false;
 		this.demandes.clear();
+		this.espacesOuverts.clear();
 	}
 
 	@TestConfiguration
