@@ -27,6 +27,7 @@ export default defineConfig({
       input: {
         vitrine: resolve(import.meta.dirname, 'app/vitrine.html'),
         ecran: resolve(import.meta.dirname, 'app/ecran.html'),
+        comptoir: resolve(import.meta.dirname, 'app/comptoir.html'),
       },
     },
   },

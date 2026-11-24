@@ -58,6 +58,7 @@ node_modules/
 # ferait deux vérités pour une seule page.
 /src/main/resources/static/app/vitrine.html
 /src/main/resources/static/app/ecran.html
+/src/main/resources/static/app/comptoir.html
 /src/main/resources/static/app/assets/
 /front/node_modules/
 /front/.ssr/
