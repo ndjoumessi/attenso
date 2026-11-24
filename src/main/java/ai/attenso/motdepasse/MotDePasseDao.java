@@ -1,7 +1,9 @@
 package ai.attenso.motdepasse;
 
+import ai.attenso.utilisateur.Role;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -38,24 +40,34 @@ public class MotDePasseDao {
 	}
 
 	/**
-	 * Pose le mot de passe, la date du changement et la nouvelle version.
+	 * Pose le mot de passe, la date du changement et la nouvelle version, et
+	 * rend l'état de la ligne au même instant.
 	 *
-	 * <p>Les trois dans le MÊME ordre SQL : séparés, une panne entre deux
-	 * laisserait un mot de passe changé sans que les sessions ouvertes soient
-	 * fermées. La date sert d'information ; c'est le compteur de version qui
-	 * ferme réellement les sessions.
+	 * <p>Tout dans le MÊME ordre SQL, et ce n'est pas de l'élégance. Écriture
+	 * et lecture séparées laisseraient une fenêtre entre les deux : un gérant
+	 * qui rétrograde ou désactive ce compte pile à ce moment verrait le
+	 * changement de mot de passe rendre un jeton neuf, valide douze heures, et
+	 * portant le privilège qu'il vient justement de retirer. Renouvelable à
+	 * volonté, puisqu'il suffit de changer son mot de passe à nouveau. Le rôle
+	 * rendu ici est celui de la base, pas celui du jeton de l'appelant.
 	 *
-	 * @return la version du jeton après incrément. Elle sert à réémettre un
-	 *         jeton pour celui qui vient de changer son mot de passe : il doit
-	 *         rester à l'écran, ce sont les AUTRES sessions qu'on ferme.
+	 * <p>{@code AND actif = true} pour la même raison, et il porte en plus la
+	 * garantie que le mot de passe d'un compte désactivé ne change pas.
+	 *
+	 * @return vide si la ligne n'existe pas ou n'est plus active ; rien n'a
+	 *         alors été écrit.
 	 */
-	public int poserLeMotDePasse(UUID utilisateurId, String empreinte, Instant quand) {
-		return jdbc.queryForObject("""
+	public Optional<EtatApresChangement> poserLeMotDePasse(UUID utilisateurId,
+			String empreinte, Instant quand) {
+		List<EtatApresChangement> pose = jdbc.query("""
 				UPDATE utilisateur
 				SET mdp_hash = ?, mdp_change_le = ?, jeton_version = jeton_version + 1
-				WHERE id = ?
-				RETURNING jeton_version
-				""", Integer.class, empreinte, java.sql.Timestamp.from(quand),
-				utilisateurId);
+				WHERE id = ? AND actif = true
+				RETURNING jeton_version, role
+				""",
+				(ligne, i) -> new EtatApresChangement(ligne.getInt(1),
+						Role.valueOf(ligne.getString(2))),
+				empreinte, java.sql.Timestamp.from(quand), utilisateurId);
+		return pose.isEmpty() ? Optional.empty() : Optional.of(pose.get(0));
 	}
 }

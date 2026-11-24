@@ -1,5 +1,6 @@
 package ai.attenso.compte;
 
+import ai.attenso.motdepasse.EtatApresChangement;
 import ai.attenso.motdepasse.MotDePasseDao;
 import java.time.Clock;
 import java.util.UUID;
@@ -46,10 +47,13 @@ public class ServiceCompte {
 	 * qui passant derrière le comptoir pourrait s'approprier le compte et en
 	 * mettre dehors son titulaire.
 	 *
-	 * @return la nouvelle version du jeton, pour en réémettre un à l'appelant
+	 * @return l'état du compte APRÈS l'écriture — version et rôle — pour
+	 *         réémettre un jeton qui dise ce que la base dit, et non ce que
+	 *         disait le jeton d'avant
 	 */
 	@Transactional
-	public int changerMotDePasse(UUID utilisateurId, String actuel, String nouveau) {
+	public EtatApresChangement changerMotDePasse(UUID utilisateurId, String actuel,
+			String nouveau) {
 		String empreinte = motsDePasseDao.hashDe(utilisateurId);
 		// Un compte désactivé entre l'émission du jeton et maintenant n'a plus
 		// d'empreinte lisible : même refus qu'un mot de passe faux, et c'est
@@ -65,10 +69,14 @@ public class ServiceCompte {
 			// utile qu'un succès silencieux.
 			throw new MotDePasseInchange();
 		}
-		int version = motsDePasseDao.poserLeMotDePasse(utilisateurId,
-				encodeur.encode(nouveau), horloge.instant());
+		// Si la ligne a disparu ou vient d'être désactivée entre la lecture de
+		// l'empreinte et ici, rien n'est écrit et l'on ne rend pas de jeton :
+		// ce compte n'a plus d'accès à renouveler.
+		EtatApresChangement etat = motsDePasseDao.poserLeMotDePasse(utilisateurId,
+				encodeur.encode(nouveau), horloge.instant())
+				.orElseThrow(CompteIndisponible::new);
 		JOURNAL.info("mot de passe changé depuis le tableau, version de jeton {}",
-				version);
-		return version;
+				etat.version());
+		return etat;
 	}
 }

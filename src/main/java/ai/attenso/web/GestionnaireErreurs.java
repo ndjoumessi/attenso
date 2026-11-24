@@ -162,6 +162,16 @@ public class GestionnaireErreurs {
 						+ "n'a pas été changé.");
 	}
 
+	@ExceptionHandler(ai.attenso.compte.CompteIndisponible.class)
+	ProblemDetail compteIndisponible(ai.attenso.compte.CompteIndisponible erreur) {
+		// 401 ici, et non le 403 du mot de passe faux : l'accès de ce compte a
+		// été retiré pendant qu'il était à l'écran. Renvoyer vers la connexion
+		// est exactement ce qu'il faut faire — il n'y a plus rien à changer.
+		return probleme(HttpStatus.UNAUTHORIZED, "Accès retiré",
+				"Votre accès à cette clinique n'est plus actif. Rapprochez-vous "
+						+ "du gérant.");
+	}
+
 	@ExceptionHandler(ai.attenso.compte.MotDePasseInchange.class)
 	ProblemDetail motDePasseInchange(ai.attenso.compte.MotDePasseInchange erreur) {
 		return probleme(HttpStatus.BAD_REQUEST, "Mot de passe inchangé",

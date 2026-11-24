@@ -5,6 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.attenso.compte.ServiceCompte;
+import ai.attenso.motdepasse.MotDePasseDao;
+import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.utilisateur.Role;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +44,12 @@ class CompteIntegrationTest extends SocleIntegration {
 
 	@Autowired
 	ObjectMapper json;
+
+	@Autowired
+	ServiceCompte comptes;
+
+	@Autowired
+	MotDePasseDao motsDePasseDao;
 
 	private UUID tenantId;
 
@@ -166,6 +175,48 @@ class CompteIntegrationTest extends SocleIntegration {
 
 		assertThat(json.readTree(corps).get("email").asString()).isEqualTo(EMAIL);
 		assertThat(json.readTree(corps).get("role").asString()).isEqualTo("ACCUEIL");
+	}
+
+	// --- La fenêtre entre le contrôle du filtre et l'écriture --------------
+	//
+	// Le filtre vérifie la version du jeton à l'entrée. Entre ce contrôle et
+	// l'écriture, un gérant peut rétrograder ou désactiver le compte. Ces deux
+	// cas se construisent ici en SQL direct, sans toucher au compteur de
+	// version : c'est exactement l'état que la course produirait.
+
+	@Test
+	@DisplayName("le jeton réémis porte le rôle de la BASE, pas celui du jeton d'avant")
+	void leJetonReemisPorteLeRoleDeLaBase() throws Exception {
+		UUID id = creerUtilisateur(tenantId, "gerant@cerisiers.fr", ANCIEN, Role.GERANT);
+		// Rétrogradé pendant qu'il est à l'écran, sans que sa session tombe.
+		proprietaire.update("UPDATE utilisateur SET role = 'ACCUEIL' WHERE id = ?", id);
+
+		var etat = ContexteTenant.avec(tenantId,
+				() -> comptes.changerMotDePasse(id, ANCIEN, NOUVEAU));
+
+		// Recopier le rôle du jeton d'appel aurait rendu un jeton GERANT neuf,
+		// valide douze heures, et renouvelable à chaque changement de mot de
+		// passe : la rétrogradation n'aurait jamais pris effet.
+		assertThat(etat.role()).isEqualTo(Role.ACCUEIL);
+	}
+
+	@Test
+	@DisplayName("le mot de passe d'un compte désactivé n'est pas écrit")
+	void leMotDePasseDUnCompteDesactiveNEstPasEcrit() {
+		UUID id = creerUtilisateur(tenantId, "parti@cerisiers.fr", ANCIEN, Role.ACCUEIL);
+		String avant = empreinteDe(id);
+		proprietaire.update("UPDATE utilisateur SET actif = false WHERE id = ?", id);
+
+		var pose = ContexteTenant.avec(tenantId, () -> motsDePasseDao.poserLeMotDePasse(
+				id, "peu-importe", java.time.Instant.now()));
+
+		assertThat(pose).isEmpty();
+		assertThat(empreinteDe(id)).isEqualTo(avant);
+	}
+
+	private String empreinteDe(UUID id) {
+		return proprietaire.queryForObject("SELECT mdp_hash FROM utilisateur WHERE id = ?",
+				String.class, id);
 	}
 
 	@Test

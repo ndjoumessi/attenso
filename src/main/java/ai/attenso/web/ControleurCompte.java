@@ -1,6 +1,7 @@
 package ai.attenso.web;
 
 import ai.attenso.compte.ServiceCompte;
+import ai.attenso.motdepasse.EtatApresChangement;
 import ai.attenso.securite.JetonPersonnel;
 import ai.attenso.securite.PrincipalPersonnel;
 import ai.attenso.utilisateur.UtilisateurRepository;
@@ -74,6 +75,14 @@ public class ControleurCompte {
 	 * avant — y compris celui de l'appelant. Sans réémission, changer son mot
 	 * de passe se solderait par une déconnexion immédiate, et ressemblerait à
 	 * un échec.
+	 *
+	 * <p><strong>Le rôle du jeton neuf vient de la base, pas du jeton
+	 * d'avant.</strong> Le filtre a bien vérifié la version à l'entrée, mais
+	 * un gérant peut rétrograder ou désactiver ce compte entre ce contrôle et
+	 * l'écriture : recopier {@code principal.role()} rendrait alors un jeton
+	 * valide portant le privilège qu'on vient de retirer — et renouvelable à
+	 * volonté, puisqu'il suffit de changer son mot de passe encore une fois.
+	 * La fenêtre est étroite ; ce qui en sort ne l'est pas.
 	 */
 	@PostMapping("/mot-de-passe")
 	public ReponseMotDePasse changerMotDePasse(
@@ -82,10 +91,10 @@ public class ControleurCompte {
 		if (!limiteur.autoriser("mdp:" + principal.utilisateurId(), ESSAIS_MAX, FENETRE)) {
 			throw new TropDeRequetes();
 		}
-		int version = comptes.changerMotDePasse(principal.utilisateurId(),
+		EtatApresChangement etat = comptes.changerMotDePasse(principal.utilisateurId(),
 				demande.actuel(), demande.nouveau());
 		return new ReponseMotDePasse(jetons.emettre(principal.utilisateurId(),
-				principal.tenantId(), principal.role(), version));
+				principal.tenantId(), etat.role(), etat.version()));
 	}
 
 	/**

@@ -218,11 +218,18 @@ public class ServiceReinitialisation {
 		lier(tenantId);
 		return ContexteTenant.avec(tenantId, () ->
 				dao.consommer(empreinte, horloge.instant()).map(utilisateurId -> {
-					motsDePasseDao.poserLeMotDePasse(utilisateurId,
-							motsDePasse.encode(nouveauMotDePasse), horloge.instant());
-					JOURNAL.info("mot de passe réinitialisé pour un compte de la "
-							+ "clinique {}", tenantId);
-					return true;
+					// L'écriture peut ne rien toucher : le compte a pu être
+					// désactivé entre la consommation du jeton et ici. Rendre
+					// « fait » dans ce cas annoncerait un mot de passe posé qui
+					// ne l'est pas, et la personne chercherait longtemps.
+					boolean pose = motsDePasseDao.poserLeMotDePasse(utilisateurId,
+							motsDePasse.encode(nouveauMotDePasse), horloge.instant())
+							.isPresent();
+					if (pose) {
+						JOURNAL.info("mot de passe réinitialisé pour un compte de la "
+								+ "clinique {}", tenantId);
+					}
+					return pose;
 				}).orElse(false));
 	}
 

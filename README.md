@@ -826,6 +826,19 @@ donc un jeton neuf, et la page recharge : le flux d'événements et la file de
 rejeu portent l'ancien jeton dans leurs fermetures, et les laisser tourner
 donnerait des refus inexplicables au premier geste hors réseau.
 
+**Le jeton réémis est bâti sur la base, pas sur le jeton d'avant** — constat
+d'une relecture de sécurité, et il était juste. Le filtre vérifie bien la
+version à l'entrée, mais un gérant peut rétrograder ou désactiver ce compte
+entre ce contrôle et l'écriture. Recopier le rôle du jeton d'appel rendait
+alors un jeton valide douze heures portant le privilège qu'on venait de
+retirer, et renouvelable à volonté puisqu'il suffit de changer son mot de
+passe à nouveau : une fenêtre étroite, mais ce qui en sortait ne l'était pas.
+L'écriture rend donc la version ET le rôle dans le même ordre SQL, avec un
+`AND actif = true` qui garantit au passage qu'un compte désactivé ne voit pas
+son mot de passe changer. Les deux états se construisent en SQL direct dans
+les tests, sans toucher au compteur de version : c'est exactement ce que la
+course produirait.
+
 **La déconnexion existait, mais elle jetait les gestes en attente sans un
 mot.** Elle vide le journal local — ce qui est voulu, on ne laisse pas le
 tableau d'une clinique sur une tablette qu'on rend — et pendant une panne
