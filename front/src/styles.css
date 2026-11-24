@@ -35,6 +35,7 @@
   --color-bande-contraste: var(--bande-contraste);
   --color-sur-bande-contraste: var(--sur-bande-contraste);
   --color-sur-bande-contraste-doux: var(--sur-bande-contraste-doux);
+  --color-anneau: var(--anneau);
   --color-barre: var(--barre);
   --color-sur-barre: var(--sur-barre);
   --color-sur-barre-doux: var(--sur-barre-doux);
