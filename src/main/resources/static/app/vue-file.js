@@ -56,7 +56,11 @@ export const LIBELLES = {
  * départs, qui est le seul chiffre justifiant l'abonnement.
  */
 export const ACTIONS = {
-  EN_ATTENTE: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
+  // « Annuler » n'est offert qu'en attente : après un appel, le geste juste
+  // est « parti » ou « absent », pas l'effacement. Annuler un ticket déjà
+  // appelé effacerait un départ du compteur, donc de l'argument de vente.
+  EN_ATTENTE: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti'],
+               ['annule', 'Annuler', '']],
   PREVENU: [['appeler', "J'appelle", 'b-principal'], ['parti', 'Parti', 'b-parti']],
   ABSENT: [['present', 'Présent', 'b-principal'], ['appeler', "J'appelle", ''],
            ['parti', 'Parti', 'b-parti']],
@@ -66,6 +70,26 @@ export const ACTIONS = {
 
 export function actionsPour(statut) {
   return ACTIONS[statut] ?? [];
+}
+
+/**
+ * Déplacement manuel dans l'ordre (EF-405).
+ *
+ * <p>Deux boutons plutôt qu'un glisser-déposer : sur une tablette posée sur un
+ * comptoir, par quelqu'un qui tient un animal de l'autre main, un glissement
+ * rate sa cible. Deux boutons ne ratent jamais.
+ *
+ * <p>Ce ne sont pas des transitions d'état : elles ne passent donc pas par
+ * ACTIONS, et le miroir de la machine à états ne les concerne pas.
+ */
+export const DEPLACEMENTS = [
+  ['monter', 'Monter', '\u2191'],
+  ['descendre', 'Descendre', '\u2193'],
+];
+
+/** Un ticket clos n'a plus de place dans la file : rien à déplacer. */
+export function deplacementsPour(statut) {
+  return OUVERTS.has(statut) ? DEPLACEMENTS : [];
 }
 
 /**

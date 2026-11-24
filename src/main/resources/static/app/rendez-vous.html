@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<title>Mon rendez-vous</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite">
+  <p class="discret" id="clinique">—</p>
+  <div class="carte-suivi" aria-live="polite" aria-atomic="true">
+    <p class="discret" id="etiquette">Votre rendez-vous</p>
+    <p class="rang" id="heure">—</p>
+    <p class="attente" id="jour">chargement…</p>
+  </div>
+
+  <p class="discret" id="motif"></p>
+  <div class="message message--info" id="etat" role="status" hidden></div>
+  <div class="message message--erreur" id="erreur" role="alert" hidden></div>
+
+  <p id="bloc-annuler" hidden>
+    <button class="b-parti b-pleine-largeur" id="annuler">Annuler ce rendez-vous</button>
+  </p>
+  <p class="discret" id="aide-annuler" hidden>
+    Prévenir libère la place pour quelqu'un d'autre.
+  </p>
+</main>
+
+<script type="module">
+import { appel } from '/app/attenso.js';
+
+const reference = location.pathname.split('/').filter(Boolean)[1];
+const el = (id) => document.getElementById(id);
+const JOUR = new Intl.DateTimeFormat('fr-FR',
+  { weekday: 'long', day: 'numeric', month: 'long' });
+
+function peindre(rdv) {
+  el('clinique').textContent = rdv.clinique;
+  el('heure').textContent = rdv.heure.slice(0, 5);
+  el('jour').textContent = JOUR.format(new Date(rdv.jour + 'T12:00:00'));
+  el('motif').textContent = rdv.motif ? `Motif : ${rdv.motif}` : '';
+
+  const annule = rdv.statut === 'ANNULE';
+  el('bloc-annuler').hidden = annule;
+  el('aide-annuler').hidden = annule;
+  const etat = el('etat');
+  etat.textContent = annule ? 'Ce rendez-vous est annulé.' : '';
+  etat.hidden = !annule;
+  // Un rendez-vous annulé garde son heure affichée en grisé plutôt que de
+  // disparaître : la personne doit pouvoir vérifier ce qu'elle vient de faire.
+  el('heure').classList.toggle('discret', annule);
+}
+
+try {
+  peindre(await appel(`/api/rendez-vous/${encodeURIComponent(reference)}`));
+} catch (echec) {
+  el('jour').textContent = '';
+  el('erreur').textContent = echec.reseau
+    ? 'Serveur injoignable : réessayez dans un instant.' : echec.message;
+  el('erreur').hidden = false;
+}
+
+el('annuler').addEventListener('click', async () => {
+  const bouton = el('annuler');
+  bouton.disabled = true;
+  try {
+    peindre(await appel(`/api/rendez-vous/${encodeURIComponent(reference)}/annuler`,
+      { method: 'POST' }));
+  } catch (echec) {
+    el('erreur').textContent = echec.reseau
+      ? "Serveur injoignable : le rendez-vous n'est PAS annulé." : echec.message;
+    el('erreur').hidden = false;
+    bouton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

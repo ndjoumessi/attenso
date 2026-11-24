@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<!-- Le QR est collé sur une médaille : la page ne doit pas être indexée. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Carnet de santé</title>
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite">
+  <p class="discret" id="clinique">—</p>
+  <h1 id="animal">Carnet de santé</h1>
+  <p class="discret" id="espece"></p>
+
+  <div class="message message--erreur" id="erreur" role="alert" hidden></div>
+
+  <h2>Vaccinations</h2>
+  <ul class="file" id="vaccins" aria-live="polite"></ul>
+  <p class="discret" id="aucun" hidden>Aucune vaccination enregistrée.</p>
+
+  <p class="discret">
+    Ce carnet est en lecture seule. Son adresse peut être révoquée par la
+    clinique à la demande du propriétaire.
+  </p>
+</main>
+
+<script type="module">
+import { appel } from '/app/attenso.js';
+import { duree } from '/app/formats.js';
+
+const jeton = location.pathname.split('/').filter(Boolean)[1];
+const el = (id) => document.getElementById(id);
+const DATE = new Intl.DateTimeFormat('fr-FR',
+  { day: 'numeric', month: 'long', year: 'numeric' });
+const dateDe = (jour) => DATE.format(new Date(jour + 'T12:00:00'));
+
+try {
+  const carnet = await appel(`/api/carnet/${encodeURIComponent(jeton)}`);
+  el('clinique').textContent = carnet.clinique;
+  el('animal').textContent = carnet.animal;
+  el('espece').textContent = carnet.espece;
+  document.title = `${carnet.animal} — carnet de santé`;
+
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  el('aucun').hidden = carnet.vaccins.length > 0;
+  el('vaccins').replaceChildren(...carnet.vaccins.map((vaccin) => {
+    const item = document.createElement('li');
+    item.className = 'ligne';
+
+    const corps = document.createElement('div');
+    const titre = document.createElement('strong');
+    titre.textContent = vaccin.vaccin;
+
+    const etiquettes = document.createElement('div');
+    etiquettes.className = 'etiquettes';
+
+    const fait = document.createElement('span');
+    fait.className = 'etiquette etiquette--duree';
+    fait.textContent = `fait le ${dateDe(vaccin.faitLe)}`;
+    etiquettes.append(fait);
+
+    if (vaccin.rappelLe) {
+      const rappel = document.createElement('span');
+      // En retard : la teinte d'alerte. C'est la seule information de cette
+      // page qui demande une action, elle doit se voir.
+      const enRetard = vaccin.rappelLe < aujourdhui;
+      rappel.className = 'etiquette ' + (enRetard ? 'etiquette--urgence'
+        : 'etiquette--prioritaire');
+      rappel.textContent = (enRetard ? 'rappel dépassé — ' : 'rappel le ')
+        + dateDe(vaccin.rappelLe);
+      etiquettes.append(rappel);
+    }
+
+    corps.append(titre, etiquettes);
+    if (vaccin.note) {
+      const note = document.createElement('p');
+      note.className = 'discret';
+      note.textContent = vaccin.note;
+      corps.append(note);
+    }
+    item.append(corps);
+    return item;
+  }));
+} catch (echec) {
+  el('animal').textContent = 'Carnet introuvable';
+  el('erreur').textContent = echec.reseau
+    ? 'Serveur injoignable : réessayez dans un instant.' : echec.message;
+  el('erreur').hidden = false;
+}
+</script>
+</body>
+</html>

@@ -42,9 +42,17 @@ public class ControleurEcran {
 		this.diffusion = diffusion;
 	}
 
-	@GetMapping("/api/ecran/{slug}")
-	public VueEcran etat(@PathVariable String slug) {
-		Tenant clinique = cliniques.parSlug(slug);
+	/**
+	 * L'état affiché au mur, derrière le jeton d'appairage (EF-601).
+	 *
+	 * <p>La route par slug qui existait avant était publique : qui devinait le
+	 * slug — le nom de la clinique, le plus souvent — lisait sa file en direct.
+	 * Rien de nominatif n'y figure, mais l'affluence d'un cabinet est une
+	 * donnée commerciale, et elle n'a pas à être servie à qui la demande.
+	 */
+	@GetMapping("/api/ecran/jeton/{jeton}")
+	public VueEcran etat(@PathVariable String jeton) {
+		Tenant clinique = cliniques.parJetonEcran(jeton);
 		LocalDate jour = file.jourCourant(clinique);
 		return ContexteTenant.avec(clinique.id(), () -> {
 			List<LigneFile> lignes = file.tableauDuJour(clinique.id(), jour);
@@ -65,6 +73,28 @@ public class ControleurEcran {
 		});
 	}
 
+	/** Le flux de l'écran du mur, appairé comme sa donnée. */
+	@GetMapping(value = "/api/ecran/jeton/{jeton}/flux",
+			produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public SseEmitter fluxEcran(@PathVariable String jeton) {
+		Tenant clinique = cliniques.parJetonEcran(jeton);
+		return diffusion.abonner(clinique.id(), file.jourCourant(clinique));
+	}
+
+	/**
+	 * Le même flux, pour le tableau de l'accueil, résolu par slug.
+	 *
+	 * <p>Deux routes et non une, parce que les deux abonnés n'ont pas le même
+	 * justificatif : le tableau est authentifié par JWT, mais {@code
+	 * EventSource} ne sait pas poser d'en-tête {@code Authorization}, et un
+	 * jeton passé en paramètre d'URL finirait dans les journaux d'accès du
+	 * serveur et des proxys. Surtout, une clinique SANS écran n'a pas de jeton
+	 * d'appairage du tout, et son tableau doit quand même se rafraîchir.
+	 *
+	 * <p>Ce flux ne transporte <strong>aucune donnée</strong> : il dit « ça a
+	 * bougé », et l'abonné relit par une route qui, elle, contrôle l'accès.
+	 * C'est ce qui rend acceptable de le laisser ouvert sur un slug.
+	 */
 	@GetMapping(value = "/api/ecran/{slug}/flux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public SseEmitter flux(@PathVariable String slug) {
 		Tenant clinique = cliniques.parSlug(slug);

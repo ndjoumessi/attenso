@@ -3,6 +3,7 @@ package ai.attenso.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.attenso.mesure.MesureDao;
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.ServiceTenant;
 import ai.attenso.ticket.ServiceCreationTicket;
@@ -31,6 +32,9 @@ class CloisonnementIntegrationTest extends SocleIntegration {
 
 	@Autowired
 	ServiceFile file;
+
+	@Autowired
+	MesureDao mesures;
 
 	@Test
 	@DisplayName("l'application ne tourne PAS en propriétaire — sans quoi tous "
@@ -116,5 +120,30 @@ class CloisonnementIntegrationTest extends SocleIntegration {
 		creerClinique("lisible", "Clinique Lisible", 2, 180);
 		ContexteTenant.delier();
 		assertThat(cliniques.parSlug("lisible").nom()).isEqualTo("Clinique Lisible");
+	}
+
+	@Test
+	@DisplayName("le comptage d'arrivants d'une clinique est invisible à l'autre, "
+			+ "même sans filtre de tenant")
+	void leComptageDArrivantsEstCloisonne() {
+		// mesure_jour est arrivée après le socle : sans politique RLS, le
+		// chiffre qui sert à décider du pilote d'une clinique serait lisible
+		// par une autre, et un UPDATE sans WHERE l'écraserait.
+		UUID cliniqueA = creerClinique("mesure-alpha", "Clinique Alpha", 2, 180);
+		UUID cliniqueB = creerClinique("mesure-beta", "Clinique Beta", 2, 180);
+		var jourA = file.jourCourant(cliniques.parSlug("mesure-alpha"));
+		var jourB = file.jourCourant(cliniques.parSlug("mesure-beta"));
+
+		ContexteTenant.executer(cliniqueA, () -> mesures.poserArrivants(cliniqueA, jourA, 40));
+		ContexteTenant.executer(cliniqueB, () -> mesures.poserArrivants(cliniqueB, jourB, 7));
+
+		Integer vuDepuisA = ContexteTenant.avec(cliniqueA, () -> applicatif
+				.queryForObject("SELECT count(*)::int FROM mesure_jour", Integer.class));
+		assertThat(vuDepuisA).as("A ne doit voir que sa propre ligne").isEqualTo(1);
+
+		Integer arrivantsDeB = ContexteTenant.avec(cliniqueB,
+				() -> mesures.duJour(cliniqueB, jourB).arrivantsTotal());
+		assertThat(arrivantsDeB).as("le comptage de B n'a pas été écrasé par celui de A")
+				.isEqualTo(7);
 	}
 }

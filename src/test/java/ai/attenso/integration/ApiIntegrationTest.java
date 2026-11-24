@@ -191,11 +191,12 @@ class ApiIntegrationTest extends SocleIntegration {
 	@DisplayName("l'écran du mur n'expose que des numéros")
 	void ecranDuMur() throws Exception {
 		UUID clinique = creerClinique("mur", "Clinique du Mur", 2, 180);
+		String jetonEcran = appairerEcran(clinique, "ecranDuMur123");
 		ContexteTenant.avec(clinique, () -> creation.creerDepuisQr(
 				cliniques.parSlug("mur"), file.jourCourant(cliniques.parSlug("mur")),
 				"0611111111"));
 
-		String corps = http.perform(get("/api/ecran/mur"))
+		String corps = http.perform(get("/api/ecran/jeton/" + jetonEcran))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.clinique").value("Clinique du Mur"))
 				.andReturn().getResponse().getContentAsString();
@@ -204,6 +205,55 @@ class ApiIntegrationTest extends SocleIntegration {
 				.as("aucun numéro de téléphone, aucun identifiant de ticket au mur")
 				.doesNotContain("0611111111").doesNotContain("+33")
 				.doesNotContain("reference");
+	}
+
+	@Test
+	@DisplayName("l'écran du mur n'est plus atteignable par le slug de la clinique")
+	void ecranNonAtteignableParSlug() throws Exception {
+		UUID clinique = creerClinique("mur-prive", "Clinique Privée", 2, 180);
+		appairerEcran(clinique, "jetonDuMurPrive");
+
+		// Le slug est devinable — c'est le nom de la clinique. L'affluence
+		// d'un cabinet est une donnée commerciale : elle ne se sert pas à qui
+		// la demande.
+		//
+		// On vérifie l'ABSENCE de donnée, pas un code précis : la route n'a
+		// plus de gestionnaire, et le code rendu dépend alors de la chaîne de
+		// sécurité — 404 sous MockMvc, 401 sur le serveur réel. Figer l'un des
+		// deux ferait passer ce test pour la mauvaise raison.
+		var reponse = http.perform(get("/api/ecran/mur-prive")).andReturn().getResponse();
+		assertThat(reponse.getStatus()).isNotEqualTo(200);
+		assertThat(reponse.getContentAsString()).doesNotContain("Clinique Privée");
+	}
+
+	@Test
+	@DisplayName("une clinique sans écran ne répond sur aucune route d'écran (EF-603)")
+	void cliniqueSansEcran() throws Exception {
+		UUID clinique = creerClinique("sans-ecran", "Clinique Sans Écran", 2, 180);
+		ContexteTenant.avec(clinique, () -> creation.creerDepuisQr(
+				cliniques.parSlug("sans-ecran"),
+				file.jourCourant(cliniques.parSlug("sans-ecran")), "0611111111"));
+
+		// Rien à désactiver : rien n'est activé. Ici la route EXISTE, donc le
+		// 404 est bien celui du contrôleur et peut être affirmé tel quel.
+		http.perform(get("/api/ecran/jeton/sans-ecran")).andExpect(status().isNotFound());
+	}
+
+    @Test
+	@DisplayName("un jeton d'écran inconnu et une clinique sans écran rendent la "
+			+ "MÊME réponse")
+	void memeReponsePourJetonFauxEtCliniqueSansEcran() throws Exception {
+		UUID clinique = creerClinique("ecran-sonde", "Clinique Sondée", 2, 180);
+		appairerEcran(clinique, "leVraiJetonIci");
+
+		// Distinguer les deux dirait à qui sonde laquelle des deux il vient de
+		// toucher, donc quelles cliniques ont un écran.
+		int jetonFaux = http.perform(get("/api/ecran/jeton/unJetonQuiNExistePas"))
+				.andReturn().getResponse().getStatus();
+		int sansEcran = http.perform(get("/api/ecran/jeton/ecran-sonde"))
+				.andReturn().getResponse().getStatus();
+
+		assertThat(jetonFaux).isEqualTo(sansEcran).isEqualTo(404);
 	}
 
 	@Test
@@ -242,5 +292,49 @@ class ApiIntegrationTest extends SocleIntegration {
 		return """
 				{"slug": "%s", "email": "%s", "motDePasse": "%s"}"""
 				.formatted(slug, email, motDePasse);
+	}
+
+	@Test
+	@DisplayName("le formulaire du comptoir peut nommer le responsable de "
+			+ "traitement, et rien d'autre (EC-04)")
+	void nomDeLaCliniquePourLaMention() throws Exception {
+		creerClinique("mention", "Clinique des Cerisiers", 2, 180);
+
+		String corps = http.perform(get("/t/mention/clinique"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.nom").value("Clinique des Cerisiers"))
+				.andReturn().getResponse().getContentAsString();
+
+		// Le nom est déjà imprimé sur l'affiche qui porte le QR : l'exposer ne
+		// révèle rien. Le reste de la configuration de la clinique, si.
+		assertThat(corps).doesNotContain("expediteur").doesNotContain("jeton")
+				.doesNotContain("seuil").doesNotContain("id");
+	}
+
+	@Test
+	@DisplayName("l'enregistrement anonyme n'écrit AUCUNE adresse IP : EC-03 "
+			+ "limite la collecte au mobile et au numéro de ticket")
+	void lEnregistrementNeCollectePasDAdresseIp() throws Exception {
+		UUID clinique = creerClinique("minimisation", "Clinique", 2, 180);
+
+		http.perform(post("/t/minimisation/tickets")
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("X-Forwarded-For", "203.0.113.7")
+						.content("{\"telephone\":\"0611111111\"}"))
+				.andExpect(status().isCreated());
+
+		// La colonne journal_acces.ip existe et reste vide : ce n'est PAS un
+		// oubli. La remplir ajouterait une troisième donnée personnelle, que
+		// EC-03 interdit. Ce test est là pour qu'on ne la « répare » pas.
+		Integer avecIp = proprietaire.queryForObject("""
+				SELECT count(*)::int FROM journal_acces
+				WHERE tenant_id = ? AND ip IS NOT NULL
+				""", Integer.class, clinique);
+		assertThat(avecIp).as("aucune adresse IP ne doit être consignée").isZero();
+
+		Integer actions = proprietaire.queryForObject("""
+				SELECT count(*)::int FROM journal_acces WHERE tenant_id = ?
+				""", Integer.class, clinique);
+		assertThat(actions).as("l'action, elle, est bien tracée (ENF-07)").isPositive();
 	}
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { RIEN, appel, legende, prochains } from
+import { RIEN, appel, attente, legende, prochains } from
   '../../main/resources/static/app/vue-ecran.js';
 
 describe("l'écran de la salle d'attente", () => {
@@ -32,5 +32,24 @@ describe("l'écran de la salle d'attente", () => {
     assert.equal(appel(vue), RIEN);
     assert.equal(legende(vue), 'personne en salle');
     assert.equal(prochains(vue), '');
+  });
+});
+
+describe("l'attente estimée au mur", () => {
+  it('est donnée par personne, pour que chacun compte depuis son numéro', () => {
+    // Un total serait faux pour tout le monde sauf le dernier de la file.
+    const vue = { appeles: [7], prochains: [5, 4], attenteMedianeMinutes: 15 };
+    assert.equal(attente(vue), 'environ 15 min par personne');
+  });
+
+  it("n'affiche rien quand la salle est vide", () => {
+    const vue = { appeles: [], prochains: [], attenteMedianeMinutes: 15 };
+    assert.equal(attente(vue), '');
+  });
+
+  it("n'affiche rien tant que la journée n'a pas fourni de médiane", () => {
+    // « environ 0 min » promettrait un tour immédiat à toute la salle.
+    const vue = { appeles: [7], prochains: [5], attenteMedianeMinutes: 0 };
+    assert.equal(attente(vue), '');
   });
 });

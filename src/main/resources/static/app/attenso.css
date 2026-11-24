@@ -21,11 +21,20 @@ body {
   margin: 0;
   background: var(--fond);
   color: var(--sur-fond);
-  font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, sans-serif;
+  /* Pile SYSTÈME, et c'est un choix de conformité avant d'être un choix de
+     goût. Charger Lexend et Source Sans 3 depuis fonts.googleapis.com
+     envoyait l'adresse IP de chaque client à un tiers hors UE, à chaque
+     chargement de page — sur un produit dont toute la position tient en
+     « nous ne collectons qu'un mobile et un numéro de ticket ». Pour revenir
+     aux polices de marque, il faut les AUTO-HÉBERGER (licence SIL OFL, qui
+     l'autorise), pas rétablir le lien distant. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   font-size: var(--txt-base);
   line-height: var(--interligne-corps);
-  font-synthesis-weight: none;
+  /* La synthèse reste autorisée : sur une pile système, l'interdire ferait
+     retomber une graisse absente sur la plus proche et aplatirait la
+     hiérarchie des titres. */
 }
 
 /* Le lien d'évitement : le tableau est long, et une personne au clavier ne
@@ -54,16 +63,20 @@ body {
   .enveloppe { padding: var(--pas-8); }
 }
 
-/* Lexend sur les titres et surtout sur les CHIFFRES : il est dessiné pour la
-   lisibilité, et ses chiffres tabulaires évitent que la file tressaute quand
-   un rang passe de 9 à 10. */
+/* Titres et CHIFFRES. Lexend tenait ce rôle tant qu'on le chargeait, pour sa
+   lisibilité ; la pile système le remplace. Ce qu'il ne faut PAS perdre en
+   chemin, c'est le chiffre tabulaire ci-dessous. */
 h1, h2, .numero, .rang, .mur-appel, .compteur dd {
-  font-family: Lexend, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  /* Lexend portait ses chiffres tabulaires d'office ; une pile système, non.
+     Sans ça, la file tressaute quand un rang passe de 9 à 10, et le grand
+     nombre du mur danse à chaque appel. */
+  font-variant-numeric: tabular-nums;
 }
 
 h1 { font-size: var(--txt-xl); line-height: var(--interligne-serre);
-     margin: 0 0 var(--pas-1); letter-spacing: -0.01em; font-weight: 650; }
+     margin: 0 0 var(--pas-1); letter-spacing: -0.01em; font-weight: 700; }
 h2 { font-size: var(--txt-sm); margin: var(--pas-8) 0 var(--pas-3);
      color: var(--sur-fond-doux); text-transform: uppercase;
      letter-spacing: 0.06em; font-weight: 600; }
@@ -90,7 +103,7 @@ p  { margin: var(--pas-2) 0; }
 .compteur dt { font-size: var(--txt-xs); text-transform: uppercase;
                letter-spacing: 0.05em; color: var(--sur-fond-doux); margin: 0; }
 .compteur dd { margin: var(--pas-1) 0 0; font-size: var(--txt-2xl);
-               font-weight: 650; font-variant-numeric: tabular-nums;
+               font-weight: 700; font-variant-numeric: tabular-nums;
                line-height: var(--interligne-serre); }
 .compteur--depart dd { color: var(--alerte); }
 
@@ -123,7 +136,7 @@ p  { margin: var(--pas-2) 0; }
               margin-bottom: var(--pas-3); align-items: center; }
 .etiquette {
   display: inline-flex; align-items: center; gap: var(--pas-1);
-  font-size: var(--txt-xs); font-weight: 650; text-transform: uppercase;
+  font-size: var(--txt-xs); font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.04em; padding: var(--pas-1) var(--pas-2);
   border-radius: var(--rayon-sm);
   background: var(--surface-douce); color: var(--sur-fond-doux);
@@ -145,6 +158,26 @@ p  { margin: var(--pas-2) 0; }
 .etiquette--muet     { background: var(--surface);
                        border: 1px dashed var(--bordure-controle); }
 .etiquette--muet::before     { content: "\2298"; }
+/* L'attente écoulée : neutre exprès. Une durée n'est pas un état, et la
+   colorer en rouge au-delà d'un seuil arbitraire ferait porter à l'outil un
+   jugement sur le travail de la clinique. */
+/* Prioritaire, et non urgent : la teinte d'attention et non celle d'alerte.
+   Les confondre ferait lire « urgence vitale » là où il y a « personne âgée »,
+   et userait le signal rouge qui doit rester rare. */
+.etiquette--prioritaire { background: var(--attention-voile); color: var(--attention);
+                          border: 1px solid var(--attention); }
+.etiquette--prioritaire::before { content: "\2605"; }   /* étoile */
+/* « Il arrive » : le vert de l'accent, parce que c'est une bonne nouvelle —
+   une absence évitée. Distinct du jaune « prioritaire », qui demande une
+   décision, et du rouge « urgence », qui en impose une. */
+.etiquette--arrive   { background: var(--accent-voile); color: var(--accent-texte);
+                       border: 1px solid var(--accent); }
+.etiquette--arrive::before   { content: "\21B7"; }   /* flèche d'approche */
+.etiquette--duree    { background: var(--surface-douce);
+                       border: 1px solid var(--bordure-douce);
+                       color: var(--sur-fond-doux);
+                       font-variant-numeric: tabular-nums; }
+.etiquette--duree::before    { content: "\231B"; }  /* sablier */
 
 /* --- Actions ------------------------------------------------------------ */
 .actions { display: flex; gap: var(--pas-2); flex-wrap: wrap; }
@@ -180,9 +213,42 @@ summary:focus-visible {
 .b-parti { border-color: var(--alerte); color: var(--alerte); border-width: 2px;
            background: transparent; }
 .b-parti:hover:not(:disabled) { background: var(--alerte-voile); }
+/* Monter / descendre : carrés et larges comme la cible tactile, parce qu'ils
+   sont côte à côte et que les rater inverse le geste voulu. */
+.b-deplacer { min-width: var(--cible); padding: 0; font-size: var(--txt-lg);
+              line-height: 1; }
 .b-pleine-largeur { width: 100%; }
 
+/* La mention d'information (EC-04). Repliée par défaut mais présente AVANT la
+   validation, et non derrière un lien qui mènerait ailleurs : le client doit
+   pouvoir l'ouvrir sans quitter sa prise de ticket. */
+.mention { margin-top: var(--pas-6); font-size: var(--txt-sm);
+           color: var(--sur-fond-doux); }
+.mention summary { min-height: var(--cible-min); display: flex; align-items: center;
+                   cursor: pointer; font-weight: 600; color: var(--sur-fond); }
+.mention p { margin: var(--pas-2) 0 0; line-height: var(--interligne-corps); }
+
+/* --- Choix multiples ---------------------------------------------------- */
+fieldset { border: 1px solid var(--bordure-douce); border-radius: var(--rayon);
+           padding: var(--pas-4); margin: var(--pas-6) 0; }
+legend { font-weight: 700; padding: 0 var(--pas-2); }
+/* La cible tactile est la LIGNE entière, pas la case de 16 px : viser une
+   case à cocher au doigt sur une tablette rate une fois sur trois. */
+.case { display: flex; align-items: center; gap: var(--pas-3);
+        min-height: var(--cible); cursor: pointer; font-weight: 400; margin: 0; }
+.case--palier { padding: var(--pas-2) 0; align-items: flex-start; }
+.case input { width: auto; min-height: 0; flex: none; margin-top: var(--pas-1); }
+.case--palier span { line-height: var(--interligne-corps); }
+
 /* --- Formulaires -------------------------------------------------------- */
+select {
+  font: inherit; width: 100%; min-height: var(--cible);
+  padding: 0 var(--pas-3);
+  border: 1px solid var(--bordure-controle); border-radius: var(--rayon-sm);
+  background: var(--surface); color: var(--sur-fond);
+}
+select:focus-visible { outline: 3px solid var(--anneau); outline-offset: 1px;
+                       border-color: var(--accent); }
 label { display: block; font-weight: 600; margin: var(--pas-4) 0 var(--pas-2); }
 input {
   font: inherit; width: 100%; min-height: var(--cible);
@@ -203,7 +269,7 @@ input[aria-invalid="true"] { border-color: var(--alerte); border-width: 2px; }
 .message--erreur { background: var(--alerte-voile); color: var(--alerte);
                    border: 1px solid var(--alerte); }
 .message--erreur::before { content: "\26A0"; }
-.message--info   { background: var(--accent-voile); color: var(--accent);
+.message--info   { background: var(--accent-voile); color: var(--accent-texte);
                    border: 1px solid var(--accent); }
 .message--info::before { content: "\2139"; }
 .message[hidden] { display: none; }
@@ -214,7 +280,7 @@ input[aria-invalid="true"] { border-color: var(--alerte); border-width: 2px; }
 .hors-ligne {
   position: sticky; top: 0; z-index: var(--plan-bandeau);
   background: var(--attention); color: var(--sur-attention);
-  font-weight: 650; padding: var(--pas-2) var(--pas-4);
+  font-weight: 700; padding: var(--pas-2) var(--pas-4);
   text-align: center; font-size: var(--txt-sm);
 }
 .hors-ligne--grave { background: var(--alerte); color: var(--sur-alerte); }
@@ -226,7 +292,7 @@ input[aria-invalid="true"] { border-color: var(--alerte); border-width: 2px; }
   border-radius: var(--rayon-lg); box-shadow: var(--ombre-1);
   padding: var(--pas-8) var(--pas-4); text-align: center;
 }
-.rang { font-size: var(--txt-4xl); font-weight: 750;
+.rang { font-size: var(--txt-4xl); font-weight: 700;
         line-height: 1; font-variant-numeric: tabular-nums;
         margin: var(--pas-2) 0; }
 @media (min-width: 420px) { .rang { font-size: 4.5rem; } }
@@ -249,6 +315,10 @@ input[aria-invalid="true"] { border-color: var(--alerte); border-width: 2px; }
                letter-spacing: 0.12em; color: var(--mur-encre-douce); margin: 0; }
 .mur-prochains { font-size: clamp(1.3rem, 4.5vw, 2.75rem); color: var(--mur-encre-douce);
                  margin-top: var(--pas-12); font-variant-numeric: tabular-nums; }
+/* L'attente estimée est la plus petite ligne du mur : utile à qui la cherche,
+   jamais le premier chiffre qu'on lit en entrant. */
+.mur-attente { font-size: clamp(0.95rem, 2.2vw, 1.5rem); color: var(--mur-encre-douce);
+               margin: var(--pas-4) 0 0; font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: no-preference) {
   .mur-appel { animation: apparition var(--duree) var(--courbe-entree); }

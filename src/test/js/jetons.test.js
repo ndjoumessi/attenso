@@ -59,6 +59,12 @@ const PAIRES = [
   ['alerte sur fond', 'alerte', 'fond', 4.5],
   ['attention sur fond', 'attention', 'fond', 4.5],
   ['accent sur fond', 'accent', 'fond', 4.5],
+  // La paire qui manquait, et qui échouait : le texte des bandeaux
+  // d'information est posé sur le VOILE, pas sur le fond. En mode sombre
+  // --accent sur --accent-voile ne donnait que 4.28:1, et cette classe porte
+  // aussi le bandeau des gestes en attente — donc l'écran de panne, là où la
+  // lecture compte le plus.
+  ['texte d\'information sur voile', 'accent-texte', 'accent-voile', 4.5],
   // Une bordure de CONTRÔLE porte l'information « ici commence un champ » :
   // elle est soumise au contraste, contrairement à une séparation décorative.
   ['bordure de contrôle sur fond', 'bordure-controle', 'fond', 3],

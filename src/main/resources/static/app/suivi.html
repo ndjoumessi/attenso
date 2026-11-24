@@ -7,9 +7,6 @@
 <meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Mon tour</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
@@ -25,6 +22,29 @@
   <div class="message message--info" id="consigne" role="status" hidden></div>
   <div class="message message--erreur" id="erreur" role="alert" hidden></div>
 
+  <!-- EF-205. Le libellé dit ce que le geste fait VRAIMENT : il prévient
+       l'accueil, il ne fait pas passer devant. Promettre autre chose
+       produirait une déception à chaque appui. -->
+  <!-- EF-307. Masqué par défaut : le bouton n'apparaît que si le service a
+       des clés VAPID ET que le navigateur sait faire du push. Sur iPhone, ça
+       suppose que la page a été ajoutée à l'écran d'accueil — proposer sans
+       vérifier produirait un bouton qui échoue. -->
+  <p id="bloc-push" hidden>
+    <button class="b-pleine-largeur" id="activer-push">
+      Me prévenir par notification (sans SMS)
+    </button>
+  </p>
+  <p class="discret" id="push-confirme" role="status" hidden>
+    Notifications activées. Vous ne recevrez pas de SMS pour ce ticket.
+  </p>
+
+  <p><button class="b-pleine-largeur" id="jarrive">
+    Je suis à quelques minutes
+  </button></p>
+  <p class="discret" id="jarrive-confirme" role="status" hidden>
+    C'est noté : l'accueil le voit sur son tableau. Votre tour ne change pas.
+  </p>
+
   <p class="discret" id="numero-ticket"></p>
   <p class="discret">
     Cette page se met à jour toute seule. Vous pouvez la garder ouverte,
@@ -38,6 +58,83 @@ import { carte, consigne, rappelDuNumero } from '/app/vue-suivi.js';
 
 const reference = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
+
+// --- EF-307 : notifications poussées ------------------------------------
+// La clé publique VAPID doit être présentée au navigateur en octets bruts.
+function versOctets(base64url) {
+  const base64 = (base64url + '='.repeat((4 - base64url.length % 4) % 4))
+    .replace(/-/g, '+').replace(/_/g, '/');
+  const binaire = atob(base64);
+  return Uint8Array.from(binaire, (c) => c.charCodeAt(0));
+}
+
+async function preparerPush() {
+  // Trois conditions, et toutes sont des cas réels : pas de service worker
+  // (navigation privée), pas de PushManager (Safari hors écran d'accueil),
+  // pas de clé configurée côté service.
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  let cle;
+  try {
+    cle = (await appel('/api/push/cle')).clePublique;
+  } catch { return; }
+  if (!cle) return;
+
+  const bloc = el('bloc-push');
+  bloc.hidden = false;
+  el('activer-push').addEventListener('click', async () => {
+    const bouton = el('activer-push');
+    bouton.disabled = true;
+    try {
+      // L'autorisation DOIT être demandée depuis un geste de l'utilisateur :
+      // la réclamer au chargement la fait refuser d'office par le navigateur,
+      // et le refus est définitif pour le site.
+      if (await Notification.requestPermission() !== 'granted') {
+        bloc.hidden = true;
+        return;
+      }
+      const inscription = await navigator.serviceWorker.ready;
+      const abonnement = await inscription.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: versOctets(cle),
+      });
+      const donnees = abonnement.toJSON();
+      await appel(`/api/suivi/${encodeURIComponent(reference)}/push`, {
+        method: 'POST',
+        body: JSON.stringify({
+          endpoint: abonnement.endpoint,
+          clePublique: donnees.keys.p256dh,
+          cleAuth: donnees.keys.auth,
+        }),
+      });
+      bloc.hidden = true;
+      el('push-confirme').hidden = false;
+    } catch (echec) {
+      bouton.disabled = false;
+    }
+  });
+}
+
+preparerPush();
+
+// EF-205 : signaler son approche. Un seul envoi suffit ; le bouton reste
+// cliquable ensuite parce que re-signaler rafraîchit l'horodatage, et
+// « il l'a dit il y a deux minutes » vaut mieux que « il y a une heure ».
+el('jarrive').addEventListener('click', async () => {
+  const bouton = el('jarrive');
+  bouton.disabled = true;
+  try {
+    await appel(`/api/suivi/${encodeURIComponent(reference)}/jarrive`, { method: 'POST' });
+    el('jarrive-confirme').hidden = false;
+  } catch (echec) {
+    const erreur = el('erreur');
+    erreur.textContent = echec.reseau
+      ? "Serveur injoignable : l'accueil n'a pas été prévenu."
+      : echec.message;
+    erreur.hidden = false;
+  } finally {
+    bouton.disabled = false;
+  }
+});
 
 async function relire() {
   try {

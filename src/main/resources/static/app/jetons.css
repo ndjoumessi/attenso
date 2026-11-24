@@ -86,6 +86,10 @@
   --accent: #1b5e4b;              /* blanc dessus : 7.64:1 */
   --sur-accent: #ffffff;
   --accent-voile: #e8f2ee;
+  /* Le vert des TEXTES posés sur --accent-voile, qui n'est pas celui des
+     aplats. En clair les deux coïncident ; en sombre non, et les confondre
+     donne 4.28:1 — sous le seuil AA. Voir la note du bloc sombre. */
+  --accent-texte: #1b5e4b;        /* sur --accent-voile : 6.46:1 */
 
   --alerte: #a8321e;              /* 6.46:1 sur --fond ; blanc dessus 6.69:1 */
   --sur-alerte: #ffffff;
@@ -131,6 +135,11 @@
     --accent: #4ea88a;            /*  5.74:1 */
     --sur-accent: #10231c;
     --accent-voile: #1d3a31;
+    /* Et non --accent : #4ea88a sur #1d3a31 ne donne que 4.28:1. C'est le
+       vert d'un APLAT (lu avec --sur-accent par-dessus), pas d'un texte posé
+       sur le voile. Le bandeau des gestes en attente porte la même classe :
+       le défaut touchait déjà l'écran de panne, où la lecture compte le plus. */
+    --accent-texte: #5fb89a;      /* sur --accent-voile : 5.18:1 */
 
     --alerte: #ef8a76;            /*  6.74:1 */
     --sur-alerte: #3a1109;

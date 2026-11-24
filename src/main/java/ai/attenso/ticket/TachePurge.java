@@ -33,15 +33,19 @@ public class TachePurge {
 
 	private final BudgetHlrDao budget;
 
+	private final java.util.Optional<ai.attenso.push.PushDao> push;
+
 	private final Clock horloge;
 
 	public TachePurge(TenantRepository tenants, TicketRepository tickets,
-			VerificationDao verifications, BudgetHlrDao budget, Clock horloge) {
+			VerificationDao verifications, BudgetHlrDao budget, Clock horloge,
+			java.util.Optional<ai.attenso.push.PushDao> push) {
 		this.tenants = tenants;
 		this.tickets = tickets;
 		this.verifications = verifications;
 		this.budget = budget;
 		this.horloge = horloge;
+		this.push = push;
 	}
 
 	@Scheduled(cron = "${attenso.file.cron-purge:0 30 3 * * *}")
@@ -57,6 +61,10 @@ public class TachePurge {
 		int purges = tickets.purgerTelephones(tenant.id(), aujourdhui);
 		// La table des vérifications porte elle aussi des numéros : même règle,
 		// et elle est entièrement effacée puisque son rôle est journalier.
+		int pushPurges = push.map(dao -> dao.purgerAvant(tenant.id(), aujourdhui)).orElse(0);
+		if (pushPurges > 0) {
+			JOURNAL.info("{} abonnement(s) push purgé(s) pour {}", pushPurges, tenant.slug());
+		}
 		int verificationsPurgees = verifications.purger(tenant.id(), aujourdhui);
 		budget.purger(tenant.id(), aujourdhui);
 		if (purges > 0 || verificationsPurgees > 0) {

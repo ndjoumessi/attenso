@@ -18,18 +18,20 @@ body {
   margin: 0;
   background: var(--fond);
   color: var(--sur-fond);
-  font-family: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, sans-serif;
+  /* Pile système : voir la note d'attenso.css. Aucune page de ce produit ne
+     charge de police depuis un tiers. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   font-size: var(--txt-lg);
   line-height: var(--interligne-corps);
 }
 
 h1, h2, h3, .marque {
-  font-family: Lexend, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   line-height: var(--interligne-serre);
   letter-spacing: -0.02em;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 a { color: var(--accent); }
@@ -69,7 +71,7 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
   min-height: var(--cible); padding: 0 var(--pas-8);
   background: var(--accent); color: var(--sur-accent);
   border: 1px solid var(--accent); border-radius: var(--rayon);
-  font: inherit; font-weight: 650; font-size: var(--txt-lg);
+  font: inherit; font-weight: 700; font-size: var(--txt-lg);
   text-decoration: none; cursor: pointer; touch-action: manipulation;
   box-shadow: var(--ombre-1);
   transition: filter var(--duree-courte) var(--courbe-entree),
@@ -94,8 +96,8 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
   border-radius: var(--rayon-lg); box-shadow: var(--ombre-1);
   padding: var(--pas-8); text-align: center;
 }
-.chiffre-valeur { font-family: Lexend, sans-serif; font-size: var(--txt-4xl);
-                  font-weight: 750; color: var(--alerte); line-height: 1;
+.chiffre-valeur { font-family: inherit; font-size: var(--txt-4xl);
+                  font-weight: 700; color: var(--alerte); line-height: 1;
                   font-variant-numeric: tabular-nums; display: block; }
 .chiffre-libelle { font-size: var(--txt-lg); margin-top: var(--pas-3); }
 
@@ -116,7 +118,7 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
          align-items: start; }
 .etape::before {
   counter-increment: etape; content: counter(etape);
-  font-family: Lexend, sans-serif; font-weight: 700; font-size: var(--txt-lg);
+  font-family: inherit; font-weight: 700; font-size: var(--txt-lg);
   width: 2.75rem; height: 2.75rem; border-radius: var(--rayon-plein);
   background: var(--accent); color: var(--sur-accent);
   display: inline-flex; align-items: center; justify-content: center;
@@ -146,7 +148,7 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
                        box-shadow: var(--ombre-1); }
 .tarif-nom { font-size: var(--txt-sm); text-transform: uppercase;
              letter-spacing: 0.06em; color: var(--sur-fond-doux); margin: 0; }
-.tarif-prix { font-family: Lexend, sans-serif; font-size: var(--txt-2xl);
+.tarif-prix { font-family: inherit; font-size: var(--txt-2xl);
               font-weight: 700; margin: var(--pas-2) 0 0;
               font-variant-numeric: tabular-nums; }
 .tarif-prix small { font-size: var(--txt-sm); font-weight: 400;

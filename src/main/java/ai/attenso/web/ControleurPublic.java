@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,6 +72,19 @@ public class ControleurPublic {
 		this.liens = liens;
 		this.limiteur = limiteur;
 		this.adresses = adresses;
+	}
+
+	/**
+	 * Le nom de la clinique, pour la mention d'information du formulaire
+	 * (EC-04 : responsable de traitement).
+	 *
+	 * <p>Pas de limite de débit ici : c'est une lecture d'un nom déjà imprimé
+	 * sur l'affiche du comptoir, et la brider ferait échouer l'affichage de la
+	 * mention légale avant celui du formulaire — l'inverse de ce qu'on veut.
+	 */
+	@GetMapping("/t/{slug}/clinique")
+	public VueClinique clinique(@PathVariable String slug) {
+		return new VueClinique(cliniques.parSlug(slug).nom());
 	}
 
 	@PostMapping("/t/{slug}/tickets")

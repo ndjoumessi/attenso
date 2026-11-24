@@ -29,6 +29,35 @@ public class GestionnaireErreurs {
 				"Ce ticket n'existe pas, ou la journée est terminée.");
 	}
 
+	@ExceptionHandler(CarnetInconnu.class)
+	ProblemDetail carnetInconnu(CarnetInconnu erreur) {
+		return probleme(HttpStatus.NOT_FOUND, "Carnet introuvable",
+				"Ce QR code ne donne accès à aucun carnet.");
+	}
+
+	@ExceptionHandler(RendezVousInconnu.class)
+	ProblemDetail rendezVousInconnu(RendezVousInconnu erreur) {
+		// Même réponse qu'un rendez-vous annulé ou passé : distinguer les cas
+		// donnerait un oracle à qui essaie des références au hasard.
+		return probleme(HttpStatus.NOT_FOUND, "Rendez-vous introuvable",
+				"Ce lien ne correspond à aucun rendez-vous.");
+	}
+
+	@ExceptionHandler(ai.attenso.agenda.CreneauComplet.class)
+	ProblemDetail creneauComplet(ai.attenso.agenda.CreneauComplet erreur) {
+		// 409 et non 400 : la demande était valable, c'est l'état du monde qui
+		// a changé entre l'affichage et le clic. Le message invite donc à
+		// choisir une autre heure, pas à corriger une saisie.
+		return probleme(HttpStatus.CONFLICT, "Créneau complet",
+				"Ce créneau vient d'être pris. Choisissez une autre heure.");
+	}
+
+	@ExceptionHandler(ai.attenso.inscription.PalierInconnu.class)
+	ProblemDetail palierInconnu(ai.attenso.inscription.PalierInconnu erreur) {
+		return probleme(HttpStatus.BAD_REQUEST, "Formule inconnue",
+				"Choisissez l'une des formules proposées.");
+	}
+
 	@ExceptionHandler(TenantInconnu.class)
 	ProblemDetail cliniqueInconnue(TenantInconnu erreur) {
 		return probleme(HttpStatus.NOT_FOUND, "Clinique introuvable",

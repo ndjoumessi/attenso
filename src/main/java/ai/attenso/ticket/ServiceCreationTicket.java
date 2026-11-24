@@ -78,8 +78,46 @@ public class ServiceCreationTicket {
 		if (verification.verdict() == Verdict.INJOIGNABLE) {
 			throw new NumeroInjoignable(verification.detail());
 		}
-		return avecReprise(tenant, jour, e164, verification.valide(), Priorite.NORMALE, null,
+		return avecReprise(tenant, jour, e164, verification.valide(), Priorisation.NORMALE, null,
 				Origine.COMPTOIR);
+	}
+
+	/**
+	 * Ticket saisi par l'accueil pour quelqu'un qui n'a pas de smartphone.
+	 *
+	 * <p>Sans lui, ces clients-là n'existent pas dans la file : l'ASV devrait
+	 * les garder en tête, et le compteur de départs — donc l'argument de vente
+	 * — ne les verrait jamais. Le numéro reste facultatif : un téléphone sans
+	 * navigateur peut recevoir un SMS, pas de téléphone du tout en reçoit
+	 * aucun, et les deux cas sont courants.
+	 *
+	 * <p>Il n'est jamais refusé pour un numéro injoignable, et il ne compte pas
+	 * dans le numérateur du taux d'auto-enregistrement : il prouve justement
+	 * que le client ne s'est pas enregistré seul.
+	 */
+	public Ticket creerPourClient(Tenant tenant, LocalDate jour, String telephoneBrut,
+			UUID parUtilisateur) {
+		return creerPourClient(tenant, jour, telephoneBrut, Priorisation.NORMALE, parUtilisateur);
+	}
+
+	/**
+	 * Même geste, avec un motif de passage prioritaire choisi par l'accueil
+	 * (EF-407).
+	 *
+	 * <p>À la différence d'une urgence, <strong>aucun SMS correctif ne
+	 * part</strong>. EF-302 ne le prévoit que pour l'urgence, et c'est bien
+	 * vu : une personne âgée qui passe devant décale la salle de quelques
+	 * minutes, pas de la demi-heure qu'une urgence vitale impose. Prévenir
+	 * tout le monde à chaque priorité coûterait un SMS par ticket prévenu
+	 * pour une information que personne n'attend.
+	 */
+	public Ticket creerPourClient(Tenant tenant, LocalDate jour, String telephoneBrut,
+			Priorisation priorisation, UUID parUtilisateur) {
+		String e164 = vide(telephoneBrut) ? null
+				: NumeroTelephone.normaliser(telephoneBrut).orElseThrow(NumeroInvalide::new);
+		Boolean valide = e164 == null ? null : verifier(tenant, jour, e164).valide();
+		return avecReprise(tenant, jour, e164, valide, priorisation, parUtilisateur,
+				Origine.ACCUEIL);
 	}
 
 	/**
@@ -91,13 +129,13 @@ public class ServiceCreationTicket {
 	 */
 	public Ticket creerUrgence(Tenant tenant, LocalDate jour, String telephoneBrut,
 			UUID parUtilisateur) {
-		if (telephoneBrut == null || telephoneBrut.isBlank()) {
-			return avecReprise(tenant, jour, null, null, Priorite.URGENCE, parUtilisateur,
+		if (vide(telephoneBrut)) {
+			return avecReprise(tenant, jour, null, null, Priorisation.URGENCE, parUtilisateur,
 					Origine.ACCUEIL);
 		}
 		String e164 = NumeroTelephone.normaliser(telephoneBrut).orElseThrow(NumeroInvalide::new);
 		return avecReprise(tenant, jour, e164, verifier(tenant, jour, e164).valide(),
-				Priorite.URGENCE, parUtilisateur, Origine.ACCUEIL);
+				Priorisation.URGENCE, parUtilisateur, Origine.ACCUEIL);
 	}
 
 	/**
@@ -139,6 +177,10 @@ public class ServiceCreationTicket {
 		return resultat;
 	}
 
+	private static boolean vide(String texte) {
+		return texte == null || texte.isBlank();
+	}
+
 	private void refuserSiPlafondAtteint(Tenant tenant, LocalDate jour) {
 		if (tickets.countByTenantIdAndJour(tenant.id(), jour)
 				>= proprietes.ticketsMaxParJour()) {
@@ -154,11 +196,11 @@ public class ServiceCreationTicket {
 	}
 
 	private Ticket avecReprise(Tenant tenant, LocalDate jour, String e164, Boolean valide,
-			short priorite, UUID parUtilisateur, Origine origine) {
+			Priorisation priorisation, UUID parUtilisateur, Origine origine) {
 		DataIntegrityViolationException dernier = null;
 		for (int essai = 1; essai <= TENTATIVES; essai++) {
 			try {
-				return insertion.inserer(tenant, jour, e164, valide, priorite, parUtilisateur,
+				return insertion.inserer(tenant, jour, e164, valide, priorisation, parUtilisateur,
 						origine);
 			}
 			catch (DataIntegrityViolationException conflit) {

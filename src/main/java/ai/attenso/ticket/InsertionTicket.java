@@ -57,7 +57,8 @@ public class InsertionTicket {
 
 	@Transactional
 	public Ticket inserer(Tenant tenant, LocalDate jour, String telephoneE164,
-			Boolean telephoneValide, short priorite, UUID parUtilisateur, Origine origine) {
+			Boolean telephoneValide, Priorisation priorisation, UUID parUtilisateur,
+			Origine origine) {
 		// Plafond de dépense : chaque ticket déclenche un SMS payant et
 		// l'agrégateur n'en offre aucun. Compté dans la transaction, donc deux
 		// enregistrements simultanés ne le franchissent pas ensemble.
@@ -84,8 +85,8 @@ public class InsertionTicket {
 		}
 
 		Ticket nouveau = new Ticket(UUID.randomUUID(), tenant.id(), jour,
-				tickets.maxNumeroJour(tenant.id(), jour) + 1, references.suivante(), priorite,
-				allouerOrdre(tenant.id(), jour), telephoneE164, telephoneValide,
+				tickets.maxNumeroJour(tenant.id(), jour) + 1, references.suivante(), priorisation,
+				allouerOrdre(tenant.id(), jour), telephoneE164, telephoneValide, origine,
 				horloge.instant());
 
 		// Deux choses dans cette ligne, et aucune n'est accessoire.
@@ -105,7 +106,7 @@ public class InsertionTicket {
 		notifications.demanderTicket(tenant, ticket);
 		// Le ticket qui vient d'être créé est promu sans SMS « revenez » : la
 		// personne est au comptoir, et le SMS de ticket vient de partir.
-		file.reevaluer(tenant, jour, priorite == Priorite.URGENCE, Set.of(ticket.id()));
+		file.reevaluer(tenant, jour, priorisation.estUrgence(), Set.of(ticket.id()));
 		return ticket;
 	}
 

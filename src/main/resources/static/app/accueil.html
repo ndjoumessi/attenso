@@ -7,9 +7,6 @@
 <meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Attenso — accueil</title>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
@@ -64,6 +61,32 @@
   <ul class="file" id="liste-file" aria-live="polite" aria-relevant="additions text"></ul>
   <p id="file-vide" class="discret" hidden>Personne en salle pour le moment.</p>
 
+  <h2>Client sans smartphone</h2>
+  <p class="discret">
+    Pour quelqu'un qui n'a pas pu scanner le QR code. Le mobile est facultatif :
+    sans numéro, la personne reste dans la file mais devra être appelée à la voix.
+  </p>
+  <form id="formulaire-client">
+    <label for="tel-client">Mobile du propriétaire (facultatif)</label>
+    <input id="tel-client" name="telephone" type="tel" inputmode="tel"
+           autocomplete="off" placeholder="06 12 34 56 78">
+    <!-- EF-407 : la liste vient du serveur, elle est paramétrée par la
+         clinique. Le bloc reste caché tant qu'aucun motif n'est actif —
+         un menu à une seule entrée « Aucun » n'apprend rien à personne. -->
+    <p id="bloc-motif" hidden>
+      <label for="motif-client">Passage prioritaire</label>
+      <select id="motif-client" name="motif">
+        <option value="">Aucun — file normale</option>
+      </select>
+    </p>
+    <p><button class="b-principal b-pleine-largeur" type="submit" id="bouton-client">
+      Ajouter à la file
+    </button></p>
+    <p class="discret" id="client-indisponible" hidden>
+      Indisponible hors réseau : le numéro du ticket est attribué par le serveur.
+    </p>
+  </form>
+
   <h2>Urgence</h2>
   <p class="discret">
     Passe devant tout le monde. Les personnes déjà prévenues reçoivent
@@ -82,6 +105,76 @@
     </p>
   </form>
 
+  <h2>Rendez-vous du jour</h2>
+  <ul class="file" id="liste-agenda" aria-live="polite"></ul>
+  <p class="discret" id="agenda-vide" hidden>
+    Aucun rendez-vous aujourd'hui. Les clients réservent sur
+    <code id="lien-reservation"></code>.
+  </p>
+
+  <h2>Carnets de santé</h2>
+  <form id="formulaire-animal">
+    <label for="animal-nom">Nom de l'animal</label>
+    <input id="animal-nom" name="nom" required maxlength="80" autocomplete="off">
+    <label for="animal-espece">Espèce</label>
+    <input id="animal-espece" name="espece" required maxlength="40" autocomplete="off"
+           placeholder="Chat, chien…">
+    <label for="animal-tel">Mobile du propriétaire (facultatif)</label>
+    <input id="animal-tel" name="telephone" type="tel" inputmode="tel" autocomplete="off"
+           aria-describedby="aide-animal-tel">
+    <p class="discret" id="aide-animal-tel">
+      Conservé pour les rappels de vaccin — contrairement au numéro d'un
+      ticket, qui est effacé le lendemain.
+    </p>
+    <p><label class="case">
+      <input type="checkbox" id="animal-carnet" checked> Émettre un QR de carnet
+    </label></p>
+    <p><button type="submit" id="bouton-animal">Ajouter l'animal</button></p>
+  </form>
+  <ul class="file" id="liste-animaux"></ul>
+
+  <h2>Exploitation</h2>
+  <dl class="compteurs" id="bloc-bord">
+    <div class="compteur"><dt>Retard moyen (30 j)</dt><dd id="bord-retard">—</dd></div>
+    <div class="compteur"><dt>Visites (30 j)</dt><dd id="bord-visites">—</dd></div>
+    <div class="compteur"><dt>Heure de pointe</dt><dd id="bord-pointe">—</dd></div>
+  </dl>
+  <p class="discret" id="bloc-abonnement"></p>
+  <p class="message message--info" id="conseil-palier" role="status" hidden></p>
+  <p><button id="bouton-export-complet">Exporter toutes mes données (ZIP)</button></p>
+  <p class="discret">
+    Ces données sont les vôtres. L'export s'ouvre dans un tableur, et rien
+    n'oblige à nous prévenir pour l'emporter ailleurs.
+  </p>
+
+  <h2>Mesure du pilote</h2>
+  <p class="discret">
+    Combien de personnes sont entrées dans la clinique aujourd'hui, ticket ou
+    pas. Le système compte celles qui prennent un ticket ; il ne voit pas celles
+    qui franchissent la porte. Sans ce chiffre, le taux d'auto-enregistrement
+    n'est pas calculable, et le pilote ne peut pas être jugé.
+  </p>
+  <form id="formulaire-arrivants">
+    <label for="arrivants">Personnes entrées aujourd'hui</label>
+    <input id="arrivants" name="arrivants" type="number" inputmode="numeric"
+           min="0" max="2000" step="1" autocomplete="off">
+    <p><button type="submit" id="bouton-arrivants">Enregistrer le comptage</button></p>
+  </form>
+
+  <dl class="compteurs" id="bloc-mesure">
+    <div class="compteur">
+      <dt>Tickets pris seul</dt><dd id="mesure-comptoir">—</dd>
+    </div>
+    <div class="compteur">
+      <dt>Saisis par l'accueil</dt><dd id="mesure-accueil">—</dd>
+    </div>
+    <div class="compteur">
+      <dt>Auto-enregistrement</dt><dd id="mesure-taux">—</dd>
+    </div>
+  </dl>
+  <p class="message" id="mesure-zone" role="status" hidden></p>
+  <p><button id="bouton-export">Télécharger l'historique (CSV)</button></p>
+
   <p><button id="deconnexion">Se déconnecter</button></p>
 </main>
 
@@ -89,8 +182,9 @@
 import { appel, flux, etatLiaison, fileDActions } from '/app/attenso.js';
 import { disponible, lireEtat, poserEtat, vider as viderJournal } from '/app/journal.js';
 import {
-  ACTIONS, CIBLES, CLASSES, LIBELLES, avecEnAttente, signature,
+  ACTIONS, CIBLES, CLASSES, LIBELLES, avecEnAttente, deplacementsPour, signature,
 } from '/app/vue-file.js';
+import { duree } from '/app/formats.js';
 
 const CLE_JETON = 'attenso.jeton';
 const CLE_CLINIQUE = 'attenso.clinique';
@@ -174,6 +268,15 @@ function ligne(donnees) {
     urgence.textContent = 'urgence';
     etiquettes.append(urgence);
   }
+  // Le motif est affiché tel qu'il a été copié sur le ticket : quand
+  // quelqu'un passe devant, l'ASV doit pouvoir dire pourquoi, même si la
+  // clinique a renommé le motif depuis.
+  else if (donnees.motifPriorite) {
+    const motif = document.createElement('span');
+    motif.className = 'etiquette etiquette--prioritaire';
+    motif.textContent = donnees.motifPriorite;
+    etiquettes.append(motif);
+  }
   if (donnees.enAttenteEnvoi) {
     const attente = document.createElement('span');
     attente.className = 'etiquette etiquette--attente';
@@ -182,12 +285,36 @@ function ligne(donnees) {
       + 'retour du réseau.';
     etiquettes.append(attente);
   }
+  // EF-205 : quelqu'un a dit qu'il arrivait. Posé à côté de l'attente
+  // écoulée, c'est ce qui permet à l'ASV de patienter deux minutes plutôt que
+  // de marquer un absent.
+  if (donnees.signaleProcheLe) {
+    const arrive = document.createElement('span');
+    arrive.className = 'etiquette etiquette--arrive';
+    arrive.dataset.depuis = donnees.signaleProcheLe;
+    arrive.textContent = `arrive — ${duree(donnees.signaleProcheLe)}`;
+    arrive.title = "Le client a signalé qu'il était à quelques minutes. "
+      + "Sa place dans la file n'a pas changé.";
+    etiquettes.append(arrive);
+  }
   if (!donnees.joignable) {
     const muet = document.createElement('span');
     muet.className = 'etiquette etiquette--muet';
     muet.textContent = 'pas de SMS';
     muet.title = 'Aucun numéro joignable : à appeler à la voix.';
     etiquettes.append(muet);
+  }
+
+  // L'attente écoulée (EF-402) : c'est ce chiffre qui fait décider l'ASV
+  // d'insérer une urgence ou de rassurer quelqu'un. Le texte est posé ici
+  // puis réécrit par rafraichirDurees(), SANS reconstruire la ligne.
+  if (donnees.position > 0) {
+    const attendDepuis = document.createElement('span');
+    attendDepuis.className = 'etiquette etiquette--duree';
+    attendDepuis.dataset.depuis = donnees.creeLe;
+    attendDepuis.textContent = duree(donnees.creeLe);
+    attendDepuis.title = 'Temps écoulé depuis la prise du ticket.';
+    etiquettes.append(attendDepuis);
   }
 
   const actionsDisponibles = document.createElement('div');
@@ -207,9 +334,43 @@ function ligne(donnees) {
     actionsDisponibles.append(bouton);
   }
 
+  // Déplacement manuel (EF-405). Pas de passage par la file d'actions hors
+  // ligne : l'ordre est arbitré par le serveur, et deux tablettes qui
+  // réordonnent à l'aveugle pendant une panne produiraient deux files
+  // différentes, chacune persuadée d'avoir raison.
+  for (const [route, libelle, fleche] of deplacementsPour(donnees.statut)) {
+    const bouton = document.createElement('button');
+    bouton.className = 'b-deplacer';
+    bouton.textContent = fleche;
+    bouton.setAttribute('aria-label', `${libelle} le ticket ${donnees.numeroJour}`);
+    bouton.title = libelle;
+    bouton.disabled = liaison.enPanne();
+    bouton.addEventListener('click', () => {
+      bouton.disabled = true;
+      deplacer(donnees.id, route);
+    });
+    actionsDisponibles.append(bouton);
+  }
+
   corps.append(etiquettes, actionsDisponibles);
   item.append(numero, corps);
   return item;
+}
+
+/**
+ * Réécrit les durées affichées sans toucher à la structure de la liste.
+ *
+ * <p>Séparé du rendu exprès : faire entrer la minute courante dans la
+ * signature ferait reconstruire la liste toutes les soixante secondes, ce qui
+ * reprend le focus sous le doigt de l'ASV — précisément ce que le garde de
+ * signature existe pour éviter.
+ */
+function rafraichirDurees() {
+  for (const span of document.querySelectorAll('#liste-file [data-depuis]')) {
+    const texte = duree(span.dataset.depuis);
+    span.textContent = span.classList.contains('etiquette--arrive')
+      ? `arrive — ${texte}` : texte;
+  }
 }
 
 function peindre() {
@@ -227,16 +388,23 @@ function peindre() {
   // une tablette ça fait clignoter l'écran et ça reprend le focus sous le doigt
   // de l'ASV, pour rien la plupart du temps.
   const signature = JSON.stringify(vue.lignes.map((l) =>
-    [l.id, l.statut, l.position, l.enAttenteEnvoi, l.joignable, l.priorite]));
+    [l.id, l.statut, l.position, l.enAttenteEnvoi, l.joignable, l.priorite,
+     l.motifPriorite, l.signaleProcheLe]));
   if (signature !== signatureListe) {
     el('liste-file').replaceChildren(...vue.lignes.map(ligne));
     signatureListe = signature;
   }
   el('file-vide').hidden = vue.lignes.length > 0;
+  rafraichirDurees();
 
   const enPanne = liaison.enPanne();
   el('bouton-urgence').disabled = enPanne;
   el('urgence-indisponible').hidden = !enPanne;
+  el('bouton-client').disabled = enPanne;
+  el('client-indisponible').hidden = !enPanne;
+  for (const bouton of document.querySelectorAll('#liste-file .b-deplacer')) {
+    bouton.disabled = enPanne;
+  }
 
   if (enPanne) {
     const heure = new Date(derniereVue.enregistreLe)
@@ -295,6 +463,294 @@ el('formulaire-urgence').addEventListener('submit', async (evenement) => {
   }
 });
 
+// --- Déplacement manuel -------------------------------------------------
+async function deplacer(ticketId, route) {
+  try {
+    await appel(`/api/tickets/${ticketId}/${route}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    // La signature change (les rangs ont bougé), donc la liste se redessine
+    // et les boutons retrouvent leur état.
+    rafraichir();
+  } catch (echec) {
+    signaler(echec, "Serveur injoignable : l'ordre est arbitré par le serveur.");
+    rafraichir();
+  }
+}
+
+// --- Client sans smartphone ---------------------------------------------
+el('formulaire-client').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const champ = el('tel-client');
+  try {
+    await appel('/api/tickets/client', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      body: JSON.stringify({
+        telephone: champ.value.trim() || null,
+        motifId: el('motif-client').value || null,
+      }),
+    });
+    champ.value = '';
+    el('motif-client').value = '';
+    rafraichir();
+  } catch (echec) {
+    signaler(echec, 'Serveur injoignable : le ticket ne peut pas être créé '
+      + 'hors réseau.');
+  }
+});
+
+// --- Motifs de priorité (EF-407) ---------------------------------------
+async function chargerMotifs() {
+  try {
+    const motifs = await appel('/api/motifs', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    const liste = el('motif-client');
+    // On repart du choix vide : recharger ne doit pas empiler les options.
+    liste.replaceChildren(liste.options[0]);
+    for (const motif of motifs) {
+      const option = document.createElement('option');
+      option.value = motif.id;
+      option.textContent = motif.libelle;
+      liste.append(option);
+    }
+    el('bloc-motif').hidden = motifs.length === 0;
+  } catch (echec) {
+    // Sans la liste, le formulaire reste utilisable sans priorité : c'est le
+    // ticket qui compte, pas le motif.
+  }
+}
+
+// --- Mesure du pilote ---------------------------------------------------
+const ZONES = {
+  NON_MESURE: ['', "Saisissez le nombre d'arrivants pour obtenir le taux."],
+  INVALIDE: ['message--erreur', 'Sous 30 % : le cahier des charges demande '
+    + "d'arrêter ou de revoir le parcours."],
+  ZONE_GRISE: ['message--info', 'Entre 30 et 50 % : zone grise, à décider avec '
+    + 'la clinique.'],
+  VALIDE: ['message--info', 'Au-dessus de 50 % : le parcours fonctionne.'],
+};
+
+function peindreMesure(mesure) {
+  el('mesure-comptoir').textContent = mesure.ticketsComptoir;
+  el('mesure-accueil').textContent = mesure.ticketsAccueil;
+  // Un taux absent n'est pas un taux de zéro : afficher « 0 % » parce que
+  // personne n'a compté les arrivants ferait conclure à l'échec du pilote.
+  el('mesure-taux').textContent = mesure.taux === null ? '—' : `${mesure.taux} %`;
+  if (mesure.arrivantsTotal !== null && el('arrivants').value === '') {
+    el('arrivants').value = mesure.arrivantsTotal;
+  }
+  const [classe, texte] = ZONES[mesure.zone] ?? ['', ''];
+  const zone = el('mesure-zone');
+  zone.className = `message ${classe}`;
+  zone.textContent = texte;
+  zone.hidden = !texte;
+}
+
+async function relireMesure() {
+  try {
+    peindreMesure(await appel('/api/mesure', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    }));
+  } catch (echec) {
+    // Silencieux : la mesure est un à-côté, son indisponibilité ne doit pas
+    // couvrir le tableau d'un bandeau d'erreur.
+  }
+}
+
+el('formulaire-arrivants').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const champ = el('arrivants');
+  if (champ.value === '') return;
+  try {
+    peindreMesure(await appel('/api/mesure/arrivants', {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      body: JSON.stringify({ arrivants: Number(champ.value) }),
+    }));
+  } catch (echec) {
+    signaler(echec, 'Serveur injoignable : le comptage sera à ressaisir.');
+  }
+});
+
+// L'export passe par fetch et non par un lien : la route exige l'en-tête
+// Authorization, qu'un <a href> ne sait pas poser. Mettre le jeton dans l'URL
+// le ferait atterrir dans les journaux d'accès du serveur et des proxys.
+el('bouton-export').addEventListener('click', async () => {
+  const bouton = el('bouton-export');
+  bouton.disabled = true;
+  try {
+    const reponse = await fetch('/api/mesure/export.csv', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    if (!reponse.ok) throw new Error(`export refusé (${reponse.status})`);
+    const nom = (reponse.headers.get('Content-Disposition') ?? '')
+      .match(/filename="([^"]+)"/)?.[1] ?? 'attenso.csv';
+    const lien = document.createElement('a');
+    lien.href = URL.createObjectURL(await reponse.blob());
+    lien.download = nom;
+    lien.click();
+    URL.revokeObjectURL(lien.href);
+  } catch (echec) {
+    signaler(echec, "Export indisponible : serveur injoignable.");
+  } finally {
+    bouton.disabled = false;
+  }
+});
+
+// --- Agenda du jour (EF-905) -------------------------------------------
+async function relireAgenda() {
+  try {
+    const rdvs = await appel('/api/agenda', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    el('agenda-vide').hidden = rdvs.length > 0;
+    el('lien-reservation').textContent =
+      `${location.origin}/rdv/${localStorage.getItem(CLE_SLUG)}`;
+    el('liste-agenda').replaceChildren(...rdvs.map((rdv) => {
+      const item = document.createElement('li');
+      item.className = 'ligne' + (rdv.statut === 'ANNULE' ? ' ligne--clos' : '');
+      const heure = document.createElement('div');
+      heure.className = 'numero';
+      heure.innerHTML = `${rdv.heure.slice(0, 5)}<small>${
+        rdv.statut === 'ANNULE' ? 'annulé' : 'prévu'}</small>`;
+      const corps = document.createElement('div');
+      corps.textContent = rdv.motif || 'sans motif';
+      item.append(heure, corps);
+      return item;
+    }));
+  } catch { /* l'agenda est un à-côté : il ne doit pas masquer la file */ }
+}
+
+// --- Carnets (EF-906) ---------------------------------------------------
+async function relireAnimaux() {
+  try {
+    const animaux = await appel('/api/animaux', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    el('liste-animaux').replaceChildren(...animaux.map((animal) => {
+      const item = document.createElement('li');
+      item.className = 'ligne';
+      const corps = document.createElement('div');
+      const titre = document.createElement('strong');
+      titre.textContent = `${animal.nom} — ${animal.espece}`;
+      corps.append(titre);
+      if (animal.jetonCarnet) {
+        const lien = document.createElement('p');
+        lien.className = 'discret';
+        lien.textContent = `${location.origin}/carnet/${animal.jetonCarnet}`;
+        const revoquer = document.createElement('button');
+        revoquer.textContent = 'Révoquer le QR';
+        revoquer.title = 'Le QR actuel cessera de fonctionner et un nouveau sera émis.';
+        revoquer.addEventListener('click', async () => {
+          revoquer.disabled = true;
+          try {
+            await appel(`/api/animaux/${animal.id}/carnet/revoquer`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${jeton}` },
+              body: JSON.stringify({ reemettre: true }),
+            });
+            relireAnimaux();
+          } catch (echec) {
+            signaler(echec, 'Serveur injoignable : le QR n\'a PAS été révoqué.');
+            revoquer.disabled = false;
+          }
+        });
+        corps.append(lien, revoquer);
+      }
+      item.append(corps);
+      return item;
+    }));
+  } catch { /* idem : un à-côté */ }
+}
+
+el('formulaire-animal').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  try {
+    await appel('/api/animaux', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      body: JSON.stringify({
+        nom: el('animal-nom').value.trim(),
+        espece: el('animal-espece').value.trim(),
+        telephone: el('animal-tel').value.trim() || null,
+        avecCarnet: el('animal-carnet').checked,
+      }),
+    });
+    el('formulaire-animal').reset();
+    el('animal-carnet').checked = true;
+    relireAnimaux();
+  } catch (echec) {
+    signaler(echec, "Serveur injoignable : l'animal n'a pas été enregistré.");
+  }
+});
+
+// --- Exploitation (EF-704, EF-902, EF-904) ------------------------------
+const EUROS = (centimes) => (centimes / 100).toLocaleString('fr-FR',
+  { style: 'currency', currency: 'EUR' });
+
+async function relireExploitation() {
+  const entete = { headers: { 'Authorization': `Bearer ${jeton}` } };
+  try {
+    const bord = await appel('/api/tableau-de-bord', entete);
+    // « — » et non « 0 min » : un retard nul se lirait comme un service
+    // parfait alors que personne n'est encore passé.
+    el('bord-retard').textContent =
+      bord.retardMoyenMinutes === null ? '—' : `${bord.retardMoyenMinutes} min`;
+    el('bord-visites').textContent = bord.visites;
+    const pointe = bord.heuresDePointe.reduce(
+      (max, creneau) => (max && max.visites >= creneau.visites ? max : creneau), null);
+    el('bord-pointe').textContent = pointe ? `${pointe.heure}h` : '—';
+  } catch { /* à-côté */ }
+
+  try {
+    const facturation = await appel('/api/facturation', entete);
+    el('bloc-abonnement').textContent = facturation.palier === null
+      ? 'Pilote : aucun abonnement en cours.'
+      : `Formule ${facturation.palier} — ${facturation.visitesDuMois} visite(s) ce mois `
+        + `sur ${facturation.visitesIncluses} incluses`
+        + (facturation.depassementCentimes > 0
+          ? `, dépassement ${EUROS(facturation.depassementCentimes)}` : '.');
+    const conseil = el('conseil-palier');
+    conseil.textContent = facturation.palierConseille
+      ? `À ce rythme, la formule ${facturation.palierConseille} vous coûterait moins `
+        + `cher que le dépassement.`
+      : '';
+    conseil.hidden = !facturation.palierConseille;
+  } catch { /* à-côté */ }
+}
+
+el('bouton-export-complet').addEventListener('click', async () => {
+  const bouton = el('bouton-export-complet');
+  bouton.disabled = true;
+  try {
+    const reponse = await fetch('/api/export/complet', {
+      headers: { 'Authorization': `Bearer ${jeton}` },
+    });
+    if (!reponse.ok) throw new Error(`export refusé (${reponse.status})`);
+    const nom = (reponse.headers.get('Content-Disposition') ?? '')
+      .match(/filename="([^"]+)"/)?.[1] ?? 'attenso.zip';
+    const lien = document.createElement('a');
+    lien.href = URL.createObjectURL(await reponse.blob());
+    lien.download = nom;
+    lien.click();
+    URL.revokeObjectURL(lien.href);
+  } catch (echec) {
+    signaler(echec, 'Export indisponible : serveur injoignable.');
+  } finally {
+    bouton.disabled = false;
+  }
+});
+
+/** Un seul endroit pour écrire dans le bandeau d'erreur du tableau. */
+function signaler(echec, messageReseau) {
+  const zone = el('erreur-file');
+  zone.textContent = echec.reseau ? messageReseau : echec.message;
+  zone.hidden = false;
+}
+
 function annoncer({ restantes, abandons, erreur, commandes }) {
   if (commandes) commandesEnAttente = commandes;
   if (erreur) {
@@ -350,7 +806,20 @@ async function demarrer() {
   const slug = localStorage.getItem(CLE_SLUG);
   fermerFlux = flux(`/api/ecran/${encodeURIComponent(slug)}/flux`, rafraichir);
   rafraichir();
+  relireMesure();
+  chargerMotifs();
+  relireAgenda();
+  relireAnimaux();
+  relireExploitation();
+  // Plus lent que la file : ces chiffres bougent à l'échelle de la journée,
+  // pas de la minute, et chaque appel est une requête d'agrégation.
+  setInterval(relireExploitation, 300000);
+  setInterval(relireAgenda, 120000);
   setInterval(rafraichir, 30000); // filet de sécurité si le SSE meurt sans le dire
+  setInterval(relireMesure, 120000);
+  // Les durées avancent toutes seules : sans cette horloge, « 3 min » resterait
+  // affiché un quart d'heure quand rien d'autre ne bouge dans la file.
+  setInterval(rafraichirDurees, 20000);
 }
 
 if (jeton) { demarrer(); } else { el('vue-connexion').hidden = false; }

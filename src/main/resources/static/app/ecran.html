@@ -6,9 +6,6 @@
 <meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Salle d'attente</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
@@ -17,22 +14,25 @@
   <p class="mur-appel" id="appel">—</p>
   <p class="mur-legende" id="legende">en attente</p>
   <p class="mur-prochains" id="prochains"></p>
+  <p class="mur-attente" id="attente"></p>
 </main>
 
 <script type="module">
 import { appel, flux } from '/app/attenso.js';
-import { appel as grandNombre, legende, prochains } from '/app/vue-ecran.js';
+import { appel as grandNombre, attente, legende, prochains } from '/app/vue-ecran.js';
 
-const slug = location.pathname.split('/').filter(Boolean)[1];
+// Le jeton d'appairage, lu dans l'URL collée une fois dans le téléviseur.
+const jeton = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
 
 async function relire() {
   try {
-    const vue = await appel(`/api/ecran/${encodeURIComponent(slug)}`);
+    const vue = await appel(`/api/ecran/jeton/${encodeURIComponent(jeton)}`);
     el('clinique').textContent = vue.clinique;
     el('appel').textContent = grandNombre(vue);
     el('legende').textContent = legende(vue);
     el('prochains').textContent = prochains(vue);
+    el('attente').textContent = attente(vue);
   } catch {
     // L'écran garde son dernier affichage : un mur vide inquiète la salle plus
     // qu'un numéro de trente secondes.
@@ -40,7 +40,7 @@ async function relire() {
 }
 
 relire();
-flux(`/api/ecran/${encodeURIComponent(slug)}/flux`, relire);
+flux(`/api/ecran/jeton/${encodeURIComponent(jeton)}/flux`, relire);
 setInterval(relire, 20000);
 </script>
 </body>

@@ -16,7 +16,8 @@ class StatutTest {
 
 	private Ticket neuf() {
 		return new Ticket(UUID.randomUUID(), UUID.randomUUID(), LocalDate.of(2026, 11, 23), 1,
-				"abcdefghijkl", Priorite.NORMALE, 1_000_000L, "+33612345678", true, MIDI);
+				"abcdefghijkl", Priorisation.NORMALE, 1_000_000L, "+33612345678", true,
+				Origine.COMPTOIR, MIDI);
 	}
 
 	@Test

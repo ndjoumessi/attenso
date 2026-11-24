@@ -125,6 +125,17 @@ public abstract class SocleIntegration {
 		return id;
 	}
 
+	/**
+	 * Appaire un écran de salle d'attente et rend son jeton (EF-601).
+	 *
+	 * <p>Séparé de la création : une clinique sans écran est le cas par défaut
+	 * (EF-603), et les tests doivent pouvoir l'exprimer sans rien passer.
+	 */
+	protected String appairerEcran(UUID tenantId, String jeton) {
+		proprietaire.update("UPDATE tenant SET jeton_ecran = ? WHERE id = ?", jeton, tenantId);
+		return jeton;
+	}
+
 	protected String statutNotification(UUID tenantId, String type) {
 		return proprietaire.queryForObject("""
 				SELECT statut FROM notification WHERE tenant_id = ? AND type = ?

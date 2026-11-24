@@ -1,9 +1,11 @@
 package ai.attenso.web;
 
+import ai.attenso.priorite.MotifDao;
 import ai.attenso.securite.PrincipalPersonnel;
 import ai.attenso.tenant.ServiceTenant;
 import ai.attenso.tenant.Tenant;
 import ai.attenso.ticket.LigneFile;
+import ai.attenso.ticket.Priorisation;
 import ai.attenso.ticket.ServiceCreationTicket;
 import ai.attenso.ticket.ServiceEstimation;
 import ai.attenso.ticket.ServiceFile;
@@ -44,12 +46,15 @@ public class ControleurFile {
 
 	private final ServiceEstimation estimation;
 
+	private final MotifDao motifs;
+
 	public ControleurFile(ServiceTenant cliniques, ServiceFile file,
-			ServiceCreationTicket creation, ServiceEstimation estimation) {
+			ServiceCreationTicket creation, ServiceEstimation estimation, MotifDao motifs) {
 		this.cliniques = cliniques;
 		this.file = file;
 		this.creation = creation;
 		this.estimation = estimation;
+		this.motifs = motifs;
 	}
 
 	@GetMapping("/file")
@@ -104,6 +109,61 @@ public class ControleurFile {
 			@RequestHeader(value = "Idempotency-Key", required = false) UUID commande) {
 		Tenant clinique = cliniques.parId(principal.tenantId());
 		return vue(file.annule(clinique, id, principal.utilisateurId(), commande));
+	}
+
+	/**
+	 * EF-108 — un client sans smartphone. Sans ce bouton, l'ASV le garde en
+	 * tête : il n'est pas dans la file, il ne compte pas dans les départs, et
+	 * la mesure du pilote l'ignore.
+	 */
+	@PostMapping("/tickets/client")
+	public ReponseTransition pourClient(@AuthenticationPrincipal PrincipalPersonnel principal,
+			@Valid @RequestBody DemandeClient demande) {
+		Tenant clinique = cliniques.parId(principal.tenantId());
+		return vue(creation.creerPourClient(clinique, file.jourCourant(clinique),
+				demande.telephone(), priorisation(clinique, demande.motifId()),
+				principal.utilisateurId()));
+	}
+
+	/** Les motifs de priorité que la clinique a paramétrés (EF-407). */
+	@GetMapping("/motifs")
+	public List<VueMotif> motifs(@AuthenticationPrincipal PrincipalPersonnel principal) {
+		return motifs.actifs(principal.tenantId()).stream()
+				.map(m -> new VueMotif(m.id(), m.libelle(), m.rang()))
+				.toList();
+	}
+
+	/**
+	 * Un motif inconnu ou désactivé rend la file NORMALE plutôt qu'une erreur.
+	 *
+	 * <p>Le cas réel : la clinique vient de retirer un motif, et la tablette
+	 * de l'accueil affiche encore l'ancienne liste. Refuser le ticket ferait
+	 * perdre le client pour un réglage ; l'enregistrer sans priorité le garde
+	 * dans la file, et l'ASV peut toujours le remonter à la main.
+	 */
+	private Priorisation priorisation(Tenant clinique, UUID motifId) {
+		if (motifId == null) {
+			return Priorisation.NORMALE;
+		}
+		return motifs.actifParId(clinique.id(), motifId)
+				.map(m -> Priorisation.motivee(m.rang(), m.libelle()))
+				.orElse(Priorisation.NORMALE);
+	}
+
+	/** EF-405 — remonter un ticket d'un rang dans sa bande de priorité. */
+	@PostMapping("/tickets/{id}/monter")
+	public ReponseTransition monter(@AuthenticationPrincipal PrincipalPersonnel principal,
+			@PathVariable UUID id) {
+		Tenant clinique = cliniques.parId(principal.tenantId());
+		return vue(file.deplacer(clinique, id, true, principal.utilisateurId()));
+	}
+
+	/** EF-405 — le descendre d'un rang. */
+	@PostMapping("/tickets/{id}/descendre")
+	public ReponseTransition descendre(@AuthenticationPrincipal PrincipalPersonnel principal,
+			@PathVariable UUID id) {
+		Tenant clinique = cliniques.parId(principal.tenantId());
+		return vue(file.deplacer(clinique, id, false, principal.utilisateurId()));
 	}
 
 	@PostMapping("/tickets/urgence")

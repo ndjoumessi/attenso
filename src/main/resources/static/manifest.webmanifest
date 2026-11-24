@@ -7,5 +7,24 @@
   "background_color": "#fbfbfa",
   "theme_color": "#1b5e4b",
   "lang": "fr",
-  "icons": []
+  "icons": [
+    {
+      "src": "/app/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icone-masquable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

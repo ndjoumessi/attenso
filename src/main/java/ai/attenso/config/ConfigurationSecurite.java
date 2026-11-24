@@ -34,6 +34,32 @@ public class ConfigurationSecurite {
 						.permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/suivi/**", "/api/ecran/**").permitAll()
+						// EF-205 : le client signale son approche. La référence du
+						// lien vaut justificatif, comme pour la consultation —
+						// c'est le même objet, avec la même portée d'une journée.
+						.requestMatchers(HttpMethod.POST, "/api/suivi/*/jarrive").permitAll()
+						// EF-307 : l'abonnement push, même justificatif que le reste
+						// de la page de suivi — la référence du lien.
+						.requestMatchers(HttpMethod.POST, "/api/suivi/*/push").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/push/cle").permitAll()
+						// EF-901 : inscription autonome. Point d'entrée anonyme qui
+						// CRÉE des comptes : la limite de débit du contrôleur est
+						// serrée, et c'est elle qui porte la protection.
+						.requestMatchers(HttpMethod.POST, "/api/inscription").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/inscription/paliers").permitAll()
+						.requestMatchers("/inscription").permitAll()
+						// EF-905 : la réservation en ligne est publique par
+						// construction — c'est un client qui n'a pas de compte.
+						// La référence opaque du rendez-vous vaut ensuite
+						// justificatif, comme celle d'un ticket.
+						.requestMatchers(HttpMethod.GET, "/api/rendez-vous/**").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/rendez-vous/*/annuler")
+						.permitAll()
+						.requestMatchers("/rdv/**", "/r/**").permitAll()
+						// EF-906 : le QR du carnet est collé sur une médaille. Le
+						// jeton vaut justificatif, et il est révocable.
+						.requestMatchers(HttpMethod.GET, "/api/carnet/**").permitAll()
+						.requestMatchers("/carnet/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/connexion").permitAll()
 						.requestMatchers("/actuator/health").permitAll()
 						// Tout le reste est le back-office de la clinique.

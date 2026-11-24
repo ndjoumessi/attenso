@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { ACTIONS, CIBLES, CLASSES, LIBELLES, OUVERTS, actionsPour, avecEnAttente, signature }
+import { ACTIONS, CIBLES, CLASSES, DEPLACEMENTS, LIBELLES, OUVERTS, actionsPour,
+  avecEnAttente, deplacementsPour, signature }
   from '../../main/resources/static/app/vue-file.js';
 
 const STATUT_JAVA = 'src/main/java/ai/attenso/ticket/Statut.java';
@@ -149,5 +150,57 @@ describe('la signature d\'affichage', () => {
     const apres = signature(
       avecEnAttente(tableau, [{ ticketId: 'b', cible: 'APPELE' }]).lignes);
     assert.notEqual(avant, apres, 'sinon le tableau ne se redessinerait pas');
+  });
+});
+
+describe("l'annulation d'un ticket", () => {
+  it("n'est offerte qu'en attente", () => {
+    // Annuler un ticket déjà appelé effacerait un départ du compteur, donc
+    // l'argument de vente. Après un appel, le geste juste est « parti ».
+    assert.ok(actionsPour('EN_ATTENTE').some(([route]) => route === 'annule'));
+    for (const statut of ['PREVENU', 'APPELE', 'ABSENT', 'EN_CONSULTATION']) {
+      assert.ok(!actionsPour(statut).some(([route]) => route === 'annule'),
+        `annuler ne doit pas être proposé en ${statut}`);
+    }
+  });
+
+  it("n'est jamais le bouton principal", () => {
+    const [, , classe] = actionsPour('EN_ATTENTE').find(([r]) => r === 'annule');
+    assert.notEqual(classe, 'b-principal');
+  });
+
+  it('a son état cible, sinon l\'affichage optimiste perdrait la ligne', () => {
+    assert.equal(CIBLES.annule, 'ANNULE');
+  });
+});
+
+describe('le déplacement manuel dans la file', () => {
+  it('est proposé sur tous les états ouverts', () => {
+    for (const statut of OUVERTS) {
+      assert.equal(deplacementsPour(statut).length, 2,
+        `monter/descendre doivent être proposés en ${statut}`);
+    }
+  });
+
+  it("n'est pas proposé sur un ticket clos, qui n'a plus de place dans la file", () => {
+    for (const statut of ['TERMINE', 'PARTI', 'ANNULE', 'EN_CONSULTATION']) {
+      assert.deepEqual(deplacementsPour(statut), []);
+    }
+  });
+
+  it("ne passe pas par la machine à états : aucune cible d'affichage optimiste", () => {
+    // Si un jour un déplacement entrait dans CIBLES, il serait rejoué comme
+    // une transition par la file hors ligne et corromprait l'ordre.
+    for (const [route] of DEPLACEMENTS) {
+      assert.equal(CIBLES[route], undefined);
+      assert.equal(ACTIONS[route], undefined);
+    }
+  });
+
+  it('porte une flèche visible, pas seulement un libellé lu par le lecteur d\'écran', () => {
+    for (const [, libelle, fleche] of DEPLACEMENTS) {
+      assert.ok(libelle.length > 0);
+      assert.ok(fleche.length > 0);
+    }
   });
 });

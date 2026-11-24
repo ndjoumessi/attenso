@@ -6,13 +6,11 @@
 <meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
 <title>Prendre son tour</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;650;700;750&family=Source+Sans+3:wght@400;600;650&display=swap">
 <link rel="stylesheet" href="/app/attenso.css">
 </head>
 <body>
 <main class="enveloppe enveloppe--etroite">
+  <p class="discret" id="clinique"></p>
   <h1>Prendre son tour</h1>
   <p class="discret">
     Laissez votre mobile : vous recevrez un message quand ce sera presque à vous,
@@ -32,6 +30,29 @@
     <p><button class="b-principal b-pleine-largeur" type="submit" id="valider">
       J'y suis
     </button></p>
+
+    <!-- EC-04 : information du client AVANT la saisie, et non derrière un
+         lien. Trois choses et trois seulement, parce qu'une mention que
+         personne ne lit ne vaut pas mieux que pas de mention : qui est
+         responsable, pourquoi, combien de temps. Le responsable est la
+         CLINIQUE et non l'éditeur — c'est elle qui décide de la finalité,
+         donc son nom vient du serveur. -->
+    <details class="mention">
+      <summary>Vos données</summary>
+      <p>
+        <strong id="responsable">Cette clinique</strong> est responsable de ce
+        traitement. Votre numéro de mobile sert uniquement à vous prévenir que
+        votre tour approche, aujourd'hui, dans cette clinique. Il est
+        <strong>effacé le lendemain</strong> ; votre numéro de ticket est
+        conservé sans votre numéro, pour le décompte des passages.
+      </p>
+      <p>
+        Aucun compte n'est créé, aucune donnée de santé n'est collectée, et
+        rien n'est utilisé à des fins commerciales. Pour y accéder, les
+        corriger ou les faire effacer avant le lendemain, adressez-vous à
+        l'accueil.
+      </p>
+    </details>
   </form>
 
   <section id="resultat" aria-live="polite" hidden>
@@ -50,6 +71,17 @@ import { minutes } from '/app/formats.js';
 
 const slug = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
+
+// Le nom de la clinique, chargé avant tout : il nomme le responsable de
+// traitement dans la mention d'information (EC-04). S'il manque, la mention
+// reste vraie mais générique — on n'affiche jamais un faux nom.
+appel(`/t/${encodeURIComponent(slug)}/clinique`)
+  .then(({ nom }) => {
+    el('clinique').textContent = nom;
+    el('responsable').textContent = nom;
+    document.title = `${nom} — prendre son tour`;
+  })
+  .catch(() => { /* mention générique : « Cette clinique » */ });
 
 el('formulaire').addEventListener('submit', async (evenement) => {
   evenement.preventDefault();

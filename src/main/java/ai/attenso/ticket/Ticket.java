@@ -60,9 +60,35 @@ public class Ticket {
 	@Column(nullable = false)
 	private long ordre;
 
+	/**
+	 * Le libellé du motif de priorité, copié au moment de la création
+	 * (EF-407). {@code null} pour la file normale et pour l'urgence.
+	 */
+	@Column(name = "motif_priorite", updatable = false)
+	private String motifPriorite;
+
+	/**
+	 * Quand le client a signalé qu'il approchait (EF-205). {@code null} tant
+	 * qu'il ne l'a pas fait.
+	 *
+	 * <p>Ce champ ne pèse <strong>jamais</strong> sur l'ordre de la file : il
+	 * s'affiche, il ne décide pas. Un bouton qui ferait passer devant donnerait
+	 * à chacun le moyen de doubler les autres depuis son téléphone.
+	 */
+	@Column(name = "signale_proche_le")
+	private Instant signaleProcheLe;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private Statut statut;
+
+	/**
+	 * Qui a créé ce ticket. Conservé parce que c'est le numérateur du taux
+	 * d'auto-enregistrement, le chiffre qui décide du projet en semaine 10.
+	 */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, updatable = false)
+	private Origine origine;
 
 	@Column(name = "cree_le", nullable = false)
 	private Instant creeLe;
@@ -83,19 +109,43 @@ public class Ticket {
 	}
 
 	public Ticket(UUID id, UUID tenantId, LocalDate jour, int numeroJour, String reference,
-			short priorite, long ordre, String telephoneE164, Boolean telephoneValide,
-			Instant maintenant) {
+			Priorisation priorisation, long ordre, String telephoneE164, Boolean telephoneValide,
+			Origine origine, Instant maintenant) {
 		this.id = id;
 		this.tenantId = tenantId;
 		this.jour = jour;
 		this.numeroJour = numeroJour;
 		this.reference = reference;
-		this.priorite = priorite;
+		this.priorite = priorisation.rang();
+		this.motifPriorite = priorisation.motif();
 		this.ordre = ordre;
 		this.telephoneE164 = telephoneE164;
 		this.telephoneValide = telephoneValide;
+		this.origine = origine;
 		this.statut = Statut.EN_ATTENTE;
 		this.creeLe = maintenant;
+	}
+
+	public String motifPriorite() {
+		return motifPriorite;
+	}
+
+	public Instant signaleProcheLe() {
+		return signaleProcheLe;
+	}
+
+	/**
+	 * Le client dit qu'il arrive (EF-205).
+	 *
+	 * <p>Idempotent par écrasement : re-signaler rafraîchit l'horodatage, ce
+	 * qui est le comportement utile — « il l'a dit il y a deux minutes » vaut
+	 * mieux que « il l'a dit il y a une heure ». Aucune transition d'état, donc
+	 * rien à valider : un client peut annoncer son approche quel que soit son
+	 * état, y compris après avoir été marqué absent, et c'est précisément le
+	 * cas où l'information a le plus de valeur.
+	 */
+	public void signalerProche(Instant maintenant) {
+		this.signaleProcheLe = maintenant;
 	}
 
 	// --- Transitions ----------------------------------------------------
@@ -180,6 +230,10 @@ public class Ticket {
 
 	public String reference() {
 		return reference;
+	}
+
+	public Origine origine() {
+		return origine;
 	}
 
 	public String telephoneE164() {

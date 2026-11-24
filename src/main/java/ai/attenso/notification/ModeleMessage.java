@@ -33,4 +33,28 @@ public final class ModeleMessage {
 		return "%s : une urgence est passée avant vous, comptez environ %d min de plus. %s"
 				.formatted(clinique, minutes, lien);
 	}
+
+	/**
+	 * Rappel la veille d'un rendez-vous (EF-905).
+	 *
+	 * <p>L'heure est écrite « 14h30 » et non « 14:30 » : les deux tiennent dans
+	 * l'alphabet GSM, mais la première se lit sans ambiguïté sur un écran de
+	 * téléphone basique où les deux-points se confondent avec un point.
+	 */
+	public static String rappelRendezVous(String clinique, String heure, String lien) {
+		return "%s : rappel de votre rendez-vous demain à %s. Annuler : %s"
+				.formatted(clinique, heure, lien);
+	}
+
+	/**
+	 * Rappel de vaccin (EF-906).
+	 *
+	 * <p>Pas de nom d'animal ni de nom de vaccin dans le SMS : il s'affiche sur
+	 * un écran verrouillé, et le carnet est derrière le lien, lui-même
+	 * révocable.
+	 */
+	public static String rappelVaccin(String clinique, String lien) {
+		return "%s : un rappel de vaccin arrive à échéance. Détails : %s"
+				.formatted(clinique, lien);
+	}
 }

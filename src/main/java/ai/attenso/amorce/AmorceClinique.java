@@ -2,6 +2,8 @@ package ai.attenso.amorce;
 
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.NomExpediteur;
+import ai.attenso.priorite.MotifDao;
+import ai.attenso.securite.GenerateurReference;
 import ai.attenso.tenant.TenantRepository;
 import ai.attenso.utilisateur.Role;
 import java.util.UUID;
@@ -36,12 +38,19 @@ public class AmorceClinique implements ApplicationRunner {
 
 	private final PasswordEncoder motsDePasse;
 
+	private final GenerateurReference jetons;
+
+	private final MotifDao motifs;
+
 	public AmorceClinique(ProprietesAmorce proprietes, TenantRepository tenants,
-			JdbcTemplate jdbc, PasswordEncoder motsDePasse) {
+			JdbcTemplate jdbc, PasswordEncoder motsDePasse, GenerateurReference jetons,
+			MotifDao motifs) {
 		this.proprietes = proprietes;
 		this.tenants = tenants;
 		this.jdbc = jdbc;
 		this.motsDePasse = motsDePasse;
+		this.jetons = jetons;
+		this.motifs = motifs;
 	}
 
 	@Override
@@ -64,13 +73,17 @@ public class AmorceClinique implements ApplicationRunner {
 		}
 
 		UUID tenantId = UUID.randomUUID();
+		// Pas d'écran demandé, pas de jeton : la clinique n'en a tout
+		// simplement pas, et ses routes d'écran répondront 404 (EF-603).
+		String jetonEcran = proprietes.avecEcran() ? jetons.suivante() : null;
 		jdbc.update("""
 				INSERT INTO tenant (id, slug, nom, fuseau, delai_grace_secondes,
-				                    seuil_prevenir, actif, expediteur_sms)
-				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?)
+				                    seuil_prevenir, actif, expediteur_sms, jeton_ecran)
+				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?, ?)
 				""", tenantId, proprietes.slug(), proprietes.nom(),
 				proprietes.delaiGraceSecondes() == null ? 180 : proprietes.delaiGraceSecondes(),
-				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir(), expediteur);
+				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir(), expediteur,
+				jetonEcran);
 
 		// La table « utilisateur » EST soumise au RLS : sans tenant lié, la
 		// politique refuserait l'insertion (WITH CHECK compare à NULL). Il faut
@@ -82,7 +95,21 @@ public class AmorceClinique implements ApplicationRunner {
 				""", UUID.randomUUID(), tenantId, proprietes.email().trim().toLowerCase(),
 				motsDePasse.encode(proprietes.motDePasse()), Role.ACCUEIL.name()));
 
-		JOURNAL.info("clinique « {} » installée — comptoir : /t/{} — écran : /ecran/{}",
-				proprietes.nom(), proprietes.slug(), proprietes.slug());
+		// Les deux motifs de priorité du cahier des charges (EF-407). La
+		// clinique les renomme, les désactive ou en ajoute ensuite.
+		ContexteTenant.executer(tenantId, () -> motifs.poserLesDefauts(tenantId));
+
+		JOURNAL.info("clinique « {} » installée — comptoir : /t/{}",
+				proprietes.nom(), proprietes.slug());
+		if (jetonEcran != null) {
+			// Journalisé une fois, à l'installation : c'est l'URL qu'on colle
+			// dans le navigateur du téléviseur. Elle n'est plus jamais
+			// affichée ailleurs, et la retrouver demande un accès à la base.
+			JOURNAL.info("écran de salle d'attente appairé — /ecran/{}", jetonEcran);
+		}
+		else {
+			JOURNAL.info("clinique « {} » sans écran de salle d'attente : aucune route "
+					+ "d'écran ne répondra pour elle", proprietes.slug());
+		}
 	}
 }

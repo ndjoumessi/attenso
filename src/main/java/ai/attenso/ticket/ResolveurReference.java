@@ -21,7 +21,16 @@ public class ResolveurReference {
 	}
 
 	public Optional<UUID> tenantDe(String reference) {
-		return jdbc.query("SELECT attenso_tenant_de_reference(?)",
+		return parFonction("SELECT attenso_tenant_de_reference(?)", reference);
+	}
+
+	/** Le pendant pour une référence de rendez-vous (EF-905). */
+	public Optional<UUID> tenantDeRendezVous(String reference) {
+		return parFonction("SELECT attenso_tenant_de_reference_rdv(?)", reference);
+	}
+
+	private Optional<UUID> parFonction(String requete, String reference) {
+		return jdbc.query(requete,
 				ligne -> ligne.next() ? Optional.ofNullable(ligne.getObject(1, UUID.class))
 						: Optional.<UUID>empty(),
 				reference);

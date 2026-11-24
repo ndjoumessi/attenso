@@ -93,7 +93,8 @@ public class ServiceFile {
 			int position = ouverts.indexOf(ticket) + 1;
 			lignes.add(new LigneFile(ticket.id(), ticket.numeroJour(), position, ticket.statut(),
 					ticket.priorite(), ticket.creeLe(), ticket.appeleLe(),
-					ticket.graceExpireLe(), ticket.joignable()));
+					ticket.graceExpireLe(), ticket.joignable(), ticket.motifPriorite(),
+					ticket.signaleProcheLe()));
 		}
 		return lignes;
 	}
@@ -156,6 +157,59 @@ public class ServiceFile {
 		reinsererApresLeSuivant(ticket);
 		tickets.save(ticket);
 		journalAcces.consigner(tenant.id(), null, ticket.id(), "ABSENT_GRACE", null);
+		reevaluer(tenant, ticket.jour(), false);
+		return ticket;
+	}
+
+	/**
+	 * Déplace un ticket d'un rang dans sa bande de priorité.
+	 *
+	 * <p>Un rang vers le haut ou vers le bas, et non un glisser-déposer : sur
+	 * une tablette posée sur un comptoir, par quelqu'un qui tient un animal, un
+	 * glissement rate sa cible une fois sur trois. Deux boutons ne ratent
+	 * jamais.
+	 *
+	 * <p>L'échange porte sur les valeurs d'{@code ordre}, pas sur une
+	 * renumérotation : le reste de la file ne bouge pas, et les numéros
+	 * affichés aux clients restent les leurs.
+	 *
+	 * @param versLeHaut vrai pour faire passer le ticket plus tôt.
+	 */
+	@Transactional
+	public Ticket deplacer(Tenant tenant, UUID ticketId, boolean versLeHaut,
+			UUID parUtilisateur) {
+		Ticket ticket = exiger(tenant.id(), ticketId);
+		if (!ticket.statut().ouvert()) {
+			throw new TransitionInterdite(ticketId, ticket.statut(), ticket.statut());
+		}
+		List<Ticket> bande = tickets
+				.findByTenantIdAndJourAndStatutInOrderByPrioriteDescOrdreAsc(tenant.id(),
+						ticket.jour(), Statut.OUVERTS)
+				.stream()
+				.filter(t -> t.priorite() == ticket.priorite())
+				.toList();
+
+		int place = -1;
+		for (int i = 0; i < bande.size(); i++) {
+			if (bande.get(i).id().equals(ticketId)) {
+				place = i;
+			}
+		}
+		int cible = versLeHaut ? place - 1 : place + 1;
+		if (place < 0 || cible < 0 || cible >= bande.size()) {
+			// Déjà en bout de sa bande : rien à faire, et surtout pas d'erreur.
+			// L'ASV a appuyé sur un bouton, elle n'a pas commis de faute.
+            return ticket;
+		}
+
+		Ticket voisin = bande.get(cible);
+		long sien = ticket.ordre();
+		ticket.deplacer(voisin.ordre());
+		voisin.deplacer(sien);
+		tickets.save(ticket);
+		tickets.save(voisin);
+		journalAcces.consigner(tenant.id(), parUtilisateur, ticketId,
+				versLeHaut ? "MONTER" : "DESCENDRE", null);
 		reevaluer(tenant, ticket.jour(), false);
 		return ticket;
 	}

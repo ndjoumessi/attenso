@@ -11,7 +11,7 @@
 // « 2 personnes devant vous » alors que c'est le tour du client depuis dix
 // minutes est pire que pas d'écran du tout.
 
-const CACHE = 'attenso-coquille-v4';
+const CACHE = 'attenso-coquille-v9';
 
 const COQUILLE = [
   '/app/jetons.css',
@@ -27,6 +27,9 @@ const COQUILLE = [
   '/app/comptoir.html',
   '/app/ecran.html',
   '/manifest.webmanifest',
+  // Les icônes font partie de la coquille : sans elles, une notification
+  // poussée arrivant hors réseau s'afficherait sans sa vignette.
+  '/app/icone-192.png',
 ];
 
 /**
@@ -79,4 +82,38 @@ self.addEventListener('fetch', (evenement) => {
       throw panne;
     }
   })());
+});
+
+// --- EF-307 : notifications poussées -------------------------------------
+//
+// Le corps arrive déchiffré ici : l'opérateur de push (Google, Apple, Mozilla)
+// n'a relayé qu'un bloc chiffré pour cet abonnement, qu'il ne peut pas lire.
+// C'est ce qui rend acceptable d'y mettre le numéro de ticket.
+self.addEventListener('push', (evenement) => {
+  // Un push sans contenu existe : certains opérateurs en envoient pour
+  // réveiller le worker. On affiche quand même quelque chose, parce qu'une
+  // notification promise et non affichée fait révoquer l'autorisation par le
+  // navigateur.
+  const corps = evenement.data ? evenement.data.text() : "C'est bientôt à vous.";
+  evenement.waitUntil(self.registration.showNotification('Attenso', {
+    body: corps,
+    // Un tag unique : deux messages successifs remplacent l'ancien au lieu
+    // d'empiler des bulles que personne ne lira.
+    tag: 'attenso-tour',
+    renotify: true,
+    icon: '/app/icone-192.png',
+    badge: '/app/icone-192.png',
+  }));
+});
+
+// Toucher la notification rouvre la page de suivi déjà ouverte si elle existe,
+// plutôt que d'en empiler une seconde.
+self.addEventListener('notificationclick', (evenement) => {
+  evenement.notification.close();
+  evenement.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    .then((fenetres) => {
+      const suivi = fenetres.find((f) => f.url.includes('/s/'));
+      if (suivi) return suivi.focus();
+      return self.clients.openWindow('/');
+    }));
 });

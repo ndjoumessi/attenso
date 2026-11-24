@@ -9,5 +9,7 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 
 	Optional<Tenant> findBySlugAndActifTrue(String slug);
 
+	Optional<Tenant> findByJetonEcranAndActifTrue(String jetonEcran);
+
 	List<Tenant> findAllByActifTrue();
 }

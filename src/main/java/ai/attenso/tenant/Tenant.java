@@ -44,6 +44,16 @@ public class Tenant {
 	@Column(name = "expediteur_sms")
 	private String expediteurSms;
 
+	/**
+	 * Jeton d'appairage de l'écran de salle d'attente (EF-601).
+	 *
+	 * <p>{@code null} quand la clinique n'a pas d'écran, ce qui est le cas par
+	 * défaut : c'est cette colonne qui porte EF-603. Sans jeton, les routes de
+	 * l'écran répondent 404 — il n'y a rien à désactiver, rien n'est activé.
+	 */
+	@Column(name = "jeton_ecran")
+	private String jetonEcran;
+
 	@Column(nullable = false)
 	private boolean actif;
 
@@ -94,6 +104,15 @@ public class Tenant {
 
 	public boolean peutEnvoyerDesSms() {
 		return NomExpediteur.valide(expediteurSms);
+	}
+
+	public String jetonEcran() {
+		return jetonEcran;
+	}
+
+	/** EF-603 : l'écran n'existe que si la clinique en possède un. */
+	public boolean aUnEcran() {
+		return jetonEcran != null && !jetonEcran.isBlank();
 	}
 
 	public boolean actif() {

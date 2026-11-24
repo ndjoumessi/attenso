@@ -40,13 +40,52 @@ public class NotificationDao {
 				coutEstime) == 1;
 	}
 
+	/**
+	 * La même chose pour un rendez-vous (EF-905) ou un rappel de vaccin
+	 * (EF-906), qui ne sont attachés à aucun ticket.
+	 *
+	 * <p>Deux méthodes plutôt qu'un paramètre nullable de plus : chacune porte
+	 * son propre {@code ON CONFLICT}, et les deux index partiels qui tiennent
+	 * le plafond d'EF-303 sont ainsi nommés à l'endroit où ils agissent.
+	 */
+	/** Le pendant pour un rappel de vaccin (EF-906). */
+	public boolean creerPourVaccination(UUID id, UUID tenantId, UUID vaccinationId,
+			TypeNotification type, Canal canal, String destinataire, String corps,
+			BigDecimal coutEstime) {
+		return jdbc.update("""
+				INSERT INTO notification
+				  (id, tenant_id, vaccination_id, type, canal, destinataire, corps, statut,
+				   cout_centimes)
+				VALUES (?, ?, ?, ?, ?, ?, ?, 'EN_ATTENTE', ?)
+				ON CONFLICT (vaccination_id, type) WHERE vaccination_id IS NOT NULL
+				DO NOTHING
+				""", id, tenantId, vaccinationId, type.name(), canal.name(), destinataire,
+				corps, coutEstime) == 1;
+	}
+
+	public boolean creerPourRendezVous(UUID id, UUID tenantId, UUID rendezVousId,
+			TypeNotification type, Canal canal, String destinataire, String corps,
+			BigDecimal coutEstime) {
+		return jdbc.update("""
+				INSERT INTO notification
+				  (id, tenant_id, rendez_vous_id, type, canal, destinataire, corps, statut,
+				   cout_centimes)
+				VALUES (?, ?, ?, ?, ?, ?, ?, 'EN_ATTENTE', ?)
+				ON CONFLICT (rendez_vous_id, type) WHERE rendez_vous_id IS NOT NULL
+				DO NOTHING
+				""", id, tenantId, rendezVousId, type.name(), canal.name(), destinataire,
+				corps, coutEstime) == 1;
+	}
+
 	public List<ANotifier> enAttente(UUID tenantId, int limite) {
 		return jdbc.query("""
-				SELECT id, destinataire, corps, tentatives FROM notification
+				SELECT id, ticket_id, canal, destinataire, corps, tentatives FROM notification
 				WHERE tenant_id = ? AND statut = 'EN_ATTENTE' AND tentatives < ?
 				ORDER BY cree_le LIMIT ?
 				""",
 				(ligne, i) -> new ANotifier(ligne.getObject("id", UUID.class),
+						ligne.getObject("ticket_id", UUID.class),
+						Canal.valueOf(ligne.getString("canal")),
 						ligne.getString("destinataire"), ligne.getString("corps"),
 						ligne.getInt("tentatives")),
 				tenantId, TENTATIVES_MAX, limite);
@@ -68,11 +107,19 @@ public class NotificationDao {
 	 * sans expéditeur enregistré », où réessayer ne servirait à rien tant que
 	 * la validation opérateur n'est pas faite.
 	 */
-	public void abandonner(UUID tenantId, String motif) {
+	/**
+	 * Abandonne les notifications en attente d'un seul canal.
+	 *
+	 * <p>Le canal est devenu un paramètre le jour où le push est arrivé : une
+	 * clinique dont l'expéditeur SMS n'est pas encore enregistré doit voir ses
+	 * SMS abandonnés, pas ses notifications push, qui ne dépendent d'aucune
+	 * validation opérateur.
+	 */
+	public void abandonner(UUID tenantId, Canal canal, String motif) {
 		jdbc.update("""
 				UPDATE notification SET statut = 'ECHEC', erreur = ?
-				WHERE tenant_id = ? AND statut = 'EN_ATTENTE'
-				""", motif, tenantId);
+				WHERE tenant_id = ? AND statut = 'EN_ATTENTE' AND canal = ?
+				""", motif, tenantId, canal.name());
 	}
 
 	public void marquerEchec(UUID id, String erreur) {

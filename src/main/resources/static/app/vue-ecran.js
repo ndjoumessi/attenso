@@ -27,3 +27,17 @@ export function legende(vue) {
 export function prochains(vue) {
   return vue.prochains.length > 0 ? `ensuite : ${vue.prochains.join(' · ')}` : '';
 }
+
+/**
+ * L'attente estimée affichée au mur (EF-602).
+ *
+ * <p>Exprimée par personne et non en total : « environ 15 min par personne »
+ * laisse chacun faire son compte à partir de son propre numéro, alors qu'un
+ * total serait faux pour tout le monde sauf le dernier. Rien n'est affiché
+ * quand la salle est vide — un chiffre sans file n'informe de rien.
+ */
+export function attente(vue) {
+  if (vue.appeles.length === 0 && vue.prochains.length === 0) return '';
+  const minutes = vue.attenteMedianeMinutes;
+  return minutes > 0 ? `environ ${minutes} min par personne` : '';
+}

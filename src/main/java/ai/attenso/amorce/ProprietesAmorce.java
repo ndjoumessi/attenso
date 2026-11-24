@@ -12,9 +12,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param expediteurSms nom affiché par les SMS de cette clinique, 3 à 11
  *        caractères alphanumériques. Laissé vide tant que les opérateurs ne
  *        l'ont pas validé : la clinique fonctionne alors sans SMS.
+ * @param avecEcran     {@code true} seulement si la clinique possède déjà un
+ *        écran en salle d'attente (EF-603). Un jeton d'appairage est alors
+ *        tiré et l'URL du mur journalisée. Sans lui, aucune route d'écran ne
+ *        répond pour cette clinique.
  */
 @ConfigurationProperties("attenso.amorce")
 public record ProprietesAmorce(boolean active, String slug, String nom, String email,
 		String motDePasse, Integer seuilPrevenir, Integer delaiGraceSecondes,
-		String expediteurSms) {
+		String expediteurSms, boolean avecEcran) {
 }

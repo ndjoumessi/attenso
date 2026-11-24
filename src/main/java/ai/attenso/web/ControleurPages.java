@@ -23,10 +23,41 @@ public class ControleurPages {
 		return "forward:/app/comptoir.html";
 	}
 
-	/** L'écran du mur. */
-	@GetMapping("/ecran/{slug}")
+	/**
+	 * L'écran du mur, appairé par jeton et non par slug (EF-601).
+	 *
+	 * <p>L'URL est collée une fois dans le navigateur du téléviseur, puis
+	 * oubliée : sa longueur n'a aucune importance, contrairement au lien du
+	 * SMS. Rien n'est vérifié ici — la page est statique ; c'est l'appel de
+	 * données qu'elle fait ensuite qui porte le contrôle.
+	 */
+	@GetMapping("/ecran/{jeton}")
 	String ecran() {
 		return "forward:/app/ecran.html";
+	}
+
+	/** Le carnet de santé, ouvert par le QR de la médaille (EF-906). */
+	@GetMapping("/carnet/{jeton}")
+	String carnet() {
+		return "forward:/app/carnet.html";
+	}
+
+	/** La réservation en ligne (EF-905). */
+	@GetMapping("/rdv/{slug}")
+	String reservation() {
+		return "forward:/app/reservation.html";
+	}
+
+	/** Le rendez-vous d'un client : consulter, annuler (EF-905). */
+	@GetMapping("/r/{reference}")
+	String rendezVous() {
+		return "forward:/app/rendez-vous.html";
+	}
+
+	/** L'inscription autonome (EF-901). */
+	@GetMapping("/inscription")
+	String inscription() {
+		return "forward:/app/inscription.html";
 	}
 
 	/** La vitrine publique. */

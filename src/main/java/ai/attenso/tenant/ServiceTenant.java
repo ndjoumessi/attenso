@@ -23,6 +23,22 @@ public class ServiceTenant {
 		return tenants.findBySlugAndActifTrue(slug).orElseThrow(() -> new TenantInconnu(slug));
 	}
 
+	/**
+	 * Résout la clinique depuis le jeton d'appairage de son écran (EF-601).
+	 *
+	 * <p>L'erreur rendue est la même que pour un slug inconnu — un 404 — et
+	 * c'est voulu : distinguer « jeton faux » de « clinique sans écran »
+	 * dirait à qui sonde laquelle des deux il vient de toucher.
+	 */
+	@Transactional(readOnly = true)
+	public Tenant parJetonEcran(String jeton) {
+		if (jeton == null || jeton.isBlank()) {
+			throw new TenantInconnu("écran");
+		}
+		return tenants.findByJetonEcranAndActifTrue(jeton)
+				.orElseThrow(() -> new TenantInconnu("écran"));
+	}
+
 	@Transactional(readOnly = true)
 	public Tenant parId(UUID id) {
 		return tenants.findById(id)

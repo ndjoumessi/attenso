@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<title>Prendre rendez-vous</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite" id="bloc-choix">
+  <p class="discret" id="clinique"></p>
+  <h1>Prendre rendez-vous</h1>
+
+  <div class="message message--erreur" id="erreur" role="alert" hidden></div>
+  <p class="discret" id="chargement">Chargement des créneaux…</p>
+  <p class="discret" id="aucun" hidden>
+    Aucun créneau n'est ouvert pour le moment. Vous pouvez venir sans
+    rendez-vous : la clinique fonctionne en flux libre.
+  </p>
+
+  <div id="jours" aria-live="polite"></div>
+</main>
+
+<main class="enveloppe enveloppe--etroite" id="bloc-formulaire" hidden>
+  <p class="discret" id="rappel-creneau"></p>
+  <h1>Confirmer</h1>
+  <form id="formulaire">
+    <label for="telephone">Votre mobile (facultatif)</label>
+    <input id="telephone" name="telephone" type="tel" inputmode="tel"
+           autocomplete="tel" placeholder="06 12 34 56 78" aria-describedby="aide-tel">
+    <p class="discret" id="aide-tel">
+      Sert uniquement à vous rappeler la veille. Sans numéro, le rendez-vous
+      est pris quand même.
+    </p>
+
+    <label for="motif">Motif (facultatif)</label>
+    <input id="motif" name="motif" maxlength="120" autocomplete="off"
+           placeholder="Vaccin, contrôle…">
+
+    <div class="message message--erreur" id="erreur-form" role="alert" hidden></div>
+    <p><button class="b-principal b-pleine-largeur" type="submit" id="valider">
+      Confirmer le rendez-vous
+    </button></p>
+    <p><button type="button" id="retour">Choisir une autre heure</button></p>
+  </form>
+</main>
+
+<main class="enveloppe enveloppe--etroite" id="bloc-confirme" hidden>
+  <h1>C'est noté</h1>
+  <div class="carte-suivi">
+    <p class="discret">Votre rendez-vous</p>
+    <p class="rang" id="confirme-heure">—</p>
+    <p class="attente" id="confirme-jour"></p>
+  </div>
+  <p><a class="bouton b-pleine-largeur" id="lien-rdv">Voir ou annuler</a></p>
+  <p class="discret">
+    Gardez ce lien : il vous permet d'annuler sans appeler la clinique.
+  </p>
+</main>
+
+<script type="module">
+import { appel } from '/app/attenso.js';
+
+const slug = location.pathname.split('/').filter(Boolean)[1];
+const el = (id) => document.getElementById(id);
+let choisi = null;
+
+const JOUR = new Intl.DateTimeFormat('fr-FR',
+  { weekday: 'long', day: 'numeric', month: 'long' });
+const dateDe = (jour) => JOUR.format(new Date(jour + 'T12:00:00'));
+// Midi et non minuit : à minuit, un décalage de fuseau d'une heure fait
+// afficher la veille.
+
+appel(`/t/${encodeURIComponent(slug)}/clinique`)
+  .then(({ nom }) => {
+    el('clinique').textContent = nom;
+    document.title = `${nom} — prendre rendez-vous`;
+  })
+  .catch(() => { /* la page reste utilisable sans le nom */ });
+
+try {
+  const creneaux = await appel(`/t/${encodeURIComponent(slug)}/creneaux`);
+  el('chargement').hidden = true;
+  if (creneaux.length === 0) {
+    el('aucun').hidden = false;
+  } else {
+    // Groupés par jour : une liste à plat de 300 créneaux est illisible.
+    const parJour = new Map();
+    for (const creneau of creneaux) {
+      if (!parJour.has(creneau.jour)) parJour.set(creneau.jour, []);
+      parJour.get(creneau.jour).push(creneau);
+    }
+    el('jours').replaceChildren(...[...parJour].map(([jour, liste]) => {
+      const bloc = document.createElement('section');
+      const titre = document.createElement('h2');
+      titre.textContent = dateDe(jour);
+      const heures = document.createElement('div');
+      heures.className = 'actions';
+      for (const creneau of liste) {
+        const bouton = document.createElement('button');
+        bouton.textContent = creneau.heure.slice(0, 5);
+        bouton.addEventListener('click', () => {
+          choisi = creneau;
+          el('rappel-creneau').textContent =
+            `${dateDe(jour)} à ${creneau.heure.slice(0, 5)}`;
+          el('bloc-choix').hidden = true;
+          el('bloc-formulaire').hidden = false;
+        });
+        heures.append(bouton);
+      }
+      bloc.append(titre, heures);
+      return bloc;
+    }));
+  }
+} catch (echec) {
+  el('chargement').hidden = true;
+  el('erreur').textContent = echec.reseau
+    ? 'Serveur injoignable : réessayez dans un instant.' : echec.message;
+  el('erreur').hidden = false;
+}
+
+el('retour').addEventListener('click', () => {
+  el('bloc-formulaire').hidden = true;
+  el('bloc-choix').hidden = false;
+});
+
+el('formulaire').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const bouton = el('valider');
+  bouton.disabled = true;
+  el('erreur-form').hidden = true;
+  try {
+    const rdv = await appel(`/t/${encodeURIComponent(slug)}/rendez-vous`, {
+      method: 'POST',
+      body: JSON.stringify({
+        jour: choisi.jour,
+        heure: choisi.heure.slice(0, 5),
+        telephone: el('telephone').value.trim() || null,
+        motif: el('motif').value.trim() || null,
+      }),
+    });
+    el('confirme-heure').textContent = rdv.heure.slice(0, 5);
+    el('confirme-jour').textContent = dateDe(rdv.jour);
+    el('lien-rdv').href = `/r/${rdv.reference}`;
+    el('bloc-formulaire').hidden = true;
+    el('bloc-confirme').hidden = false;
+  } catch (echec) {
+    // Un créneau pris entre l'affichage et le clic est le cas NORMAL : le
+    // message invite à choisir autre chose, pas à réessayer.
+    el('erreur-form').textContent = echec.reseau
+      ? "Serveur injoignable : le rendez-vous n'est pas pris." : echec.message;
+    el('erreur-form').hidden = false;
+    bouton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
