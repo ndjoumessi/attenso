@@ -60,3 +60,30 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- L'affiche du comptoir, à l'impression -----------------------------
+ * Ce qui ne s'exprime pas en classes utilitaires : la règle @page, et la
+ * chaîne de hauteurs qui permet à la feuille de remplir la page et de
+ * centrer son contenu. Un pourcentage sur un parent en hauteur automatique
+ * ne vaut rien, et la chaîne ne souffre pas un maillon manquant — oubliée
+ * au premier essai, elle laissait l'affiche collée en haut avec un tiers de
+ * page blanche dessous. */
+@media print {
+  @page {
+    size: A4 portrait;
+    /* Les marges de la feuille, pas celles du navigateur : la zone de
+       silence du QR est dans le SVG, mais une affiche collée au mur se
+       regarde mieux sans texte au ras du bord. */
+    margin: 14mm;
+  }
+  html, body, .feuille-page { height: 100%; }
+  .feuille-qr-impression {
+    /* En millimètres, et non en pourcentage : c'est la seule dimension de
+       cette page qui décide si un téléphone lit le code ou non. Mesuré,
+       zone de silence comprise : 37 modules de côté pour « /t/cerisiers »,
+       49 pour le slug le plus long que l'inscription puisse fabriquer. À
+       100 mm, le pire cas donne des carrés de 2,0 mm. */
+    width: 100mm !important;
+    height: 100mm !important;
+  }
+}

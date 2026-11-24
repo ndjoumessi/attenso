@@ -24,6 +24,14 @@ const PAGES = [
   { nom: 'vitrine', composant: 'Vitrine', source: 'src/vitrine.jsx', hydrate: false },
   { nom: 'comptoir', composant: 'Comptoir', source: 'src/comptoir.jsx', hydrate: true },
   { nom: 'suivi', composant: 'Suivi', source: 'src/suivi.jsx', hydrate: true },
+  { nom: 'inscription', composant: 'Inscription', source: 'src/inscription.jsx', hydrate: true },
+  { nom: 'reinitialisation', composant: 'Reinitialisation', source: 'src/reinitialisation.jsx', hydrate: true },
+  { nom: 'mentions', composant: 'Mentions', source: 'src/mentions.jsx', hydrate: true },
+  { nom: 'cgv', composant: 'Page', source: 'src/cgv.jsx', hydrate: true },
+  { nom: 'carnet', composant: 'Carnet', source: 'src/carnet.jsx', hydrate: true },
+  { nom: 'rendez-vous', composant: 'RendezVous', source: 'src/rendez-vous.jsx', hydrate: true },
+  { nom: 'reservation', composant: 'Reservation', source: 'src/reservation.jsx', hydrate: true },
+  { nom: 'confidentialite', composant: 'Page', source: 'src/confidentialite.jsx', hydrate: true },
 ];
 
 // configFile FAUX : sans ça, cette construction hérite des entrées HTML du

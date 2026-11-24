@@ -60,6 +60,15 @@ node_modules/
 /src/main/resources/static/app/ecran.html
 /src/main/resources/static/app/comptoir.html
 /src/main/resources/static/app/suivi.html
+/src/main/resources/static/app/inscription.html
+/src/main/resources/static/app/reinitialisation.html
+/src/main/resources/static/app/affiche.html
+/src/main/resources/static/app/mentions.html
+/src/main/resources/static/app/cgv.html
+/src/main/resources/static/app/confidentialite.html
+/src/main/resources/static/app/carnet.html
+/src/main/resources/static/app/rendez-vous.html
+/src/main/resources/static/app/reservation.html
 /src/main/resources/static/app/assets/
 /front/node_modules/
 /front/.ssr/
