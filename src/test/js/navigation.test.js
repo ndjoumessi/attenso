@@ -244,42 +244,83 @@ describe('la barre reste une barre à libellés', () => {
    * son icône. Les deux sont donc vérifiés séparément.
    */
   describe('les contrôles de la barre tiennent le plancher tactile', () => {
-    const HAUTEUR = /\bcible(-min)?\b|\bh-1[12]\b|\bsize-1[12]\b/;
-    const LARGEUR = /w-\(--cible(-min)?\)|\bw-1[12]\b|\bsize-1[12]\b|\bw-full\b/;
+    /**
+     * Les classes acceptées, en JETONS EXACTS et non en motifs.
+     *
+     * <p>C'est la correction d'une faille de cette garde même, et de la classe
+     * de défaut qu'elle prétend interdire, retournée contre elle. La hauteur
+     * était cherchée par `/\bcible(-min)?\b/`, qui correspond AUSSI à la
+     * sous-chaîne `--cible-min` du jeton de largeur `w-(--cible-min)` — `-`
+     * n'étant pas un caractère de mot, `\b` s'ancre à l'intérieur. Une croix
+     * écrite `absolute w-(--cible-min)` SANS la classe `cible-min` passait donc
+     * les deux assertions : large de 44 px, haute de 16, garde au vert.
+     *
+     * <p>Comparer des jetons découpés rend la faille impossible par
+     * construction, au lieu de la repousser derrière un motif plus fin.
+     */
+    const HAUTEUR = ['cible', 'cible-min', 'h-11', 'h-12', 'size-11', 'size-12'];
+    const LARGEUR = ['w-(--cible)', 'w-(--cible-min)', 'w-11', 'w-12', 'size-11', 'size-12'];
 
-    /** Le source d'une fonction ou d'un élément, depuis son ancre. */
-    const depuis = (fichier, ancre) => {
+    /** La croix occupe `right-4` + sa largeur depuis le bord droit. */
+    const PLACE_DE_LA_CROIX = 16 + 44;
+
+    /**
+     * Les classes du premier `className` qui suit l'ancre, en jetons.
+     *
+     * <p>Découpe sur les espaces : seul un jeton entier compte, donc
+     * `w-(--cible-min)` ne peut pas se faire passer pour `cible-min`.
+     */
+    function classesApres(fichier, ancre) {
       const source = sansCommentaires(lire(fichier));
       const i = source.indexOf(ancre);
       assert.notEqual(i, -1, `${ancre} introuvable dans ${fichier}`);
-      return source.slice(i);
-    };
+      const m = source.slice(i).match(/className=(?:"([^"]*)"|\{`([^`]*)`\})/);
+      assert.ok(m, `aucun className après ${ancre} dans ${fichier}`);
+      return (m[1] ?? m[2]).split(/\s+/).filter(Boolean);
+    }
+
+    const tient = (classes, acceptees) => classes.some((c) => acceptees.includes(c));
 
     it('le bouton qui ouvre le tiroir', () => {
-      assert.match(depuis('front/src/accueil/Barre.jsx', 'export function OuvreLaBarre'),
-        HAUTEUR, 'le bouton « Menu » n\'annonce aucune cible tactile');
+      const classes = classesApres('front/src/accueil/Barre.jsx', 'export function OuvreLaBarre');
+      assert.ok(tient(classes, HAUTEUR),
+        `le bouton « Menu » n'annonce aucune cible tactile : ${classes.join(' ')}`);
     });
 
     it('chaque entrée de la barre', () => {
-      assert.match(depuis('front/src/accueil/Barre.jsx', 'function Entree'),
-        HAUTEUR, 'une entrée de navigation sous le plancher tactile');
+      const classes = classesApres('front/src/accueil/Barre.jsx', 'function Entree');
+      assert.ok(tient(classes, HAUTEUR),
+        `une entrée de navigation sous le plancher tactile : ${classes.join(' ')}`);
     });
 
-    it('la croix du tiroir, en hauteur ET en largeur', () => {
-      const sheet = sansCommentaires(lire('front/src/ui/sheet.jsx'));
-      const bouton = sheet.match(/<SheetPrimitive\.Close\s+className="([^"]*)"/);
-      assert.ok(bouton, 'bouton de fermeture du tiroir introuvable');
-      assert.match(bouton[1], HAUTEUR, 'croix sans hauteur de cible');
-      assert.match(bouton[1], LARGEUR,
-        'croix sans largeur de cible : elle reste large comme son icône, '
-        + 'donc plus étroite que la pellicule qu\'elle remplace');
+    it('la croix du tiroir tient sa HAUTEUR', () => {
+      const classes = classesApres('front/src/ui/sheet.jsx', '<SheetPrimitive.Close');
+      assert.ok(tient(classes, HAUTEUR),
+        `croix sans hauteur de cible : ${classes.join(' ')}`);
+    });
+
+    it('la croix du tiroir tient sa LARGEUR', () => {
+      // Séparée de la hauteur, et pas seulement par goût : tant que les deux
+      // vivaient dans un même `it`, la hauteur rougissait d'abord et la largeur
+      // n'était jamais éprouvée seule. `cible-min` ne pose qu'un `min-height`,
+      // donc c'est bien cette assertion-ci qui tient le défaut d'origine.
+      const classes = classesApres('front/src/ui/sheet.jsx', '<SheetPrimitive.Close');
+      assert.ok(tient(classes, LARGEUR),
+        'croix sans largeur de cible : elle reste large comme son icône, donc '
+        + `plus étroite que la pellicule qu'elle remplace : ${classes.join(' ')}`);
     });
 
     it('et l\'en-tête de la barre dégage la place de cette croix', () => {
-      // Sinon un nom de clinique long passe sous un contrôle devenu large.
-      const entete = depuis('front/src/accueil/Barre.jsx', '<SidebarHeader');
-      assert.match(entete.slice(0, 200), /pr-1[5-9]|pr-2[0-9]|pr-\[/,
-        'le dégagement ne couvre plus la croix élargie');
+      // La GÉOMÉTRIE, pas une liste de classes permises : `pr-15` valait 60 px
+      // et ne laissait pas un pixel de marge, mais satisfaisait le motif
+      // `pr-1[5-9]` d'avant.
+      const classes = classesApres('front/src/accueil/Barre.jsx', '<SidebarHeader');
+      const pas = classes.map((c) => c.match(/^'?pr-(\d+)'?$/)).find(Boolean);
+      assert.ok(pas, `aucun dégagement à droite sur l'en-tête : ${classes.join(' ')}`);
+      const px = Number(pas[1]) * 4;
+      assert.ok(px > PLACE_DE_LA_CROIX,
+        `pr-${pas[1]} = ${px}px : la croix occupe ${PLACE_DE_LA_CROIX}px depuis le `
+        + 'bord, il en faut davantage');
     });
   });
 
