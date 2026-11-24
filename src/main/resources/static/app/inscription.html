@@ -106,10 +106,9 @@
 
 <script type="module">
 import { appel } from '/app/attenso.js';
+import { euros } from '/app/formats.js';
 
 const el = (id) => document.getElementById(id);
-const euros = (centimes) => (centimes / 100).toLocaleString('fr-FR',
-  { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 });
 
 // Les prix viennent du serveur : les recopier ici ferait diverger la page de
 // la facture dès le premier changement de tarif.

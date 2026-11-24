@@ -63,16 +63,11 @@
 
 <script type="module">
 import { appel } from '/app/attenso.js';
+import { grouperParJour, heureCourte, jourLong } from '/app/formats.js';
 
 const slug = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
 let choisi = null;
-
-const JOUR = new Intl.DateTimeFormat('fr-FR',
-  { weekday: 'long', day: 'numeric', month: 'long' });
-const dateDe = (jour) => JOUR.format(new Date(jour + 'T12:00:00'));
-// Midi et non minuit : à minuit, un décalage de fuseau d'une heure fait
-// afficher la veille.
 
 appel(`/t/${encodeURIComponent(slug)}/clinique`)
   .then(({ nom }) => {
@@ -87,25 +82,19 @@ try {
   if (creneaux.length === 0) {
     el('aucun').hidden = false;
   } else {
-    // Groupés par jour : une liste à plat de 300 créneaux est illisible.
-    const parJour = new Map();
-    for (const creneau of creneaux) {
-      if (!parJour.has(creneau.jour)) parJour.set(creneau.jour, []);
-      parJour.get(creneau.jour).push(creneau);
-    }
-    el('jours').replaceChildren(...[...parJour].map(([jour, liste]) => {
+    el('jours').replaceChildren(...[...grouperParJour(creneaux)].map(([jour, liste]) => {
       const bloc = document.createElement('section');
       const titre = document.createElement('h2');
-      titre.textContent = dateDe(jour);
+      titre.textContent = jourLong(jour);
       const heures = document.createElement('div');
       heures.className = 'actions';
       for (const creneau of liste) {
         const bouton = document.createElement('button');
-        bouton.textContent = creneau.heure.slice(0, 5);
+        bouton.textContent = heureCourte(creneau.heure);
         bouton.addEventListener('click', () => {
           choisi = creneau;
           el('rappel-creneau').textContent =
-            `${dateDe(jour)} à ${creneau.heure.slice(0, 5)}`;
+            `${jourLong(jour)} à ${heureCourte(creneau.heure)}`;
           el('bloc-choix').hidden = true;
           el('bloc-formulaire').hidden = false;
         });
@@ -137,13 +126,13 @@ el('formulaire').addEventListener('submit', async (evenement) => {
       method: 'POST',
       body: JSON.stringify({
         jour: choisi.jour,
-        heure: choisi.heure.slice(0, 5),
+        heure: heureCourte(choisi.heure),
         telephone: el('telephone').value.trim() || null,
         motif: el('motif').value.trim() || null,
       }),
     });
-    el('confirme-heure').textContent = rdv.heure.slice(0, 5);
-    el('confirme-jour').textContent = dateDe(rdv.jour);
+    el('confirme-heure').textContent = heureCourte(rdv.heure);
+    el('confirme-jour').textContent = jourLong(rdv.jour);
     el('lien-rdv').href = `/r/${rdv.reference}`;
     el('bloc-formulaire').hidden = true;
     el('bloc-confirme').hidden = false;

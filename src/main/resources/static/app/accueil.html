@@ -184,7 +184,7 @@ import { disponible, lireEtat, poserEtat, vider as viderJournal } from '/app/jou
 import {
   ACTIONS, CIBLES, CLASSES, LIBELLES, avecEnAttente, deplacementsPour, signature,
 } from '/app/vue-file.js';
-import { duree } from '/app/formats.js';
+import { duree, euros, heureCourte, jourLong } from '/app/formats.js';
 
 const CLE_JETON = 'attenso.jeton';
 const CLE_CLINIQUE = 'attenso.clinique';
@@ -380,8 +380,7 @@ function peindre() {
   el('compteur-file').textContent = vue.enFile;
   el('compteur-departs').textContent = vue.departs;
   el('compteur-mediane').textContent = `${vue.attenteMedianeMinutes} min`;
-  el('date-jour').textContent = new Date(vue.jour + 'T00:00:00')
-    .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  el('date-jour').textContent = jourLong(vue.jour);
 
   // La liste n'est reconstruite que si elle a changé. Sans ce garde, le
   // rafraîchissement de sécurité la redessine toutes les trente secondes : sur
@@ -614,7 +613,7 @@ async function relireAgenda() {
       item.className = 'ligne' + (rdv.statut === 'ANNULE' ? ' ligne--clos' : '');
       const heure = document.createElement('div');
       heure.className = 'numero';
-      heure.innerHTML = `${rdv.heure.slice(0, 5)}<small>${
+      heure.innerHTML = `${heureCourte(rdv.heure)}<small>${
         rdv.statut === 'ANNULE' ? 'annulé' : 'prévu'}</small>`;
       const corps = document.createElement('div');
       corps.textContent = rdv.motif || 'sans motif';
@@ -688,8 +687,6 @@ el('formulaire-animal').addEventListener('submit', async (evenement) => {
 });
 
 // --- Exploitation (EF-704, EF-902, EF-904) ------------------------------
-const EUROS = (centimes) => (centimes / 100).toLocaleString('fr-FR',
-  { style: 'currency', currency: 'EUR' });
 
 async function relireExploitation() {
   const entete = { headers: { 'Authorization': `Bearer ${jeton}` } };
@@ -712,7 +709,7 @@ async function relireExploitation() {
       : `Formule ${facturation.palier} — ${facturation.visitesDuMois} visite(s) ce mois `
         + `sur ${facturation.visitesIncluses} incluses`
         + (facturation.depassementCentimes > 0
-          ? `, dépassement ${EUROS(facturation.depassementCentimes)}` : '.');
+          ? `, dépassement ${euros(facturation.depassementCentimes)}.` : '.');
     const conseil = el('conseil-palier');
     conseil.textContent = facturation.palierConseille
       ? `À ce rythme, la formule ${facturation.palierConseille} vous coûterait moins `

@@ -32,16 +32,14 @@
 
 <script type="module">
 import { appel } from '/app/attenso.js';
+import { heureCourte, jourLong } from '/app/formats.js';
 
 const reference = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
-const JOUR = new Intl.DateTimeFormat('fr-FR',
-  { weekday: 'long', day: 'numeric', month: 'long' });
-
 function peindre(rdv) {
   el('clinique').textContent = rdv.clinique;
-  el('heure').textContent = rdv.heure.slice(0, 5);
-  el('jour').textContent = JOUR.format(new Date(rdv.jour + 'T12:00:00'));
+  el('heure').textContent = heureCourte(rdv.heure);
+  el('jour').textContent = jourLong(rdv.jour);
   el('motif').textContent = rdv.motif ? `Motif : ${rdv.motif}` : '';
 
   const annule = rdv.statut === 'ANNULE';

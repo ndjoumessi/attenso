@@ -30,13 +30,10 @@
 
 <script type="module">
 import { appel } from '/app/attenso.js';
-import { duree } from '/app/formats.js';
+import { jourAvecAnnee } from '/app/formats.js';
 
 const jeton = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
-const DATE = new Intl.DateTimeFormat('fr-FR',
-  { day: 'numeric', month: 'long', year: 'numeric' });
-const dateDe = (jour) => DATE.format(new Date(jour + 'T12:00:00'));
 
 try {
   const carnet = await appel(`/api/carnet/${encodeURIComponent(jeton)}`);
@@ -60,7 +57,7 @@ try {
 
     const fait = document.createElement('span');
     fait.className = 'etiquette etiquette--duree';
-    fait.textContent = `fait le ${dateDe(vaccin.faitLe)}`;
+    fait.textContent = `fait le ${jourAvecAnnee(vaccin.faitLe)}`;
     etiquettes.append(fait);
 
     if (vaccin.rappelLe) {
@@ -71,7 +68,7 @@ try {
       rappel.className = 'etiquette ' + (enRetard ? 'etiquette--urgence'
         : 'etiquette--prioritaire');
       rappel.textContent = (enRetard ? 'rappel dépassé — ' : 'rappel le ')
-        + dateDe(vaccin.rappelLe);
+        + jourAvecAnnee(vaccin.rappelLe);
       etiquettes.append(rappel);
     }
 
