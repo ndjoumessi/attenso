@@ -52,7 +52,20 @@ public abstract class SocleIntegration {
 	 * donc pas les migrations. On obtient un schéma absent sur une base
 	 * joignable, c'est-à-dire la panne la plus déroutante possible.
 	 */
-	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
+	/**
+	 * La MÊME version majeure que la production, qui sert du 18.7 sur Railway.
+	 *
+	 * <p>Tester sur une majeure d'écart revient à valider les migrations et le
+	 * cloisonnement par <em>row level security</em> sur un moteur qui n'est pas
+	 * celui qui garde les données. C'est la seule divergence qu'on ne peut pas
+	 * rattraper après coup : une base migrée de travers ne se reconstruit pas.
+	 *
+	 * <p>Le tag {@code 18-alpine} vaut 18.7 à ce jour, soit exactement la
+	 * production. Rien n'impose automatiquement cet alignement — il n'y a aucun
+	 * moyen de lire la version de la production depuis un test. À revoir quand
+	 * Railway passera une majeure.
+	 */
+	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine");
 
 	static {
 		POSTGRES.start();

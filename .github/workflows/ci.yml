@@ -63,9 +63,9 @@ jobs:
         run: npm ci --no-fund --no-audit
         working-directory: front
 
-      # Testcontainers démarre postgres:16-alpine. Docker est préinstallé sur
-      # les exécuteurs Ubuntu ; on le vérifie explicitement pour que l'échec
-      # soit lisible le jour où ça change.
+      # Testcontainers démarre postgres:18-alpine, la même majeure que la
+      # production. Docker est préinstallé sur les exécuteurs Ubuntu ; on le
+      # vérifie explicitement pour que l'échec soit lisible le jour où ça change.
       - name: Vérifier Docker
         run: docker version --format 'Docker {{.Server.Version}}'
 
