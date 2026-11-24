@@ -1,5 +1,6 @@
 package ai.attenso.securite;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -39,14 +40,18 @@ public class SessionsRevoquees {
 	}
 
 	/**
-	 * @return vrai si le jeton doit être refusé : version périmée, ou compte
-	 *         disparu depuis l'émission — ce second cas coupe aussi l'accès
-	 *         d'un compte supprimé sans attendre l'expiration.
+	 * @return vrai si le jeton doit être refusé : version périmée, compte
+	 *         désactivé, ou compte disparu depuis l'émission.
 	 */
 	public boolean revoque(UUID utilisateurId, int versionDuJeton) {
-		Integer version = jdbc.query("""
-				SELECT jeton_version FROM utilisateur WHERE id = ?
-				""", ligne -> ligne.next() ? ligne.getInt(1) : null, utilisateurId);
-		return version == null || version != versionDuJeton;
+		// « actif » est lu dans la MÊME requête, donc gratuitement. La
+		// désactivation incrémente déjà la version, ce qui suffirait ; mais un
+		// compte désactivé ne doit pas dépendre d'un incrément qu'un futur
+		// chemin pourrait oublier, et la condition est ici une colonne de plus
+		// dans un SELECT déjà fait.
+		List<Boolean> actif = jdbc.query("""
+				SELECT actif FROM utilisateur WHERE id = ? AND jeton_version = ?
+				""", (ligne, i) -> ligne.getBoolean(1), utilisateurId, versionDuJeton);
+		return actif.isEmpty() || !actif.get(0);
 	}
 }

@@ -129,14 +129,18 @@ public class ServiceReinitialisation {
 				.ifPresent(utilisateurId -> envoyer(clinique.get(), utilisateurId)));
 	}
 
-	private void envoyer(Tenant clinique, UUID utilisateurId) {
-		String jeton = jetons.suivante() + jetons.suivante();
-		Instant maintenant = horloge.instant();
-		dao.ouvrir(UUID.randomUUID(), clinique.id(), utilisateurId, empreinte(jeton),
-				maintenant.plus(VALIDITE), maintenant);
+	/**
+	 * Validité d'une INVITATION, bien plus longue que celle d'un oubli.
+	 *
+	 * <p>Une heure conviendrait mal : une invitation envoyée le vendredi soir
+	 * doit encore marcher le lundi matin. Et le risque n'est pas le même — un
+	 * lien d'oubli donne accès à un compte qui existe et travaille, un lien
+	 * d'invitation ouvre un compte qui n'a jamais servi.
+	 */
+	public static final Duration VALIDITE_INVITATION = Duration.ofDays(7);
 
-		String lien = baseUrl + "/reinitialisation/" + jeton;
-		boolean parti = courriels.envoyer(dao.emailDe(utilisateurId),
+	private void envoyer(Tenant clinique, UUID utilisateurId) {
+		ouvrirEtEnvoyer(clinique, utilisateurId, VALIDITE,
 				"Attenso — réinitialiser votre mot de passe", """
 						Bonjour,
 
@@ -149,12 +153,49 @@ public class ServiceReinitialisation {
 
 						Si vous n'êtes pas à l'origine de cette demande, ignorez ce \
 						message : votre mot de passe reste inchangé.
-						""".formatted(clinique.nom(), lien));
+						""");
+	}
+
+	/**
+	 * Invite un compte qui vient d'être créé à choisir son mot de passe.
+	 *
+	 * <p>Le même mécanisme que l'oubli, et c'est volontaire : un compte
+	 * fraîchement créé n'a pas de mot de passe connu de son titulaire, ce qui
+	 * est exactement la situation d'un oubli. L'alternative — un mot de passe
+	 * provisoire transmis par le gérant — ferait circuler un secret par un
+	 * canal qu'on ne maîtrise pas, et il resterait valable tant que personne
+	 * n'y pense.
+	 */
+	public void inviter(Tenant clinique, UUID utilisateurId) {
+		ouvrirEtEnvoyer(clinique, utilisateurId, VALIDITE_INVITATION,
+				"Attenso — votre accès à la clinique", """
+						Bonjour,
+
+						Un accès vient de vous être ouvert sur Attenso pour la \
+						clinique « %s ».
+
+						Choisissez votre mot de passe ici, sous sept jours :
+						%s
+
+						Si vous ne vous attendiez pas à ce message, ignorez-le : \
+						sans mot de passe choisi, l'accès ne s'ouvre pas.
+						""");
+	}
+
+	private void ouvrirEtEnvoyer(Tenant clinique, UUID utilisateurId, Duration validite,
+			String sujet, String modele) {
+		String jeton = jetons.suivante() + jetons.suivante();
+		Instant maintenant = horloge.instant();
+		dao.ouvrir(UUID.randomUUID(), clinique.id(), utilisateurId, empreinte(jeton),
+				maintenant.plus(validite), maintenant);
+
+		String lien = baseUrl + "/reinitialisation/" + jeton;
+		boolean parti = courriels.envoyer(dao.emailDe(utilisateurId), sujet,
+				modele.formatted(clinique.nom(), lien));
 		if (!parti) {
 			// On garde la demande ouverte : l'exploitant peut encore dépanner,
 			// et l'échec n'est pas la faute du client.
-			JOURNAL.error("lien de réinitialisation non envoyé pour la clinique {}",
-					clinique.slug());
+			JOURNAL.error("lien non envoyé pour la clinique {}", clinique.slug());
 		}
 	}
 

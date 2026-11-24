@@ -62,6 +62,30 @@ public class GestionnaireErreurs {
 						+ "créneaux encore libres.");
 	}
 
+	@ExceptionHandler(ai.attenso.equipe.DerniereGerance.class)
+	ProblemDetail derniereGerance(ai.attenso.equipe.DerniereGerance erreur) {
+		// 409 : la demande est formée correctement, c'est l'état de l'équipe
+		// qui l'interdit. Le message dit QUOI FAIRE — nommer un autre gérant —
+		// parce que « refusé » tout court laisse chercher.
+		return probleme(HttpStatus.CONFLICT, "Dernier gérant",
+				"Il doit rester au moins un gérant actif. Nommez d'abord "
+						+ "quelqu'un d'autre gérant, puis recommencez.");
+	}
+
+	@ExceptionHandler(ai.attenso.equipe.AdresseDejaPrise.class)
+	ProblemDetail adresseDejaPrise(ai.attenso.equipe.AdresseDejaPrise erreur) {
+		return probleme(HttpStatus.CONFLICT, "Adresse déjà utilisée",
+				"Cette adresse a déjà un accès dans votre clinique. Si la "
+						+ "personne ne peut plus se connecter, réactivez son "
+						+ "compte plutôt que d'en créer un second.");
+	}
+
+	@ExceptionHandler(ai.attenso.equipe.MembreInconnu.class)
+	ProblemDetail membreInconnu(ai.attenso.equipe.MembreInconnu erreur) {
+		return probleme(HttpStatus.NOT_FOUND, "Compte introuvable",
+				"Ce compte n'existe pas dans votre clinique.");
+	}
+
 	@ExceptionHandler(ai.attenso.paiement.SouscriptionIndisponible.class)
 	ProblemDetail souscriptionIndisponible(
 			ai.attenso.paiement.SouscriptionIndisponible erreur) {

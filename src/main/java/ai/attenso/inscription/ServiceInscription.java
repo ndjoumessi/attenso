@@ -136,7 +136,7 @@ public class ServiceInscription {
 					INSERT INTO utilisateur (id, tenant_id, email, mdp_hash, role, actif)
 					VALUES (?, ?, ?, ?, ?, true)
 					""", UUID.randomUUID(), tenantId, email,
-					motsDePasse.encode(demande.motDePasse()), Role.ACCUEIL.name());
+					motsDePasse.encode(demande.motDePasse()), Role.GERANT.name());
 			motifs.poserLesDefauts(tenantId);
 			facturation.souscrire(tenantId, palier, LocalDate.now(horloge), "EN_ATTENTE");
 		});

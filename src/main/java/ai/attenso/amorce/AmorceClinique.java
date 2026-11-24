@@ -93,7 +93,7 @@ public class AmorceClinique implements ApplicationRunner {
 				INSERT INTO utilisateur (id, tenant_id, email, mdp_hash, role, actif)
 				VALUES (?, ?, ?, ?, ?, true)
 				""", UUID.randomUUID(), tenantId, proprietes.email().trim().toLowerCase(),
-				motsDePasse.encode(proprietes.motDePasse()), Role.ACCUEIL.name()));
+				motsDePasse.encode(proprietes.motDePasse()), Role.GERANT.name()));
 
 		// Les deux motifs de priorité du cahier des charges (EF-407). La
 		// clinique les renomme, les désactive ou en ajoute ensuite.

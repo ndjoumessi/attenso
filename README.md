@@ -671,6 +671,53 @@ Les tests ne demandent ni compte ni réseau — la passerelle est remplacée par
 fausse — à deux exceptions près, vérifiées pour de bon : la signature des
 webhooks, avec un vrai HMAC, et le fait qu'un impayé ne ferme pas la clinique.
 
+### Les comptes du personnel
+
+Jusqu'ici une clinique n'avait **qu'un seul compte**, celui créé à
+l'inscription : l'ASV et le vétérinaire partageaient le même mot de passe, et
+un départ de salarié obligeait à tout réinitialiser. Le gérant peut désormais
+inviter, changer un rôle, désactiver et réactiver.
+
+**C'est le premier endroit où les deux rôles cessent d'être décoratifs.**
+`ACCUEIL` et `GERANT` existaient depuis le V0 mais ouvraient exactement les
+mêmes portes ; `/api/equipe/**` est réservé au gérant. Par conséquent, le
+compte créé à l'inscription devient GÉRANT — c'est celui qui paie — là où il
+naissait ACCUEIL, ce qui aurait fermé la gestion des comptes à la seule
+personne capable de s'en servir.
+
+**Un compte invité naît sans mot de passe utilisable.** Il porte un marqueur à
+la place de l'empreinte : aucun mot de passe ne peut y correspondre, pas même
+le marqueur lui-même, et un test le vérifie. L'invitation réutilise le
+mécanisme de l'oubli — un compte neuf est exactement dans la situation d'un
+oubli — avec une validité de sept jours au lieu d'une heure : une invitation
+envoyée le vendredi soir doit encore marcher le lundi matin. L'alternative, un
+mot de passe provisoire transmis par le gérant, ferait circuler un secret par
+un canal qu'on ne maîtrise pas et qui resterait valable tant que personne n'y
+pense.
+
+**Il doit rester un gérant actif**, et le serveur le refuse autrement. Sans ce
+garde, une clinique se verrouille dehors en un clic : plus personne pour
+inviter, ni pour gérer l'abonnement, et la sortie serait une intervention en
+base un samedi. Le message dit quoi faire — nommer quelqu'un d'autre d'abord —
+parce que « refusé » tout court laisse chercher.
+
+**Tout changement de rôle ou d'activation ferme les sessions du compte visé.**
+Le rôle voyage dans le jeton : sans l'incrément de version, une rétrogradation
+ou un départ ne prendrait effet qu'à l'expiration, jusqu'à douze heures plus
+tard — or on rétrograde quelqu'un précisément quand on veut lui retirer un
+droit maintenant. Au passage, `SessionsRevoquees` lit aussi `actif` dans la
+même requête, donc gratuitement : un compte désactivé ne doit pas dépendre d'un
+incrément qu'un futur chemin pourrait oublier.
+
+**Pas de suppression, seulement une désactivation.** Un compte supprimé
+emporterait le journal d'accès qui le désigne, or c'est précisément quand
+quelqu'un part qu'on veut pouvoir relire ce qu'il a fait.
+
+**Le rôle n'est pas lu côté navigateur pour décider de l'affichage** : la page
+demande la liste, et masque la section si le serveur refuse. Un contrôle
+d'accès qui vit dans la page se contourne avec la console, et finirait par être
+pris pour la vraie règle.
+
 ### Récupération de mot de passe
 
 Sans elle, une clinique qui perd son mot de passe est enfermée dehors

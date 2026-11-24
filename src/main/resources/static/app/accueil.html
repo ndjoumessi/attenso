@@ -168,6 +168,35 @@
     n'oblige à nous prévenir pour l'emporter ailleurs.
   </p>
 
+  <!-- Comptes du personnel. La section entière est masquée pour un compte
+       d'accueil : le serveur refuse de toute façon, mais afficher des boutons
+       qui répondent 403 serait une invitation à les essayer. -->
+  <section id="bloc-equipe" hidden>
+    <h2>Comptes de la clinique</h2>
+    <p class="discret">
+      Chaque personne a son propre accès. Un départ se règle en désactivant un
+      compte, sans toucher à celui des autres.
+    </p>
+    <ul class="file" id="liste-equipe"></ul>
+
+    <form id="formulaire-invitation">
+      <label for="equipe-email">Adresse de la personne à inviter</label>
+      <input id="equipe-email" type="email" required maxlength="200"
+             autocomplete="off" placeholder="asv@clinique.fr">
+      <label for="equipe-role">Accès</label>
+      <select id="equipe-role">
+        <option value="ACCUEIL" selected>Accueil — fait avancer la file</option>
+        <option value="GERANT">Gérant — gère aussi l'abonnement et les comptes</option>
+      </select>
+      <div class="message message--erreur" id="erreur-equipe" role="alert" hidden></div>
+      <p><button type="submit" id="bouton-inviter">Envoyer l'invitation</button></p>
+    </form>
+    <p class="discret">
+      La personne choisit son mot de passe depuis le lien qu'elle reçoit. Vous
+      n'avez jamais à en inventer un pour elle, ni à le lui transmettre.
+    </p>
+  </section>
+
   <h2>Mesure du pilote</h2>
   <p class="discret">
     Combien de personnes sont entrées dans la clinique aujourd'hui, ticket ou
@@ -773,6 +802,99 @@ async function relireExploitation() {
   } catch { /* à-côté */ }
 }
 
+// --- Comptes du personnel ------------------------------------------------
+//
+// La section ne s'affiche que si le serveur accepte de la servir. On ne lit
+// PAS le rôle dans le jeton pour en décider : un contrôle d'accès qui vit
+// dans la page se contourne avec la console du navigateur, et il finirait par
+// être pris pour la vraie règle.
+const LIBELLE_ROLE = { ACCUEIL: 'Accueil', GERANT: 'Gérant' };
+
+async function relireEquipe() {
+  let membres;
+  try {
+    membres = await appel('/api/equipe', { headers: { 'Authorization': `Bearer ${jeton}` } });
+  } catch {
+    el('bloc-equipe').hidden = true;
+    return;
+  }
+  el('bloc-equipe').hidden = false;
+  el('liste-equipe').replaceChildren(...membres.map((membre) => {
+    const item = document.createElement('li');
+    item.className = 'ligne';
+
+    const corps = document.createElement('div');
+    const titre = document.createElement('strong');
+    titre.textContent = membre.email;
+    if (!membre.actif) titre.classList.add('discret');
+
+    const etiquettes = document.createElement('div');
+    etiquettes.className = 'etiquettes';
+    const role = document.createElement('span');
+    role.className = 'etiquette';
+    role.textContent = LIBELLE_ROLE[membre.role] ?? membre.role;
+    etiquettes.append(role);
+    if (!membre.actif) {
+      const inactif = document.createElement('span');
+      inactif.className = 'etiquette etiquette--urgence';
+      inactif.textContent = 'désactivé';
+      etiquettes.append(inactif);
+    } else if (!membre.aChoisiSonMotDePasse) {
+      // L'information qui manque le plus : un compte créé mais jamais ouvert
+      // ressemble en tout point à un compte qui marche.
+      const attente = document.createElement('span');
+      attente.className = 'etiquette etiquette--prioritaire';
+      attente.textContent = 'invitation en attente';
+      etiquettes.append(attente);
+    }
+    corps.append(titre, etiquettes);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const bascule = document.createElement('button');
+    bascule.textContent = membre.actif ? 'Désactiver' : 'Réactiver';
+    bascule.addEventListener('click', () => agirSurEquipe(
+      `/api/equipe/${membre.id}/${membre.actif ? 'desactiver' : 'reactiver'}`));
+    const autre = membre.role === 'GERANT' ? 'ACCUEIL' : 'GERANT';
+    const changer = document.createElement('button');
+    changer.textContent = `Passer ${LIBELLE_ROLE[autre].toLowerCase()}`;
+    changer.addEventListener('click', () => agirSurEquipe(
+      `/api/equipe/${membre.id}/role`, { role: autre }));
+    actions.append(bascule, changer);
+
+    item.append(corps, actions);
+    return item;
+  }));
+}
+
+async function agirSurEquipe(route, corps) {
+  const erreur = el('erreur-equipe');
+  erreur.hidden = true;
+  try {
+    await appel(route, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${jeton}` },
+      ...(corps ? { body: JSON.stringify(corps) } : {}),
+    });
+    await relireEquipe();
+  } catch (echec) {
+    // Le refus du dernier gérant arrive ici, et son message dit quoi faire.
+    signaler(echec, 'Serveur injoignable : rien n\'a été changé.', erreur);
+  }
+}
+
+el('formulaire-invitation').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const bouton = el('bouton-inviter');
+  bouton.disabled = true;
+  await agirSurEquipe('/api/equipe', {
+    email: el('equipe-email').value.trim(),
+    role: el('equipe-role').value,
+  });
+  el('equipe-email').value = '';
+  bouton.disabled = false;
+});
+
 el('bouton-espace-client').addEventListener('click', async () => {
   const bouton = el('bouton-espace-client');
   bouton.disabled = true;
@@ -813,8 +935,15 @@ el('bouton-export-complet').addEventListener('click', async () => {
 });
 
 /** Un seul endroit pour écrire dans le bandeau d'erreur du tableau. */
-function signaler(echec, messageReseau) {
-  const zone = el('erreur-file');
+/**
+ * Affiche un échec là où l'utilisateur regarde.
+ *
+ * @param zone bandeau d'erreur à remplir ; par défaut celui de la file, qui
+ *        est le bon pour tout ce qui touche au tableau. Les formulaires qui
+ *        ont le leur le passent, sinon l'erreur s'afficherait à l'autre bout
+ *        de la page.
+ */
+function signaler(echec, messageReseau, zone = el('erreur-file')) {
   zone.textContent = echec.reseau ? messageReseau : echec.message;
   zone.hidden = false;
 }
@@ -879,6 +1008,9 @@ async function demarrer() {
   relireAgenda();
   relireAnimaux();
   relireExploitation();
+  // Une seule fois au chargement : la composition d'une équipe ne change pas
+  // en cours de journée, et chaque appel sert aussi de test de droit.
+  relireEquipe();
   // Plus lent que la file : ces chiffres bougent à l'échelle de la journée,
   // pas de la minute, et chaque appel est une requête d'agrégation.
   setInterval(relireExploitation, 300000);
