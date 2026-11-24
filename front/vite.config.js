@@ -23,6 +23,10 @@ export default defineConfig({
     // Sous /app/ : c'est le seul préfixe que la configuration de sécurité
     // ouvre au public. Mettre les bundles ailleurs demanderait d'y toucher.
     assetsDir: 'app/assets',
+    // Le manifeste dit quels morceaux chaque page charge réellement. C'est
+    // lui qui permet à la coquille hors réseau de ne contenir que ce qui lui
+    // sert, au lieu de tout ce que la construction a produit.
+    manifest: 'app/manifeste.json',
     rollupOptions: {
       input: {
         vitrine: resolve(import.meta.dirname, 'app/vitrine.html'),
@@ -37,6 +41,7 @@ export default defineConfig({
         carnet: resolve(import.meta.dirname, 'app/carnet.html'),
         'rendez-vous': resolve(import.meta.dirname, 'app/rendez-vous.html'),
         reservation: resolve(import.meta.dirname, 'app/reservation.html'),
+        accueil: resolve(import.meta.dirname, 'app/accueil.html'),
         confidentialite: resolve(import.meta.dirname, 'app/confidentialite.html'),
       },
     },

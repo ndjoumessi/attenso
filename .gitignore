@@ -69,6 +69,9 @@ node_modules/
 /src/main/resources/static/app/carnet.html
 /src/main/resources/static/app/rendez-vous.html
 /src/main/resources/static/app/reservation.html
+/src/main/resources/static/app/accueil.html
+/src/main/resources/static/app/manifeste.json
+/src/main/resources/static/sw.js
 /src/main/resources/static/app/assets/
 /front/node_modules/
 /front/.ssr/

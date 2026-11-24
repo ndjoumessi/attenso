@@ -11,26 +11,18 @@
 // « 2 personnes devant vous » alors que c'est le tour du client depuis dix
 // minutes est pire que pas d'écran du tout.
 
-const CACHE = 'attenso-coquille-v10';
+// Le nom du cache et la liste de la coquille sont ÉCRITS À LA CONSTRUCTION,
+// par prerender.mjs. Ils ne peuvent plus l'être à la main : les pages et leurs
+// bundles portent une empreinte qui change à chaque build, et une liste tenue
+// manuellement serait périmée au premier déploiement — la coquille servirait
+// alors des pages sans style ni script, ce qui est pire que pas de coquille.
+//
+// Le nom du cache dérive de cette liste : il change tout seul quand un fichier
+// change, et l'ancien cache est effacé à l'activation. Plus de version à
+// penser à incrémenter.
+const CACHE = '__CACHE__';
 
-const COQUILLE = [
-  '/app/jetons.css',
-  '/app/attenso.css',
-  '/app/attenso.js',
-  '/app/journal.js',
-  '/app/accueil.html',
-  '/app/vue-file.js',
-  '/app/vue-suivi.js',
-  '/app/vue-ecran.js',
-  '/app/formats.js',
-  '/app/suivi.html',
-  '/app/comptoir.html',
-  '/app/ecran.html',
-  '/manifest.webmanifest',
-  // Les icônes font partie de la coquille : sans elles, une notification
-  // poussée arrivant hors réseau s'afficherait sans sa vignette.
-  '/app/icone-192.png',
-];
+const COQUILLE = __COQUILLE__;
 
 /**
  * Miroir de ControleurPages : quelle page sert quelle URL. Une navigation vers

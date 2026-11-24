@@ -5,7 +5,8 @@
   "description": "Les écrans d'Attenso. React + Tailwind, construits par Vite dans les ressources Spring.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node prerender.mjs"
+    "build": "vite build && node prerender.mjs",
+    "prebuild": "node nettoyer.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
