@@ -77,6 +77,14 @@ const PAIRES = [
   // comme ailleurs, mode sombre compris, puisqu'elle ne change pas.
   ['affiche : encre sur papier', 'sur-papier', 'papier', 4.5],
   ['affiche : encre douce sur papier', 'sur-papier-doux', 'papier', 4.5],
+  // La barre latérale est du CHROME : elle se distingue du contenu, donc elle a
+  // son propre fond, donc ses propres paires à mesurer.
+  ['barre : libellé sur fond de barre', 'sur-barre', 'barre', 4.5],
+  ['barre : libellé doux sur fond de barre', 'sur-barre-doux', 'barre', 4.5],
+  ['barre : libellé de l\'entrée active', 'sur-barre-active', 'barre-active', 4.5],
+  // La bordure de la barre sépare deux surfaces porteuses d'information : elle
+  // dit « ici finit la navigation ». Soumise au 3:1 comme une bordure de contrôle.
+  ['barre : bordure sur fond', 'barre-bordure', 'fond', 3],
 ];
 
 for (const mode of ['clair', 'sombre']) {
