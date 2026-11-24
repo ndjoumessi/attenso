@@ -53,6 +53,37 @@ public class AmorceClinique implements ApplicationRunner {
 		this.motifs = motifs;
 	}
 
+	/**
+	 * Motifs propres à la clinique de démonstration, en plus des deux défauts.
+	 *
+	 * <p>Les défauts portent sur l'humain accompagnant et sont posés au même
+	 * rang : une clinique qui les voit seuls ne perçoit ni que la priorité est
+	 * graduée, ni qu'elle peut écrire ses propres motifs. Ceux-ci parlent de
+	 * l'animal, avec des rangs étagés. Ils restent ici et non dans
+	 * {@code MotifDao.DEFAUTS} : « bétaillère » n'a pas de sens pour une
+	 * clinique urbaine, et changer les défauts changerait le produit pour tous.
+	 *
+	 * <p>Pas de garde propre : on n'arrive ici que par la création de la
+	 * clinique, que {@code run} ne refait jamais quand le slug existe déjà.
+	 * Les rangs restent dans la bande 1 à 9 de {@code motif_rang_dans_la_bande} :
+	 * aucun ne peut rejoindre l'urgence (10).
+	 */
+	private void poserLesMotifsDeDemonstration(UUID tenantId) {
+		// « Contagieux » tout en haut : l'isoler protège toute la salle d'attente,
+		// pas seulement l'animal concerné.
+		// « Chat en caisse » et « bétaillère » sont les exemples que cite
+		// V8__motifs_priorite.sql : une attente prolongée en caisse, un animal de
+		// ferme qui ne peut pas patienter dans sa remorque.
+		// « Contrôle post-opératoire » en dessous des défauts : c'est du confort,
+		// pas une dégradation, il passe devant la file normale sans doubler personne
+		// de plus pressé.
+		short ordre = (short) (MotifDao.DEFAUTS.size() + 1);
+		motifs.ajouter(tenantId, "Animal potentiellement contagieux", (short) 8, ordre++);
+		motifs.ajouter(tenantId, "Chat en caisse depuis plus de 30 min", (short) 7, ordre++);
+		motifs.ajouter(tenantId, "Animal de ferme en bétaillère", (short) 6, ordre++);
+		motifs.ajouter(tenantId, "Contrôle post-opératoire court", (short) 3, ordre);
+	}
+
 	@Override
 	public void run(ApplicationArguments arguments) {
 		if (proprietes.slug() == null || proprietes.motDePasse() == null
@@ -97,7 +128,10 @@ public class AmorceClinique implements ApplicationRunner {
 
 		// Les deux motifs de priorité du cahier des charges (EF-407). La
 		// clinique les renomme, les désactive ou en ajoute ensuite.
-		ContexteTenant.executer(tenantId, () -> motifs.poserLesDefauts(tenantId));
+		ContexteTenant.executer(tenantId, () -> {
+			motifs.poserLesDefauts(tenantId);
+			poserLesMotifsDeDemonstration(tenantId);
+		});
 
 		JOURNAL.info("clinique « {} » installée — comptoir : /t/{}",
 				proprietes.nom(), proprietes.slug());
