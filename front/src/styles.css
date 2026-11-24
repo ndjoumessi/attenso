@@ -63,6 +63,22 @@
   --color-sidebar-ring: var(--accent);
 }
 
+/* Le seuil de la barre latérale, DÉCLARÉ UNE FOIS et nommé.
+ *
+ * 900 px, et non les 768 de `md` que shadcn emploie : au-dessus la barre est un
+ * panneau permanent, en dessous un tiroir que l'on ouvre. Le même nombre vit
+ * côté JavaScript dans `ui/sidebar.jsx` (SEUIL_BARRE), parce qu'une requête de
+ * média ne se lit pas depuis React ; `navigation.test.js` vérifie que les deux
+ * faces restent accordées — désaccordées, il existe une largeur où la barre
+ * n'est ni panneau ni tiroir.
+ *
+ * Hors du bloc `@theme inline` ci-dessus : `inline` sert aux couleurs, qui
+ * doivent rester lisibles comme variables ; un point de rupture est une valeur
+ * littérale que Tailwind compile en requête de média. */
+@theme {
+  --breakpoint-barre: 900px;
+}
+
 /* La cible tactile du produit : 56 px, au-dessus des 44 d'Apple et des 48 de
  * Material. Justifiée par le comptoir — une tablette touchée au doigt par
  * quelqu'un qui tient un animal de l'autre main. */
