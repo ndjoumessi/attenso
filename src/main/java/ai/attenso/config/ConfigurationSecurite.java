@@ -60,6 +60,12 @@ public class ConfigurationSecurite {
 						// jeton vaut justificatif, et il est révocable.
 						.requestMatchers(HttpMethod.GET, "/api/carnet/**").permitAll()
 						.requestMatchers("/carnet/**").permitAll()
+						// Le webhook de Stripe. Publique par nécessité — Stripe ne
+						// porte aucun jeton de notre part — et authentifiée par la
+						// SIGNATURE du corps, vérifiée dans ControleurPaiement. C'est
+						// la seule route de ce produit dont la sécurité ne tient pas à
+						// un filtre mais au contrôleur lui-même.
+						.requestMatchers(HttpMethod.POST, "/api/paiement/webhook").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/connexion").permitAll()
 						.requestMatchers("/actuator/health").permitAll()
 						// Tout le reste est le back-office de la clinique.

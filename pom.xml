@@ -111,6 +111,16 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Souscription payante. Le SDK sert à deux choses et deux seulement :
+		     ouvrir une page de paiement hébergée par Stripe, et VÉRIFIER LA
+		     SIGNATURE des webhooks. Aucune donnée de carte ne transite par
+		     Attenso, et c'est le seul montage qui le garantisse. -->
+		<dependency>
+			<groupId>com.stripe</groupId>
+			<artifactId>stripe-java</artifactId>
+			<version>34.1.0</version>
+		</dependency>
+
 		<!-- EF-307 : Web Push (VAPID + chiffrement aes128gcm du contenu). Le
 		     protocole impose une signature ECDSA et un chiffrement par abonnement ;
 		     l'écrire à la main serait de la cryptographie maison dans un produit

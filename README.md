@@ -159,13 +159,17 @@ La seule exception est la déclaration des polices (voir plus bas), et c'est la
 raison pour laquelle elle est signalée comme une dette plutôt que comme un
 détail d'habillage.
 
-### Ce qui reste hors du code pour atteindre L2
+### Ce qui reste hors du code
 
-Le jalon dit « V0 déployé **et exploité** chez l'établissement pilote ». La
-moitié technique est là et vérifiée. L'autre moitié ne s'écrit pas :
-louer une machine en UE, y pointer un nom de domaine, et surtout trouver la
-clinique qui accepte d'être pilote — ce que le planning place en semaines 1-2,
-avant toute ligne de code.
+La moitié technique est là et vérifiée. L'autre moitié ne s'écrit pas : louer
+une machine en UE, y pointer un nom de domaine, ouvrir le compte Stripe et
+déposer l'autorisation d'expéditeur SMS auprès des opérateurs.
+
+**Le pilote a été abandonné**, sur décision du commanditaire : pas de clinique
+pilote, pas de phase gratuite. Le produit se vend à l'abonnement dès la mise en
+ligne, et c'est ce que dit maintenant la vitrine. Le jalon L2 du cahier des
+charges — « V0 déployé et exploité chez l'établissement pilote » — n'a donc
+plus d'objet sous cette forme ; ce qui en reste, c'est le déploiement.
 
 ## Variables d'environnement
 
@@ -522,12 +526,13 @@ persuadée d'avoir raison.
 
 ## Les paliers V1a et V1b
 
-Le V0 — la file seule — est le périmètre du pilote. Les paliers suivants ont
+Le V0 — la file seule — était le périmètre du pilote. Les paliers suivants ont
 été construits ensuite, sur demande explicite, **avant** que le pilote n'ait
 rendu son verdict. Le cahier des charges les conditionnait : V1a après une
 mesure à ≥ 50 % d'auto-enregistrement en semaine 10, V1b après trois clients
 payants sur V1a. Ces portes n'ont pas été franchies, elles ont été contournées,
-et c'est une décision assumée du commanditaire — pas un oubli.
+et c'est une décision assumée du commanditaire — pas un oubli. Le pilote a
+depuis été abandonné tout court : le produit se vend directement.
 
 ### Inscription autonome (EF-901), et ce qu'elle ne peut pas faire
 
@@ -591,6 +596,67 @@ ne doit correspondre à rien.
 Le même raisonnement a déplacé la mise en avant de la page : elle était sur
 Clinique, c'est-à-dire sur la formule dominée. Elle est sur Comptoir, comme la
 présélection de l'inscription.
+
+### Souscrire, et payer (Stripe)
+
+Le produit se vend à l'abonnement : une clinique s'inscrit seule, paie, et
+ouvre. Il n'y a plus de pilote gratuit.
+
+**Le paiement passe par une page hébergée par Stripe**, et c'est le choix
+central : aucune donnée de carte n'entre jamais dans Attenso. Ce dépôt n'a donc
+rien à protéger de ce côté — rien à chiffrer, rien à faire auditer —, et
+l'authentification forte du payeur, les cartes européennes, le prélèvement SEPA
+et les relances sont l'affaire du prestataire. Écrire un formulaire de carte
+maison aurait ajouté la pire des surfaces d'attaque à un produit qui, par
+ailleurs, ne collecte qu'un numéro de mobile.
+
+**La clinique naît FERMÉE, et c'est le paiement qui l'ouvre.** `tenant.actif`
+était déjà le drapeau honoré partout — connexion du personnel, QR du comptoir,
+tâches planifiées — donc l'abonnement n'a pas eu besoin d'une seconde notion de
+« clinique fermée » qu'il aurait fallu faire respecter dans chaque recoin. Effet
+de bord qu'il a fallu traiter : une clinique inactive RÉSERVE quand même son
+adresse, sinon la suivante du même nom recevrait le même slug et buterait sur
+l'index unique au milieu de son inscription.
+
+**Un impayé ne coupe rien, et c'est délibéré.** Attenso fait tourner une salle
+d'attente. Couper la file un mardi matin parce qu'une carte a expiré laisserait
+de vraies personnes debout devant une clinique qui ne peut plus les appeler, et
+punirait les clients pour le moyen de paiement du vétérinaire. L'abonnement
+passe en `IMPAYE`, ça se voit, et les relances sont l'affaire de Stripe puis la
+nôtre — comme n'importe quel impayé entre professionnels. Ce qui ferme
+réellement, c'est une résiliation, le lendemain du dernier jour payé : la
+clinique garde la période qu'elle a réglée.
+
+**Le prélèvement SEPA est encaissé après coup, et la clinique ouvre quand
+même.** Une carte se valide en deux secondes ; un prélèvement met plusieurs
+jours à se dénouer, et `checkout.session.completed` arrive avant l'argent.
+Attendre le dénouement ferait patienter une clinique plusieurs jours devant une
+file fermée, pour un moyen de paiement qui est justement l'usage courant en B2B
+français. On ouvre donc à la confirmation de la session, et un rejet ultérieur
+fait simplement passer l'abonnement en `IMPAYE` — exposition bornée à une
+période, et cohérente avec la règle ci-dessus.
+
+**La route du webhook est publique, et la signature est sa seule serrure.** Le
+corps est donc lu en texte BRUT — la signature porte sur les octets exacts, et
+un objet reconstruit puis ré-encodé ne les reproduit pas. Sans cette
+vérification, n'importe qui posterait un `checkout.session.completed` et
+s'offrirait un abonnement. Les événements sont dédupliqués en base : Stripe
+rejoue à la moindre réponse lente, et la réservation de l'identifiant vit dans
+la MÊME transaction que le traitement, pour qu'un échec rende l'événement à son
+rejeu au lieu de le perdre.
+
+**Ce qui reste à faire de ton côté**, et que du code ne peut pas faire : créer
+le compte Stripe, y définir trois tarifs mensuels, poser les cinq variables
+`ATTENSO_STRIPE_*`, et déclarer le point de terminaison
+`https://<domaine>/api/paiement/webhook`. Vérifie aussi que la **version d'API**
+du compte correspond à celle du SDK (`2026-10-28.endive` pour stripe-java
+34.1.0) : sinon les charges arrivent illisibles, et le symptôme serait « les
+abonnements ne s'activent plus », découvert par une clinique qui a payé. Le code
+journalise cette cause-là explicitement.
+
+Les tests ne demandent ni compte ni réseau — la passerelle est remplacée par une
+fausse — à deux exceptions près, vérifiées pour de bon : la signature des
+webhooks, avec un vrai HMAC, et le fait qu'un impayé ne ferme pas la clinique.
 
 ### Supervision (EF-903)
 
@@ -811,9 +877,10 @@ la même file que les autres.
 **Ce que le système de design a recommandé et que j'ai refusé.** Le motif
 proposé pour une vitrine réclame témoignages, logos clients et preuve sociale.
 Attenso n'a aucun client : les inventer serait fabriquer des preuves. La page
-dit donc ce qui est vrai — le produit cherche ses premières cliniques — et
-cadre l'appel à l'action sur le pilote. En pré-lancement, c'est aussi ce qui
-convertit.
+dit donc ce qui est vrai — le produit est jeune, il n'y a rien à citer — et
+propose à la place ce qui se vérifie : trois minutes pour s'inscrire, une
+résiliation en un clic, et un compteur de départs qui dit dès la première
+semaine si l'outil sert. L'appel à l'action mène à l'inscription payante.
 
 Les cibles tactiles sont à 56 px, au-dessus des 44 d'Apple et des 48 de
 Material. Ce n'est pas du zèle : le tableau est touché au doigt, sur une

@@ -62,6 +62,19 @@ public class GestionnaireErreurs {
 						+ "créneaux encore libres.");
 	}
 
+	@ExceptionHandler(ai.attenso.paiement.SouscriptionIndisponible.class)
+	ProblemDetail souscriptionIndisponible(
+			ai.attenso.paiement.SouscriptionIndisponible erreur) {
+		// 503 et non 500 : la demande était valable, c'est notre prestataire de
+		// paiement qui manque à l'appel. Sans ce gestionnaire, l'exception
+		// repartait en 500, le renvoi vers /error repassait par la chaîne de
+		// sécurité, et la page affichait « Erreur 401 » — un message qui
+		// envoie chercher un problème de connexion là où il n'y en a pas.
+		return probleme(HttpStatus.SERVICE_UNAVAILABLE, "Souscription indisponible",
+				"L'inscription en ligne est momentanément fermée. Écrivez-nous à "
+						+ "contact@attenso.fr, nous ouvrons votre clinique à la main.");
+	}
+
 	@ExceptionHandler(ai.attenso.inscription.PalierInconnu.class)
 	ProblemDetail palierInconnu(ai.attenso.inscription.PalierInconnu erreur) {
 		return probleme(HttpStatus.BAD_REQUEST, "Formule inconnue",

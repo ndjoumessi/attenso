@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * la main, pour que les tests ne dépendent pas d'un délai.
  */
 @SpringBootTest
+@Import(ai.attenso.paiement.PasserelleFausse.Config.class)
 public abstract class SocleIntegration {
 
 	protected static final String ROLE_APPLICATIF = "attenso_app";
@@ -36,6 +38,9 @@ public abstract class SocleIntegration {
 	private static final String MDP_APPLICATIF = "mdp_de_test";
 
 	private static final String JAMAIS = "0 0 5 31 2 *";
+
+	/** Secret de signature des webhooks, pour les tests seulement. */
+	protected static final String SECRET_WEBHOOK = "whsec_secret_de_test";
 
 	/**
 	 * Un seul conteneur pour toutes les classes de test, démarré ici et jamais
@@ -72,6 +77,17 @@ public abstract class SocleIntegration {
 		registre.add("attenso.file.periode-tick", () -> 3_600_000);
 		registre.add("attenso.sms.periode-balayage", () -> 3_600_000);
 		registre.add("attenso.file.cron-purge", () -> JAMAIS);
+
+		// Stripe est configuré POUR DE BON côté secret de webhook : la
+		// vérification de signature est le seul rempart de cette route, et la
+		// tester avec un secret factice mais un vrai HMAC est tout l'intérêt.
+		// La clé d'API, elle, ne sert jamais — la passerelle est remplacée.
+		registre.add("attenso.paiement.cle", () -> "sk_test_jamais_appelee");
+		registre.add("attenso.paiement.secret-webhook", () -> SECRET_WEBHOOK);
+		registre.add("attenso.paiement.prix.comptoir", () -> "price_comptoir");
+		registre.add("attenso.paiement.prix.clinique", () -> "price_clinique");
+		registre.add("attenso.paiement.prix.centre", () -> "price_centre");
+		registre.add("attenso.paiement.cron-fin", () -> JAMAIS);
 	}
 
 	@Autowired

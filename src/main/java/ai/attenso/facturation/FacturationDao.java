@@ -46,10 +46,22 @@ public class FacturationDao {
 
 	/** Ferme l'abonnement en cours s'il existe, puis en ouvre un neuf. */
 	public void souscrire(UUID tenantId, Palier palier, LocalDate debut) {
+		souscrire(tenantId, palier, debut, "ACTIF");
+	}
+
+	/**
+	 * Le même, en choisissant l'état.
+	 *
+	 * <p>Une inscription en ligne ouvre un abonnement {@code EN_ATTENTE} : la
+	 * clinique existe, sa page de paiement est ouverte, et rien n'est confirmé
+	 * tant que Stripe n'a pas rappelé. L'inscrire directement en ACTIF
+	 * donnerait un abonnement gratuit à quiconque ferme l'onglet.
+	 */
+	public void souscrire(UUID tenantId, Palier palier, LocalDate debut, String statut) {
 		jdbc.update("UPDATE abonnement SET fin = ? WHERE tenant_id = ? AND fin IS NULL",
 				debut.minusDays(1), tenantId);
-		jdbc.update("INSERT INTO abonnement (tenant_id, palier, debut) VALUES (?, ?, ?)",
-				tenantId, palier.name(), debut);
+		jdbc.update("INSERT INTO abonnement (tenant_id, palier, debut, statut) "
+				+ "VALUES (?, ?, ?, ?)", tenantId, palier.name(), debut, statut);
 	}
 
 	// --- Factures -------------------------------------------------------

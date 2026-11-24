@@ -57,6 +57,14 @@ services:
       ATTENSO_PUSH_CLE_PUBLIQUE: ${ATTENSO_PUSH_CLE_PUBLIQUE:-}
       ATTENSO_PUSH_CLE_PRIVEE: ${ATTENSO_PUSH_CLE_PRIVEE:-}
       ATTENSO_SUPERVISION_WEBHOOK: ${ATTENSO_SUPERVISION_WEBHOOK:-}
+
+      # Souscription payante. Absents, ils ferment l'inscription en ligne
+      # sans rien casser pour les cliniques déjà ouvertes.
+      ATTENSO_STRIPE_CLE: ${ATTENSO_STRIPE_CLE:-}
+      ATTENSO_STRIPE_WEBHOOK: ${ATTENSO_STRIPE_WEBHOOK:-}
+      ATTENSO_STRIPE_PRIX_COMPTOIR: ${ATTENSO_STRIPE_PRIX_COMPTOIR:-}
+      ATTENSO_STRIPE_PRIX_CLINIQUE: ${ATTENSO_STRIPE_PRIX_CLINIQUE:-}
+      ATTENSO_STRIPE_PRIX_CENTRE: ${ATTENSO_STRIPE_PRIX_CENTRE:-}
     # Publié sur la BOUCLE LOCALE seulement. L'application parle du HTTP en
     # clair — jetons du personnel compris — et la lier à 0.0.0.0 sur une
     # machine publique exposerait ce clair à l'Internet. Le TLS est terminé par

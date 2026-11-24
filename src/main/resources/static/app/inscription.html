@@ -11,6 +11,8 @@
 <body>
 <main class="enveloppe enveloppe--etroite" id="formulaire-bloc">
   <h1>Inscrire ma clinique</h1>
+  <!-- Rempli au retour du prestataire de paiement, jamais autrement. -->
+  <div class="message message--info" id="retour-paiement" role="status" hidden></div>
   <p class="discret">
     Trois minutes, aucun matériel, aucune installation. Vous repartez avec
     l'adresse du QR code à imprimer et poser au comptoir.
@@ -67,11 +69,21 @@
 </main>
 
 <main class="enveloppe enveloppe--etroite" id="resultat" hidden>
-  <h1>C'est prêt</h1>
+  <h1>Plus qu'une étape</h1>
   <div class="message message--info" role="status">
-    Votre file tourne déjà. Connectez-vous avec l'adresse et le mot de passe
-    que vous venez de choisir.
+    Votre clinique est réservée, mais elle <strong>n'est pas encore
+    ouverte</strong> : l'abonnement se confirme au paiement. Gardez les
+    adresses ci-dessous, elles sont déjà les vôtres.
   </div>
+
+  <p><a class="bouton b-principal b-pleine-largeur" id="aller-payer" href="#">
+    Payer et ouvrir ma clinique
+  </a></p>
+  <p class="discret">
+    Paiement par carte ou prélèvement, sur une page de notre prestataire. Nous
+    ne voyons jamais votre numéro de carte. Résiliable à tout moment, sans
+    préavis : vous gardez le service jusqu'à la fin de la période payée.
+  </p>
 
   <h2>À imprimer et poser au comptoir</h2>
   <p>Le QR code de vos clients pointe vers&nbsp;: <code id="url-comptoir"></code></p>
@@ -99,9 +111,11 @@
     depuis le QR code.
   </p>
 
-  <p><a class="bouton b-principal b-pleine-largeur" href="/accueil">
-    Ouvrir mon tableau d'accueil
-  </a></p>
+  <p class="discret">
+    Une fois le paiement confirmé, votre tableau d'accueil s'ouvre sur
+    <a href="/accueil">/accueil</a>, avec l'adresse et le mot de passe que
+    vous venez de choisir.
+  </p>
 </main>
 
 <script type="module">
@@ -109,6 +123,21 @@ import { appel } from '/app/attenso.js';
 import { euros, nomPalier } from '/app/formats.js';
 
 const el = (id) => document.getElementById(id);
+
+// Le retour du prestataire. On ne se fie PAS à ce paramètre pour décider que
+// l'abonnement est actif — seul le webhook signé le fait — mais il faut bien
+// dire quelque chose à quelqu'un qui revient de la page de paiement.
+const retour = new URLSearchParams(location.search).get('paiement');
+if (retour === 'ok') {
+  el('retour-paiement').textContent = "Paiement enregistré. Votre clinique "
+    + "s'ouvre dès que notre prestataire nous l'a confirmé, en général en "
+    + 'quelques secondes.';
+  el('retour-paiement').hidden = false;
+} else if (retour === 'abandon') {
+  el('retour-paiement').textContent = "Paiement abandonné. Votre clinique est "
+    + 'réservée : reprenez quand vous voulez, rien n\'est perdu.';
+  el('retour-paiement').hidden = false;
+}
 
 // Les prix viennent du serveur : les recopier ici ferait diverger la page de
 // la facture dès le premier changement de tarif.
@@ -156,6 +185,7 @@ el('formulaire').addEventListener('submit', async (evenement) => {
       el('titre-ecran').hidden = false;
       el('bloc-ecran').hidden = false;
     }
+    el('aller-payer').href = reponse.urlPaiement;
     el('formulaire-bloc').hidden = true;
     el('resultat').hidden = false;
   } catch (echec) {
