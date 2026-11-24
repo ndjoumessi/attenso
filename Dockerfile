@@ -6,11 +6,28 @@
 FROM maven:3.9-eclipse-temurin-17 AS construction
 WORKDIR /source
 
+# Node, pour construire le front. L'image Maven ne l'a pas, et le dépôt
+# NodeSource est ici préféré à un téléchargement de binaire par un plugin
+# Maven : il est signé, versionné, et l'étage entier disparaît de l'image
+# finale. Rien de tout cela ne subsiste à l'exécution — ENF-04 parle des
+# appels sortants du PRODUIT, pas de ceux de sa fabrication.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # Les dépendances d'abord, le code ensuite : une correction d'une ligne dans
 # un contrôleur ne doit pas refaire tout le téléchargement Maven.
 COPY pom.xml .
 RUN mvn -q -B dependency:go-offline
 
+# Les dépendances du front avant son code, pour la même raison que celles de
+# Maven : une correction dans un composant ne doit pas refaire npm ci.
+COPY front/package.json front/package-lock.json ./front/
+RUN cd front && npm ci --no-fund --no-audit
+
+COPY front ./front
 COPY src ./src
 COPY package.json .
 # Les tests exigent Docker (Testcontainers) et ne peuvent donc pas tourner

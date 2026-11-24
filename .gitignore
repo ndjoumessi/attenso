@@ -52,3 +52,11 @@ docs/
 
 # --- Écrans ---
 node_modules/
+
+# Sorties de la construction du front (Vite). Le source vit dans front/ ;
+# ces fichiers sont régénérés par `mvn generate-resources`, et les committer
+# ferait deux vérités pour une seule page.
+/src/main/resources/static/app/vitrine.html
+/src/main/resources/static/app/assets/
+/front/node_modules/
+/front/.ssr/

@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* Les jetons restent la SOURCE des couleurs, et Tailwind les lit.
+ *
+ * Chaque valeur y est mesurée contre son fond d'usage, et `jetons.test.js`
+ * revérifie les ratios dans les deux modes. Redéclarer des couleurs ici en
+ * ferait une seconde source, qui dériverait de la première sans que le test
+ * s'en aperçoive — il lit le fichier, pas la page. */
+@import "../../src/main/resources/static/app/jetons.css";
+
+@theme inline {
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-surface-douce: var(--surface-douce);
+  --color-sur-fond: var(--sur-fond);
+  --color-sur-fond-doux: var(--sur-fond-doux);
+  --color-bordure-controle: var(--bordure-controle);
+  --color-bordure-douce: var(--bordure-douce);
+  --color-accent: var(--accent);
+  --color-sur-accent: var(--sur-accent);
+  --color-accent-voile: var(--accent-voile);
+  --color-accent-texte: var(--accent-texte);
+  --color-alerte: var(--alerte);
+  --color-sur-alerte: var(--sur-alerte);
+  --color-alerte-voile: var(--alerte-voile);
+  --color-attention: var(--attention);
+  --color-sur-attention: var(--sur-attention);
+  --color-attention-voile: var(--attention-voile);
+  --color-bande-contraste: var(--bande-contraste);
+  --color-sur-bande-contraste: var(--sur-bande-contraste);
+  --color-sur-bande-contraste-doux: var(--sur-bande-contraste-doux);
+
+  --radius-sm: var(--rayon-sm);
+  --radius-DEFAULT: var(--rayon);
+  --radius-lg: var(--rayon-lg);
+
+  --shadow-1: var(--ombre-1);
+  --shadow-2: var(--ombre-2);
+}
+
+/* La cible tactile du produit : 56 px, au-dessus des 44 d'Apple et des 48 de
+ * Material. Justifiée par le comptoir — une tablette touchée au doigt par
+ * quelqu'un qui tient un animal de l'autre main. */
+@utility cible {
+  min-height: var(--cible);
+}
+@utility cible-min {
+  min-height: var(--cible-min);
+}
+
+html {
+  color-scheme: light dark;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

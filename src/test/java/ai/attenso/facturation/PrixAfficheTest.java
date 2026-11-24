@@ -101,13 +101,23 @@ class PrixAfficheTest {
 	void elleNAnnonceRienQuiNeCorrespondeAUnPalier() throws IOException {
 		// Le pendant du test précédent : sans lui, une ancienne valeur laissée
 		// sur la page passerait inaperçue tant que la nouvelle y figure aussi.
-		assertThat(nombresDe("(\\d+) €<small> / mois</small>"))
+		// Le <small> peut porter des attributs — la vitrine est rendue par
+		// React, qui y pose une classe. Ce qui est gardé ici, c'est que les
+		// prix affichés sont EXACTEMENT ceux des paliers, pas la forme du
+		// balisage ; coupler le garde à un attribut près le rendrait fragile
+		// sans rien protéger de plus.
+		assertThat(nombresDe("(\\d+) €<small[^>]*> / mois</small>"))
 				.as("les prix d'abonnement affichés sur la vitrine")
 				.isNotEmpty()
 				.containsExactlyInAnyOrder(Arrays.stream(Palier.values())
 						.map(p -> p.prixCentimes() / 100).toArray(Integer[]::new));
 
-		assertThat(nombresDe("Jusqu'à ([\\d\\s\\u00a0\\u202f]+) visites par mois"))
+		// L'apostrophe peut arriver échappée : la vitrine est rendue par React,
+		// qui écrit « &#x27; » là où la page écrite à la main écrivait « \' ».
+		// C'est le MÊME caractère une fois affiché ; anchorer le garde sur son
+		// encodage le ferait échouer sur une page pourtant juste.
+		assertThat(nombresDe("Jusqu(?:'|\u2019|&#x27;|&#39;)"
+				+ "à ([\\d\\s\\u00a0\\u202f]+) visites par mois"))
 				.as("les volumes inclus affichés sur la vitrine")
 				.isNotEmpty()
 				.containsExactlyInAnyOrder(Arrays.stream(Palier.values())
