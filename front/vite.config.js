@@ -26,6 +26,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         vitrine: resolve(import.meta.dirname, 'app/vitrine.html'),
+        ecran: resolve(import.meta.dirname, 'app/ecran.html'),
       },
     },
   },
