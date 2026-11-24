@@ -57,8 +57,14 @@ services:
       ATTENSO_PUSH_CLE_PUBLIQUE: ${ATTENSO_PUSH_CLE_PUBLIQUE:-}
       ATTENSO_PUSH_CLE_PRIVEE: ${ATTENSO_PUSH_CLE_PRIVEE:-}
       ATTENSO_SUPERVISION_WEBHOOK: ${ATTENSO_SUPERVISION_WEBHOOK:-}
+    # Publié sur la BOUCLE LOCALE seulement. L'application parle du HTTP en
+    # clair — jetons du personnel compris — et la lier à 0.0.0.0 sur une
+    # machine publique exposerait ce clair à l'Internet. Le TLS est terminé par
+    # un proxy inverse sur l'hôte, qui est aussi ce qui porte le certificat du
+    # domaine ; il reste à poser au jalon L2 et ne peut pas vivre ici, puisque
+    # ce fichier ne connaît pas le domaine.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
 volumes:
   donnees:

@@ -93,6 +93,30 @@ conteneur déclaré prêt trop tôt reçoit du trafic qu'il ne peut pas servir.
 interne. Publier 5432 sur une machine publique est la faute la plus courante de
 ce genre de fichier, et elle donnerait accès à toutes les cliniques d'un coup.
 
+**L'application ne publie qu'en boucle locale.** Elle parle du HTTP en clair —
+les jetons du personnel y passent — donc la lier à `0.0.0.0` sur une machine
+publique exposerait ce clair à l'Internet. Le port est donc publié sur
+`127.0.0.1`, et le TLS est terminé par un proxy inverse sur l'hôte, qui est
+aussi ce qui porte le certificat du domaine. Ce proxy ne peut pas vivre dans ce
+descripteur, qui ne connaît pas le domaine : c'est une pièce du jalon L2.
+
+**Ce que le conteneur applicatif détient, et ce que ça coûte.** Il reçoit les
+**deux** rôles : l'applicatif pour servir, le propriétaire pour que Flyway
+migre au démarrage. Une exécution de code arbitraire dans l'application
+contourne donc le RLS. Et ce n'est pas une affaire de superutilisateur : le
+propriétaire d'une table n'est pas soumis à ses politiques, de sorte qu'un rôle
+propriétaire dédié et non superutilisateur ne changerait rien à ce point précis
+— seul `FORCE ROW LEVEL SECURITY` le ferait, et il casserait les migrations.
+Ce n'est pas non plus ce que la seconde barrière protège : elle existe contre
+un `WHERE tenant_id` oublié dans le code, pas contre un attaquant qui exécute
+ce qu'il veut. Le vrai remède est de sortir Flyway de l'application — un
+service à usage unique qui migre puis s'arrête, seul porteur du mot de passe
+propriétaire, avec `spring.flyway.enabled=false` côté application. Pas fait :
+ça ferait diverger le chemin de migration de celui du développement et des
+tests, où Flyway tourne dans le processus, et cette divergence est exactement
+ce qui a produit les deux pièges ci-dessous. À reprendre le jour où il y aura
+plus d'une machine à migrer.
+
 **Base Jammy et non Alpine**, délibérément : Temurin ne publie pas de JRE
 Alpine pour arm64, et l'image ne se construirait donc ni sur un Mac Apple
 Silicon ni sur un serveur ARM — qui sont justement les machines les moins

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.attenso.agenda.AgendaDao;
 import ai.attenso.agenda.CreneauComplet;
+import ai.attenso.agenda.CreneauPasse;
 import ai.attenso.agenda.RendezVous;
 import ai.attenso.agenda.ServiceAgenda;
 import ai.attenso.agenda.TacheRappelRendezVous;
@@ -166,6 +167,22 @@ class AgendaIntegrationTest extends SocleIntegration {
 		dao.materialiser(id, hier, LocalTime.of(9, 0), (short) 5);
 
 		assertThat(agenda.disponibles(clinique, hier, hier.plusDays(30))).isEmpty();
+	}
+
+	@Test
+	@DisplayName("réserver un créneau passé est refusé, et ne prend aucune place")
+	void reserverUnCreneauPasseEstRefuse() {
+		UUID id = installer("agenda-passe-api");
+		LocalDate hier = LocalDate.now().minusDays(1);
+		dao.materialiser(id, hier, LocalTime.of(9, 0), (short) 5);
+
+		// Le test voisin ne couvre que l'AFFICHAGE. Ne pas le rejouer ici
+		// laisserait le chemin d'écriture sans garde : il suffisait de poster
+		// directement sur l'API pour réserver une heure révolue.
+		assertThatThrownBy(() -> agenda.reserver(clinique, hier, LocalTime.of(9, 0),
+				"0612345678", "vaccin")).isInstanceOf(CreneauPasse.class);
+
+		assertThat(dao.creneaux(id, hier, hier).get(0).prises()).isZero();
 	}
 
 	@Test

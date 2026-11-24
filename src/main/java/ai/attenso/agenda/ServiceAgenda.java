@@ -95,15 +95,26 @@ public class ServiceAgenda {
 
 	/** Les créneaux encore réservables, à partir de maintenant. */
 	public List<Creneau> disponibles(Tenant tenant, LocalDate debut, LocalDate fin) {
-		LocalDate aujourdhui = LocalDate.now(horloge.withZone(tenant.zone()));
-		LocalTime maintenant = LocalTime.now(horloge.withZone(tenant.zone()));
 		return dao.creneaux(tenant.id(), debut, fin).stream()
 				.filter(c -> !c.complet())
-				// Un créneau de ce matin n'est pas réservable cet après-midi :
-				// l'afficher ferait prendre un rendez-vous déjà passé.
-				.filter(c -> c.jour().isAfter(aujourdhui)
-						|| (c.jour().equals(aujourdhui) && c.heure().isAfter(maintenant)))
+				.filter(c -> encoreReservable(tenant, c.jour(), c.heure()))
 				.toList();
+	}
+
+	/**
+	 * Un créneau de ce matin n'est pas réservable cet après-midi.
+	 *
+	 * <p>UNE seule règle, partagée par l'affichage et par l'écriture. Elle ne
+	 * vivait que dans le filtre d'affichage, et c'était un défaut : rien
+	 * n'empêchait de poster directement sur {@code /t/{slug}/rendez-vous} pour
+	 * réserver une heure déjà passée. Un garde qui ne tient que dans la vue ne
+	 * garde rien.
+	 */
+	public boolean encoreReservable(Tenant tenant, LocalDate jour, LocalTime heure) {
+		LocalDate aujourdhui = LocalDate.now(horloge.withZone(tenant.zone()));
+		LocalTime maintenant = LocalTime.now(horloge.withZone(tenant.zone()));
+		return jour.isAfter(aujourdhui)
+				|| (jour.equals(aujourdhui) && heure.isAfter(maintenant));
 	}
 
 	/**
@@ -119,13 +130,24 @@ public class ServiceAgenda {
 		String e164 = (telephoneBrut == null || telephoneBrut.isBlank()) ? null
 				: NumeroTelephone.normaliser(telephoneBrut).orElseThrow(NumeroInvalide::new);
 
+		// Vérifié AVANT de prendre la place : sinon un créneau passé consomme
+		// une place le temps que la transaction s'annule.
+		if (!encoreReservable(tenant, jour, heure)) {
+			throw new CreneauPasse(jour, heure);
+		}
+
 		UUID creneauId = dao.reserverUnePlace(tenant.id(), jour, heure)
 				.orElseThrow(() -> new CreneauComplet(jour, heure));
 
 		UUID id = UUID.randomUUID();
 		String reference = references.suivante();
 		dao.poser(tenant.id(), id, creneauId, jour, heure, reference, e164, motif);
-		JOURNAL.info("rendez-vous {} pris pour {} le {} à {}", reference, tenant.slug(), jour,
+		// L'identifiant interne, JAMAIS la référence : celle-ci est le seul
+		// justificatif du client — elle ouvre /api/rendez-vous/{reference} et
+		// autorise l'annulation. Dans un journal, c'est une capacité d'annuler
+		// le rendez-vous d'un inconnu. Aucun autre service de ce produit ne
+		// journalise une référence.
+		JOURNAL.info("rendez-vous {} pris pour {} le {} à {}", id, tenant.slug(), jour,
 				heure);
 		return new RendezVous(id, reference, jour, heure, e164, motif, "CONFIRME", null,
 				horloge.instant());

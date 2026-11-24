@@ -52,6 +52,16 @@ public class GestionnaireErreurs {
 				"Ce créneau vient d'être pris. Choisissez une autre heure.");
 	}
 
+	@ExceptionHandler(ai.attenso.agenda.CreneauPasse.class)
+	ProblemDetail creneauPasse(ai.attenso.agenda.CreneauPasse erreur) {
+		// 409 comme le créneau complet, et pour la même raison : la demande
+		// était formée correctement, c'est l'heure qui a tourné. Le message
+		// invite à recharger, puisque la page affichée est périmée.
+		return probleme(HttpStatus.CONFLICT, "Créneau passé",
+				"Cette heure est déjà passée. Rechargez la page pour voir les "
+						+ "créneaux encore libres.");
+	}
+
 	@ExceptionHandler(ai.attenso.inscription.PalierInconnu.class)
 	ProblemDetail palierInconnu(ai.attenso.inscription.PalierInconnu erreur) {
 		return probleme(HttpStatus.BAD_REQUEST, "Formule inconnue",
