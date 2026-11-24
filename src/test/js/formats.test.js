@@ -3,7 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 
 import {
-  duree, euros, grouperParJour, heureCourte, jourAvecAnnee, jourLong, minutes,
+  aujourdhui, duree, euros, grouperParJour, heureCourte, jourAvecAnnee, jourLong,
+  minutes, nomPalier,
 } from '../../main/resources/static/app/formats.js';
 
 describe("l'annonce d'attente", () => {
@@ -144,5 +145,64 @@ describe('un montant', () => {
 
   it('accepte les gros montants sans perdre le séparateur de milliers', () => {
     assert.match(insecable(euros(149000)), /^1 490 €$/);
+  });
+});
+
+describe("la date du jour de l'appareil", () => {
+  const MODULE = new URL('../../main/resources/static/app/formats.js',
+    import.meta.url).pathname;
+
+  /** Même raison qu'au-dessus : le fuseau est figé au démarrage de node. */
+  const dansLeFuseau = (zone, appel) => execFileSync(process.execPath,
+    ['--input-type=module', '-e',
+      `import('${MODULE}').then((m) => process.stdout.write(${appel}));`],
+    { env: { ...process.env, TZ: zone }, encoding: 'utf8' });
+
+  it('rend AAAA-MM-JJ, à zéros complétés', () => {
+    assert.equal(aujourdhui(new Date(2026, 0, 5, 12, 0)), '2026-01-05');
+  });
+
+  /**
+   * L'HEURE QUI COMPTE. 23 h 30 UTC le 23 novembre, c'est déjà le 24 à Paris.
+   * `toISOString()` rendait « 2026-11-23 », et les deux écrans qui s'en
+   * servaient le payaient : un rappel de vaccin dépassé affiché comme à venir,
+   * et surtout des gestes hors réseau estampillés de la veille, donc abandonnés
+   * au rechargement suivant comme « d'un autre jour ».
+   */
+  it("ne retarde pas d'un jour après minuit en France", () => {
+    const apresMinuitAParis = "m.aujourdhui(new Date('2026-11-23T23:30:00Z'))";
+    assert.equal(dansLeFuseau('Europe/Paris', apresMinuitAParis), '2026-11-24');
+    // L'été, le décalage est de deux heures : 22 h 30 UTC suffit.
+    assert.equal(
+      dansLeFuseau('Europe/Paris', "m.aujourdhui(new Date('2026-06-23T22:30:00Z'))"),
+      '2026-06-24');
+  });
+
+  it("ne devance pas d'un jour à l'ouest de Greenwich", () => {
+    // Le pendant : 00 h 30 UTC le 24, c'est encore le 23 à Pago Pago. Une
+    // implémentation qui rendrait bêtement la date UTC se tromperait ici dans
+    // l'autre sens.
+    assert.equal(
+      dansLeFuseau('Pacific/Pago_Pago', "m.aujourdhui(new Date('2026-11-24T00:30:00Z'))"),
+      '2026-11-23');
+  });
+});
+
+describe("le nom d'un palier", () => {
+  // Le vrai cas : le tableau de facturation écrivait « Formule COMPTOIR » là
+  // où l'inscription écrivait « Comptoir ». La même clinique lisait deux noms
+  // pour sa propre formule.
+  it('ne crie pas', () => {
+    assert.equal(nomPalier('COMPTOIR'), 'Comptoir');
+    assert.equal(nomPalier('CLINIQUE'), 'Clinique');
+    assert.equal(nomPalier('CENTRE'), 'Centre');
+  });
+
+  // Une clinique du pilote n'a pas d'abonnement : le serveur rend null, et la
+  // page doit écrire une phrase, pas « Formule null ».
+  it("rend une chaîne vide quand il n'y a pas de palier", () => {
+    assert.equal(nomPalier(null), '');
+    assert.equal(nomPalier(undefined), '');
+    assert.equal(nomPalier(''), '');
   });
 });

@@ -184,7 +184,9 @@ import { disponible, lireEtat, poserEtat, vider as viderJournal } from '/app/jou
 import {
   ACTIONS, CIBLES, CLASSES, LIBELLES, avecEnAttente, deplacementsPour, signature,
 } from '/app/vue-file.js';
-import { duree, euros, heureCourte, jourLong } from '/app/formats.js';
+import {
+  aujourdhui, duree, euros, heureCourte, jourLong, nomPalier,
+} from '/app/formats.js';
 
 const CLE_JETON = 'attenso.jeton';
 const CLE_CLINIQUE = 'attenso.clinique';
@@ -706,13 +708,15 @@ async function relireExploitation() {
     const facturation = await appel('/api/facturation', entete);
     el('bloc-abonnement').textContent = facturation.palier === null
       ? 'Pilote : aucun abonnement en cours.'
-      : `Formule ${facturation.palier} — ${facturation.visitesDuMois} visite(s) ce mois `
+      : `Formule ${nomPalier(facturation.palier)} — ${facturation.visitesDuMois} `
+        + `visite(s) ce mois `
         + `sur ${facturation.visitesIncluses} incluses`
         + (facturation.depassementCentimes > 0
           ? `, dépassement ${euros(facturation.depassementCentimes)}.` : '.');
     const conseil = el('conseil-palier');
     conseil.textContent = facturation.palierConseille
-      ? `À ce rythme, la formule ${facturation.palierConseille} vous coûterait moins `
+      ? `À ce rythme, la formule ${nomPalier(facturation.palierConseille)} vous `
+        + `coûterait moins `
         + `cher que le dépassement.`
       : '';
     conseil.hidden = !facturation.palierConseille;
@@ -784,7 +788,7 @@ async function demarrer() {
     peindre();
   }
 
-  const jour = cache?.valeur?.jour ?? new Date().toISOString().slice(0, 10);
+  const jour = cache?.valeur?.jour ?? aujourdhui();
   actions = fileDActions({ jeton, jour, liaison, surEtat: annoncer });
   const perimees = await actions.reprendre();
   if (perimees > 0) {

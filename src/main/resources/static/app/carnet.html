@@ -30,7 +30,7 @@
 
 <script type="module">
 import { appel } from '/app/attenso.js';
-import { jourAvecAnnee } from '/app/formats.js';
+import { aujourdhui, jourAvecAnnee } from '/app/formats.js';
 
 const jeton = location.pathname.split('/').filter(Boolean)[1];
 const el = (id) => document.getElementById(id);
@@ -42,7 +42,7 @@ try {
   el('espece').textContent = carnet.espece;
   document.title = `${carnet.animal} — carnet de santé`;
 
-  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const ceJour = aujourdhui();
   el('aucun').hidden = carnet.vaccins.length > 0;
   el('vaccins').replaceChildren(...carnet.vaccins.map((vaccin) => {
     const item = document.createElement('li');
@@ -64,7 +64,7 @@ try {
       const rappel = document.createElement('span');
       // En retard : la teinte d'alerte. C'est la seule information de cette
       // page qui demande une action, elle doit se voir.
-      const enRetard = vaccin.rappelLe < aujourdhui;
+      const enRetard = vaccin.rappelLe < ceJour;
       rappel.className = 'etiquette ' + (enRetard ? 'etiquette--urgence'
         : 'etiquette--prioritaire');
       rappel.textContent = (enRetard ? 'rappel dépassé — ' : 'rappel le ')

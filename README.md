@@ -577,6 +577,21 @@ changement qui coûterait plus cher, et ne conseille une *baisse* que sur un moi
 complet — la première version poussait une clinique inscrite la veille à
 descendre de formule, sur un compteur à zéro parce que le mois commençait.
 
+**La vitrine annonçait autre chose que le produit.** Ses trois formules sont
+écrites en dur — une page d'accueil n'a pas à attendre une API pour trois noms
+et six nombres qui changent une fois par an — et personne ne les vérifiait. Elle
+promettait « jusqu'à 400 visites » là où Comptoir en inclut 300, « 1 000 » là où
+Clinique en inclut 800, et appelait « Cabinet » le palier nommé Comptoir partout
+ailleurs. Une clinique pouvait donc s'abonner sur une promesse de 400 visites et
+recevoir du dépassement dès la 301ᵉ. Corrigé, et `PrixAfficheTest` tient
+désormais les trois colonnes — nom, prix, volume — plus le tarif de dépassement,
+dans les deux sens : chaque palier doit être annoncé, et aucune valeur affichée
+ne doit correspondre à rien.
+
+Le même raisonnement a déplacé la mise en avant de la page : elle était sur
+Clinique, c'est-à-dire sur la formule dominée. Elle est sur Comptoir, comme la
+présélection de l'inscription.
+
 ### Supervision (EF-903)
 
 Trois contrôles, choisis parce qu'ils correspondent à trois pannes réelles et

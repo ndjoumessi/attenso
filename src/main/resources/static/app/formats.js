@@ -113,3 +113,56 @@ export function euros(centimes) {
     minimumFractionDigits: centimes % 100 === 0 ? 0 : 2,
   });
 }
+
+/**
+ * La date du jour de l'APPAREIL, en « AAAA-MM-JJ ».
+ *
+ * <p>Et non {@code new Date().toISOString().slice(0, 10)}, qui rend la date
+ * UTC. En France, entre minuit et 1 h l'hiver — 2 h l'été — la date UTC est
+ * encore celle de la veille, et les deux écrans qui s'en servaient en
+ * souffraient chacun à sa façon :
+ *
+ * <ul>
+ * <li>le carnet de santé affichait « rappel le … » pour un rappel pourtant
+ * dépassé de la veille, c'est-à-dire la seule information de la page qui
+ * demande une action ;</li>
+ * <li>le tableau de l'accueil s'en servait comme jour de repli pour la file
+ * de gestes hors réseau. Un geste estampillé de la veille est jugé « d'un
+ * autre jour » au rechargement suivant, donc ABANDONNÉ — du travail perdu,
+ * précisément pendant l'heure où une clinique de garde s'en sert.</li>
+ * </ul>
+ *
+ * <p>Les accesseurs locaux plutôt qu'un formateur : {@code getFullYear},
+ * {@code getMonth} et {@code getDate} disent dans leur nom qu'ils lisent
+ * l'heure locale, là où passer par une locale qui rend « AAAA-MM-JJ »
+ * marcherait par effet de bord.
+ *
+ * <p>Le résultat se compare directement aux dates du serveur, qui arrivent au
+ * même format : sur des dates ISO, l'ordre des chaînes EST l'ordre
+ * chronologique.
+ *
+ * @param maintenant injectable pour les tests ; sinon l'instant courant.
+ */
+export function aujourdhui(maintenant = new Date()) {
+  const mois = String(maintenant.getMonth() + 1).padStart(2, '0');
+  const jour = String(maintenant.getDate()).padStart(2, '0');
+  return `${maintenant.getFullYear()}-${mois}-${jour}`;
+}
+
+/**
+ * Le nom d'un palier tel qu'on l'écrit : « COMPTOIR » → « Comptoir ».
+ *
+ * <p>Les paliers circulent sous le nom de l'énumération Java, en capitales.
+ * Le tableau de facturation l'affichait tel quel — « Formule COMPTOIR » — là
+ * où la page d'inscription écrivait « Comptoir » : la même clinique lisait
+ * deux noms pour sa propre formule, dont un qui criait.
+ *
+ * <p>Pas de table de correspondance : les trois noms du §13 sont exactement
+ * les noms de l'énumération, et en ajouter une inviterait à les faire
+ * diverger. Si un palier devait un jour s'appeler autrement que sa constante,
+ * c'est le serveur qui enverrait le libellé.
+ */
+export function nomPalier(nom) {
+  if (!nom) return '';
+  return nom.charAt(0).toUpperCase() + nom.slice(1).toLowerCase();
+}

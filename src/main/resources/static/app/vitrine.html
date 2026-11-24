@@ -178,23 +178,39 @@
   <section class="bande" aria-labelledby="titre-tarifs">
     <div class="colonne">
       <h2 id="titre-tarifs">Ensuite, selon votre volume</h2>
+      <!--
+        Noms, prix et volumes repris du §13, à la lettre. Ils sont écrits en
+        dur — une page d'accueil n'a pas à attendre une API pour trois nombres
+        qui changent une fois l'an — et c'est PrixAfficheTest qui les garde
+        alignés sur l'énumération Palier. Il mord sur les trois à la fois.
+
+        La mise en avant est sur Comptoir, et non sur la formule du milieu
+        comme le veut l'usage : à aucun volume Clinique n'est la moins chère
+        (Comptoir plus dépassement la bat partout). Mettre en avant la formule
+        du milieu serait vendre contre l'intérêt du client, et c'est déjà la
+        raison pour laquelle l'inscription présélectionne Comptoir.
+      -->
       <ul class="tarifs">
-        <li class="tarif">
-          <p class="tarif-nom">Cabinet</p>
-          <p class="tarif-prix">69 €<small> / mois</small></p>
-          <p class="tarif-detail">Jusqu'à 400 visites par mois</p>
-        </li>
         <li class="tarif tarif--mis-en-avant">
+          <p class="tarif-nom">Comptoir</p>
+          <p class="tarif-prix">69 €<small> / mois</small></p>
+          <p class="tarif-detail">Jusqu'à 300 visites par mois</p>
+        </li>
+        <li class="tarif">
           <p class="tarif-nom">Clinique</p>
           <p class="tarif-prix">149 €<small> / mois</small></p>
-          <p class="tarif-detail">Jusqu'à 1 000 visites par mois</p>
+          <p class="tarif-detail">Jusqu'à 800 visites par mois</p>
         </li>
         <li class="tarif">
           <p class="tarif-nom">Centre</p>
           <p class="tarif-prix">239 €<small> / mois</small></p>
-          <p class="tarif-detail">Au-delà, SMS inclus</p>
+          <p class="tarif-detail">Jusqu'à 1 500 visites par mois</p>
         </li>
       </ul>
+      <p class="discret" style="margin-top: var(--pas-3);">
+        Au-delà du volume inclus, chaque visite supplémentaire est facturée
+        0,15 €.
+      </p>
       <p class="discret" style="margin-top: var(--pas-4);">
         Au volume, pas au nombre de vétérinaires : une clinique à trois
         praticiens qui voit peu de monde ne paie pas pour ses confrères.
