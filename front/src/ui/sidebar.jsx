@@ -29,10 +29,20 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
-/* Le seuil de la barre, face JavaScript. Les 768 de shadcn laissaient un rail
- * d'icônes sur une tablette tenue en portrait ; 900 px donne un tiroir. La
- * face CSS est `--breakpoint-barre` dans styles.css, et les classes `barre:`
- * ci-dessous en viennent. Les deux doivent rester accordées. */
+/* Le seuil de la barre, et sa SEULE déclaration. Les 768 de shadcn laissaient
+ * un rail d'icônes sur une tablette tenue en portrait ; 900 px donne un tiroir.
+ *
+ * Il n'a pas de face CSS, et c'est la correction d'un défaut. Les classes
+ * `barre:block` / `barre:flex` qui gardaient le panneau compilaient vers
+ * `@media (width>=900px)` : Lightning CSS écrit la syntaxe d'INTERVALLE dès que
+ * `build.cssTarget` l'autorise, et la réécrit même si la source dit
+ * `min-width`. Safari ne la lit qu'à partir de 16.4, alors qu'ENF-08 demande
+ * 16.0 — sur un iPad en 16.0-16.3 tenu en paysage, le panneau restait
+ * `display:none` et il n'existait plus AUCUNE navigation.
+ *
+ * `isMobile` ci-dessous tranche donc seul, par `matchMedia` et `max-width`, lu
+ * depuis Safari 9 : la branche rendue EST la bonne, aucune requête de média ne
+ * vient la contredire. Une seule source, donc rien à tenir accordé. */
 const SEUIL_BARRE = 900
 
 const SidebarContext = React.createContext(null)
@@ -163,13 +173,18 @@ function Sidebar({
   }
 
   if (isMobile) {
+    // Le bouton de fermeture de Radix est RENDU, là où shadcn le masquait par
+    // `[&>button]:hidden` sur SheetContent. Sous le seuil, la barre EST le
+    // tiroir : sans lui on n'en sort que par la pellicule, Échap ou en
+    // choisissant une entrée — et sur une tablette tenue à une main, la bande
+    // de pellicule à côté d'un tiroir de 18rem est une cible étroite.
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE
@@ -177,9 +192,14 @@ function Sidebar({
           }
           side={side}
         >
+          {/* En français : ce sont les deux chaînes que le lecteur d'écran
+              annonce à l'ouverture du tiroir, dans un produit qui n'a pas une
+              seule autre phrase en anglais. */}
           <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+            <SheetTitle>Navigation</SheetTitle>
+            <SheetDescription>
+              Les écrans du tableau de la clinique.
+            </SheetDescription>
           </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
@@ -189,7 +209,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground barre:block"
+      className="group peer block text-sidebar-foreground"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -211,7 +231,7 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear barre:flex",
+          "fixed inset-y-0 z-10 flex h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

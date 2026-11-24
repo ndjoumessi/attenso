@@ -1,3 +1,4 @@
+import { PanelLeftIcon } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuBadge,
@@ -38,7 +39,10 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="px-3 py-4">
+      {/* `pr-10` dégage la place du bouton de fermeture du tiroir, posé en
+          `absolute top-4 right-4` par `sheet.jsx` : un nom de clinique long
+          passerait sous la croix. */}
+      <SidebarHeader className="px-3 py-4 pr-10">
         <p className="text-base font-bold leading-tight">{clinique}</p>
       </SidebarHeader>
       <SidebarSeparator />
@@ -86,13 +90,17 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
  * `--barre-active` : un libellé doux y donnerait 1,05:1 en clair.
  */
 function Entree({ vue, active, compteur, surClic }) {
+  const Icone = vue.icone;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton size="lg" isActive={active}
                          aria-current={active ? 'page' : undefined}
                          onClick={() => surClic(vue.cle)}
                          className="cible-min rounded px-3 text-base">
-        <span aria-hidden="true" className="w-5 shrink-0 text-center">{vue.icone}</span>
+        {/* Taille et retrait laissés aux variantes du bouton, qui portent déjà
+            `[&>svg]:size-4` et `[&>svg]:shrink-0` : les redéclarer ici perdrait
+            la bataille de spécificité contre elles, sans le dire. */}
+        <Icone aria-hidden="true" />
         <span>{vue.libelle}</span>
       </SidebarMenuButton>
       {compteur > 0 && (
@@ -108,17 +116,27 @@ function Entree({ vue, active, compteur, surClic }) {
  * Le bouton qui ouvre le tiroir, sous le seuil de la barre.
  *
  * <p>Il porte le mot « Menu » et non la seule icône de panneau de shadcn : le
- * geste d'ouverture doit se lire comme les entrées qu'il révèle. Au-dessus du
- * seuil la barre est là, donc le bouton disparaît.
+ * geste d'ouverture doit se lire comme les entrées qu'il révèle.
+ *
+ * <p>Sa visibilité vient d'`isMobile` — le MÊME prédicat JavaScript que celui
+ * qui décide ce que fait `toggleSidebar` — et non d'une classe `barre:hidden`.
+ * C'est la correction d'un défaut : avec la classe, l'apparition du bouton
+ * venait du CSS et son effet du JavaScript, deux sources qui pouvaient se
+ * contredire. Elles se contredisaient : sur Safari iOS sans syntaxe
+ * d'intervalle, le bouton s'affichait au-dessus de 900 px alors que
+ * `toggleSidebar` partait vers le panneau permanent, et rien ne s'ouvrait. Liés
+ * à une seule source, « bouton visible » et « tiroir ouvrable » ne peuvent plus
+ * diverger.
  */
 export function OuvreLaBarre() {
-  const { toggleSidebar } = useSidebar();
+  const { isMobile, toggleSidebar } = useSidebar();
+  if (!isMobile) return null;
   return (
-    <button type="button" onClick={toggleSidebar} aria-label="Ouvrir le menu"
+    <button type="button" onClick={toggleSidebar}
             className="cible-min mb-4 inline-flex items-center gap-2 rounded border
                        border-bordure-controle bg-surface px-4 font-semibold
-                       hover:bg-surface-douce barre:hidden">
-      <span aria-hidden="true">☰</span>
+                       hover:bg-surface-douce">
+      <PanelLeftIcon aria-hidden="true" className="size-5" />
       Menu
     </button>
   );
