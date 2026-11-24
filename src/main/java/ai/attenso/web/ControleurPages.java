@@ -55,6 +55,18 @@ public class ControleurPages {
 		return "forward:/app/rendez-vous.html";
 	}
 
+	/**
+	 * L'affiche à imprimer pour le comptoir (EF-101).
+	 *
+	 * <p>Page statique comme les autres : ce qu'elle montre lui est servi par
+	 * {@code /api/affiche}, qui exige le jeton. Sans jeton elle renvoie au
+	 * tableau, et il n'y a rien à protéger dans son balisage.
+	 */
+	@GetMapping("/affiche")
+	String affiche() {
+		return "forward:/app/affiche.html";
+	}
+
 	/** L'inscription autonome (EF-901). */
 	@GetMapping("/inscription")
 	String inscription() {

@@ -115,6 +115,15 @@
   --mur-encre: #ffffff;           /* 17.79:1 */
   --mur-encre-douce: #c9cdd4;     /* 10.2:1  — remplace une opacité, qui
                                      ne garantit aucun contraste */
+
+  /* L'affiche du comptoir, pour la même raison que le mur, à l'envers :
+     elle sortira d'une imprimante. Elle reste donc blanche dans les deux
+     modes — un aperçu sombre d'une page qui s'imprime en blanc ne montre
+     pas ce qu'on imprime, et le gérant corrigerait une mise en page qui
+     n'a jamais existé. */
+  --papier: #ffffff;
+  --sur-papier: #15181d;          /* 17.79:1 — lu de l'autre bout d'un comptoir */
+  --sur-papier-doux: #4a515c;     /*  8.01:1 */
 }
 
 /* --- Mode sombre -------------------------------------------------------

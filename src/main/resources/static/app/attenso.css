@@ -240,6 +240,15 @@ summary:focus-visible {
 }
 .b-lien:hover:not(:disabled), .b-lien:active:not(:disabled) { background: none; }
 
+/* L'inverse : un vrai lien, mais qu'on touche au doigt sur la tablette. Du
+   texte souligné au fil d'un paragraphe fait une cible de vingt pixels de
+   haut — sur un comptoir, avec un animal dans l'autre main, ce n'est pas une
+   cible. Reste un <a> : on veut pouvoir l'ouvrir dans un autre onglet. */
+.lien-cible {
+  display: inline-flex; align-items: center; min-height: var(--cible);
+  color: var(--accent-texte);
+}
+
 /* La mention d'information (EC-04). Repliée par défaut mais présente AVANT la
    validation, et non derrière un lien qui mènerait ailleurs : le client doit
    pouvoir l'ouvrir sans quitter sa prise de ticket. */

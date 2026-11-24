@@ -73,6 +73,10 @@ const PAIRES = [
   // Le mur garde le même fond dans les deux modes : il est physique.
   ['mur : encre sur fond', 'mur-encre', 'mur-fond', 4.5],
   ['mur : encre douce sur fond', 'mur-encre-douce', 'mur-fond', 4.5],
+  // L'affiche aussi : elle sort d'une imprimante. Le contraste s'y vérifie
+  // comme ailleurs, mode sombre compris, puisqu'elle ne change pas.
+  ['affiche : encre sur papier', 'sur-papier', 'papier', 4.5],
+  ['affiche : encre douce sur papier', 'sur-papier-doux', 'papier', 4.5],
 ];
 
 for (const mode of ['clair', 'sombre']) {

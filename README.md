@@ -129,7 +129,7 @@ utilisateur `attenso`, ne journalise **aucune ligne d'erreur**, et le rôle
 `attenso_app` est confirmé non privilégié — la seconde barrière survit donc à
 la conteneurisation, ce qui est tout l'enjeu.
 
-### Deux pièges rencontrés en le vérifiant
+### Trois pièges rencontrés en le vérifiant
 
 **Changer un mot de passe de base après le premier démarrage casse la pile, et
 l'erreur ment.** Postgres n'applique `POSTGRES_PASSWORD` qu'à l'initialisation
@@ -146,6 +146,20 @@ du descripteur refusent toute commande sans les secrets, démontage compris.
 C'est voulu — un descripteur qui démarre sans mot de passe en démarrerait un
 sans mot de passe — mais ça surprend, et un `down` qui échoue en silence laisse
 un volume périmé derrière lui, ce qui ramène au piège précédent.
+
+**L'indicateur de santé du courriel déclarait le produit en panne.**
+`spring-boot-starter-mail` installe tout seul un contrôle qui tente de joindre
+le serveur SMTP, et il fait passer `/actuator/health` à `DOWN` tant qu'aucun
+SMTP n'est configuré — c'est-à-dire sur toute installation neuve, et c'est
+précisément l'état documenté plus bas. Or `/actuator/health` est le contrôle de
+vivacité du conteneur : le produit se serait déclaré en panne alors que la
+file, les SMS et les écrans tournaient. Chaque sonde ouvrait au passage une
+connexion vers un serveur inexistant et déversait cent cinquante lignes de
+trace — au rythme du `HEALTHCHECK`, le journal devenait illisible. L'indicateur
+est coupé (`management.health.mail.enabled=false`), et `SanteIntegrationTest`
+empêche de le remettre par mégarde. Ne pas pouvoir envoyer un courriel de
+réinitialisation n'est pas une panne du service : c'est une fonction
+indisponible, et le démarrage le dit déjà en clair.
 
 ### Ce que ce fichier ne peut pas garantir : ENF-04
 
@@ -452,6 +466,54 @@ journalisé en avertissement, nommément, pour qu'il se voie.
 Les deux réglages sont indépendants : on peut activer le HLR sans l'envoi réel,
 par exemple pour mesurer la qualité des numéros d'une clinique avant d'ouvrir
 les SMS.
+
+## L'affiche du comptoir, et pourquoi elle sort du produit
+
+EF-101 fait entrer le client par un QR code affiché au comptoir. Le code en
+dépendait depuis le premier jour — la route `/t/{slug}`, le slug lisible à voix
+haute, la page de prise de ticket — mais **rien ne fabriquait le QR**. Tant
+qu'il y avait une clinique pilote, quelqu'un passait le poser. Il n'y en a plus
+: une clinique qui s'inscrit seule aurait dû chercher un générateur de QR sur
+le web et y coller l'adresse de son comptoir, c'est-à-dire la confier à un
+tiers quelconque, puis imprimer un résultat que personne n'aurait vérifié.
+
+`/affiche` rend donc la feuille, prête à imprimer en A4, ouverte aux deux rôles
+— réimprimer une affiche décollée est un geste de comptoir.
+
+Trois décisions valent d'être écrites :
+
+**Le serveur n'envoie pas de balise.** Il envoie un côté de grille et un tracé
+(`Qr`), et c'est la page qui en fait un `<svg>` avec `createElementNS`. Rien de
+ce qui vient du réseau n'est interprété comme de la structure sur cette page.
+Le gain est petit — le tracé est fabriqué par nous à partir d'une URL bornée —
+mais il est gratuit.
+
+**L'affiche ne promet un SMS que si la clinique peut en envoyer.** Tant que
+l'expéditeur n'est pas validé par les opérateurs, `expediteur_sms` est `NULL`
+et aucun message ne partira ; la feuille dit alors « vous suivrez votre tour
+depuis votre téléphone », qui est vrai dans les deux cas. Une affiche qui
+promet un message ferait ranger le téléphone à un client qui n'en recevra
+jamais.
+
+**La feuille est du papier, pas de l'écran.** Elle reste noire sur blanc en
+mode sombre, et c'est la seule exception aux jetons de couleur du produit
+(`--papier`, `--sur-papier`) — pour la même raison que le mur de la salle
+d'attente garde son fond sombre dans les deux modes. Deux pièges y ont été
+rencontrés, tous deux invisibles à la lecture : le titre héritait du style
+`h2` de l'application et tombait à **2,2:1** sur fond blanc, et la chaîne de
+hauteurs qui permet de centrer verticalement avait un maillon manquant, ce qui
+laissait un tiers de page blanche sous l'affiche.
+
+Le QR est encodé par zxing en redondance Q (25 %). Le choix est gratuit : aux
+niveaux M comme Q, l'URL d'un comptoir tient dans la même version de symbole,
+donc dans le même nombre de modules — `GenerateurQrTest` le vérifie plutôt que
+de le croire. Mesuré, zone de silence comprise : 37 modules de côté pour
+`/t/cerisiers`, 49 pour le slug le plus long que l'inscription puisse
+fabriquer. À 100 mm sur le papier, le pire cas donne des carrés de 2,0 mm.
+
+Enfin, ce qu'aucune relecture ne peut établir : le tracé rendu par le
+navigateur a été rastérisé puis **relu par un décodeur**, par le même chemin
+qu'un appareil photo de téléphone, et il rend bien l'adresse du comptoir.
 
 ## L'écran du mur est appairé, et optionnel
 
@@ -1134,6 +1196,7 @@ procédure de répétition est plus haut, et elle a été jouée dans Chrome.
 | `journal` | journal d'accès et journal des commandes, en ajout seul |
 | `numero` | vérification HLR et interprétation des verdicts |
 | `mesure` | instrumentation du pilote : origine, arrivants, taux, export |
+| `affiche` | le QR du comptoir : encodage et tracé (EF-101) |
 | `amorce` | installation de la première clinique |
 
 L'expéditeur SMS d'une clinique se règle à l'installation

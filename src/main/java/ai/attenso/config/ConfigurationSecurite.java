@@ -53,6 +53,12 @@ public class ConfigurationSecurite {
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/editeur").permitAll()
 						.requestMatchers("/inscription").permitAll()
+						// EF-101 : la page de l'affiche. Du balisage inerte — les
+						// données viennent de /api/affiche, qui exige le jeton. La
+						// servir derrière l'authentification demanderait au
+						// navigateur de poser un en-tête sur une navigation, ce
+						// qu'il ne sait pas faire.
+						.requestMatchers("/affiche").permitAll()
 						// EF-905 : la réservation en ligne est publique par
 						// construction — c'est un client qui n'a pas de compte.
 						// La référence opaque du rendez-vous vaut ensuite

@@ -154,6 +154,19 @@
 			<artifactId>bcpkix-jdk18on</artifactId>
 			<version>1.78.1</version>
 		</dependency>
+
+		<!-- EF-101 : l'affiche du comptoir porte un QR code, et il faut bien
+		     que quelque chose l'encode. L'écrire à la main voudrait dire
+		     implémenter Reed-Solomon sur GF(256), le choix de version, les huit
+		     masques et les blocs d'entrelacement : quelques centaines de lignes
+		     dont une erreur ne se verrait qu'au comptoir, sur un QR imprimé que
+		     la moitié des téléphones refuserait. zxing est l'implémentation de
+		     référence, et le test d'aller-retour la relit. -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
 	</dependencies>
 
 	<build>
