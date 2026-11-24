@@ -75,3 +75,6 @@ node_modules/
 /src/main/resources/static/app/assets/
 /front/node_modules/
 /front/.ssr/
+
+# Maquettes de cadrage (superpowers/brainstorming), hors dépôt.
+.superpowers/
