@@ -74,7 +74,8 @@ public class JetonPersonnel {
 			return new PrincipalPersonnel(
 					UUID.fromString(decode.getSubject()),
 					UUID.fromString(decode.getClaimAsString(CLAIM_TENANT)),
-					Role.valueOf(decode.getClaimAsString(CLAIM_ROLE)));
+					Role.valueOf(decode.getClaimAsString(CLAIM_ROLE)),
+					decode.getIssuedAt());
 		}
 		catch (JwtException | IllegalArgumentException | NullPointerException invalide) {
 			return null;

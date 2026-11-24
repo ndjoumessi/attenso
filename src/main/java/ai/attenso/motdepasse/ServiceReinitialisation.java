@@ -1,6 +1,7 @@
 package ai.attenso.motdepasse;
 
 import ai.attenso.courriel.ServiceCourriel;
+import ai.attenso.courriel.TravailDiffere;
 import ai.attenso.securite.GenerateurReference;
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.Tenant;
@@ -21,6 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Récupération de mot de passe.
@@ -64,9 +66,14 @@ public class ServiceReinitialisation {
 
 	private final JdbcTemplate jdbc;
 
+	private final TravailDiffere differe;
+
+	private final TransactionTemplate transaction;
+
 	public ServiceReinitialisation(TenantRepository tenants, ReinitialisationDao dao,
 			ServiceCourriel courriels, GenerateurReference jetons,
 			PasswordEncoder motsDePasse, Clock horloge, JdbcTemplate jdbc,
+			TravailDiffere differe, TransactionTemplate transaction,
 			@Value("${attenso.lien.base}") String baseUrl) {
 		this.tenants = tenants;
 		this.dao = dao;
@@ -75,16 +82,43 @@ public class ServiceReinitialisation {
 		this.motsDePasse = motsDePasse;
 		this.horloge = horloge;
 		this.jdbc = jdbc;
+		this.differe = differe;
+		this.transaction = transaction;
 		this.baseUrl = baseUrl;
 	}
 
 	/**
 	 * Ouvre une demande et envoie le lien, si et seulement si le compte existe.
 	 *
-	 * <p>Ne rend rien : l'appelant ne doit pas pouvoir distinguer les cas.
+	 * <p>Ne rend rien, et ne fait RIEN sur le fil de la requête. C'est la
+	 * seconde moitié de la promesse « la réponse ne dit pas si le compte
+	 * existe » : répondre pareil ne suffit pas si l'on répond plus LENTEMENT
+	 * quand le compte existe. Un envoi SMTP prend des centaines de
+	 * millisecondes, là où un compte inconnu repartait en deux ou trois — un
+	 * écart qui se chronomètre depuis n'importe où, et l'énumération revenait
+	 * par la porte de derrière. Tout est donc remis à un fil d'exécution, y
+	 * compris la recherche de la clinique : la requête repart en temps
+	 * constant, quoi qu'il arrive ensuite.
+	 *
+	 * <p>Pas de délai artificiel ajouté : il ralentirait tout le monde sans
+	 * rien garantir de plus, puisque le travail ne se mesure plus.
 	 */
-	@Transactional
 	public void demander(String slug, String email) {
+		differe.plusTard(() -> {
+			try {
+				transaction.executeWithoutResult(etat -> traiter(slug, email));
+			}
+			catch (RuntimeException panne) {
+				// Hors du fil de la requête, une exception ne remonte nulle
+				// part : sans ce filet, une panne de base ferait disparaître
+				// les demandes en silence.
+				JOURNAL.error("demande de réinitialisation en échec : {}",
+						panne.getMessage());
+			}
+		});
+	}
+
+	private void traiter(String slug, String email) {
 		Optional<Tenant> clinique = tenants.findBySlugAndActifTrue(slug);
 		if (clinique.isEmpty()) {
 			return;
@@ -140,7 +174,7 @@ public class ServiceReinitialisation {
 		return ContexteTenant.avec(tenantId, () ->
 				dao.consommer(empreinte, horloge.instant()).map(utilisateurId -> {
 					dao.poserLeMotDePasse(utilisateurId,
-							motsDePasse.encode(nouveauMotDePasse));
+							motsDePasse.encode(nouveauMotDePasse), horloge.instant());
 					JOURNAL.info("mot de passe réinitialisé pour un compte de la "
 							+ "clinique {}", tenantId);
 					return true;

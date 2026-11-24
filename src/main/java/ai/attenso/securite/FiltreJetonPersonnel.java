@@ -27,8 +27,11 @@ public class FiltreJetonPersonnel extends OncePerRequestFilter {
 
 	private final JetonPersonnel jetons;
 
-	public FiltreJetonPersonnel(JetonPersonnel jetons) {
+	private final SessionsRevoquees revocations;
+
+	public FiltreJetonPersonnel(JetonPersonnel jetons, SessionsRevoquees revocations) {
 		this.jetons = jetons;
+		this.revocations = revocations;
 	}
 
 	@Override
@@ -40,10 +43,22 @@ public class FiltreJetonPersonnel extends OncePerRequestFilter {
 				: null;
 		try {
 			if (principal != null) {
-				SecurityContextHolder.getContext().setAuthentication(
-						new UsernamePasswordAuthenticationToken(principal, null,
-								List.of(new SimpleGrantedAuthority(principal.role().autorite()))));
+				// Le tenant est lié AVANT la vérification : la table
+				// « utilisateur » est soumise au RLS, donc une lecture sans
+				// liage ne verrait rien et révoquerait tout le monde.
 				ContexteTenant.lier(principal.tenantId());
+				if (revocations.revoque(principal.utilisateurId(), principal.emisLe())) {
+					// Jeton plus ancien que le dernier changement de mot de
+					// passe : la requête continue SANS authentification, et la
+					// chaîne répondra 401. Rien à expliquer de plus au porteur.
+					ContexteTenant.delier();
+				}
+				else {
+					SecurityContextHolder.getContext().setAuthentication(
+							new UsernamePasswordAuthenticationToken(principal, null,
+									List.of(new SimpleGrantedAuthority(
+											principal.role().autorite()))));
+				}
 			}
 			suite.doFilter(requete, reponse);
 		}

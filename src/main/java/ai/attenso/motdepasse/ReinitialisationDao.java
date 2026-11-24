@@ -88,8 +88,16 @@ public class ReinitialisationDao {
 				String.class, utilisateurId);
 	}
 
-	public void poserLeMotDePasse(UUID utilisateurId, String empreinte) {
-		jdbc.update("UPDATE utilisateur SET mdp_hash = ? WHERE id = ?", empreinte,
-				utilisateurId);
+	/**
+	 * Pose le mot de passe ET la date du changement.
+	 *
+	 * <p>Les deux dans le MÊME ordre SQL : séparés, une panne entre les deux
+	 * laisserait un mot de passe changé sans que les sessions ouvertes soient
+	 * fermées — exactement le cas où l'on change son mot de passe parce qu'on
+	 * le croit volé.
+	 */
+	public void poserLeMotDePasse(UUID utilisateurId, String empreinte, Instant quand) {
+		jdbc.update("UPDATE utilisateur SET mdp_hash = ?, mdp_change_le = ? WHERE id = ?",
+				empreinte, java.sql.Timestamp.from(quand), utilisateurId);
 	}
 }

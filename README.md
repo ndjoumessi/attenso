@@ -685,6 +685,20 @@ identique pour une clinique inconnue, une adresse inconnue et un envoi réussi.
 Le dépassement de la limite de débit est lui aussi **silencieux**, pour la même
 raison : un 429 dirait « cette adresse existe et on lui a déjà écrit ».
 
+**Répondre pareil ne suffit pas : il faut répondre aussi VITE.** La première
+version faisait tout sur le fil de la requête, donc un envoi SMTP de plusieurs
+centaines de millisecondes quand le compte existait, contre deux ou trois quand
+il n'existait pas — un écart qui se chronomètre depuis n'importe où, et
+l'énumération revenait par la porte de derrière. Tout le travail est maintenant
+remis à un fil d'exécution, recherche de la clinique comprise : la requête
+repart en temps constant. Aucun délai artificiel n'est ajouté ; il ralentirait
+tout le monde sans rien garantir de plus.
+
+**Et la clé de limitation est normalisée comme la recherche en base.** Sans ça,
+`Asv@Clinique.fr`, `asv@clinique.fr` et la même adresse précédée d'une espace
+étaient trois compteurs différents pour un seul compte : la limite de trois
+devenait neuf, puis autant que l'imagination de l'appelant.
+
 **Le jeton n'est jamais stocké en clair.** Il vaut un mot de passe pendant une
 heure ; une base lue par un tiers — sauvegarde égarée, injection, curiosité d'un
 exploitant — donnerait sinon la main sur tous les comptes en cours de
@@ -706,13 +720,26 @@ connaître. Lier le code à une API américaine aurait démenti la politique de
 confidentialité, qui promet qu'aucun prestataire hors UE n'est appelé pour faire
 fonctionner le service.
 
-**Ce que ça ne fait pas, et qu'il faut savoir : les sessions ouvertes
-survivent.** Les jetons du personnel durent douze heures — une journée de
-travail — et ne sont pas révocables sans une lecture en base à chaque requête,
-qui coûterait sur le chemin le plus chaud du produit. Changer son mot de passe
-parce qu'on le croit volé laisse donc jusqu'à douze heures à une session déjà
-ouverte. C'est borné, c'est écrit, et le jour où ça ne suffira plus, la réponse
-est une version de jeton par utilisateur, pas un rustine.
+**La réinitialisation ferme les sessions ouvertes**, et c'est tout l'intérêt :
+on change son mot de passe parce qu'on le croit volé, et un mot de passe changé
+qui laisse la session du voleur ouverte douze heures de plus ne sert à rien.
+`utilisateur.mdp_change_le` porte la date, le jeton porte son instant
+d'émission, et un jeton plus ancien est refusé. Oui, c'est une lecture en base
+par requête authentifiée — le prix d'un jeton révocable — mais elle porte sur
+une clé primaire dans une table de quelques lignes par clinique, et elle ne
+touche QUE les requêtes du personnel : le chemin client, celui qui porte la
+contrainte de latence d'ENF-01, n'a pas de jeton de personnel et n'est pas
+concerné.
+
+Un détail qui a coûté deux allers-retours : l'instant d'émission d'un JWT est
+tronqué à la seconde, la date en base porte les millisecondes. Comparer l'un à
+l'autre tel quel rejetait la connexion faite dans la MÊME seconde que la
+réinitialisation — c'est-à-dire le cas le plus courant, puisqu'on se reconnecte
+juste après. Les deux côtés sont donc ramenés à la seconde ; ce qui subsiste,
+c'est qu'un jeton émis dans la même seconde que le changement survit. Une
+seconde contre l'impossibilité de se reconnecter : le choix est vite fait. Deux
+tests tiennent les deux bords, sur une horloge qu'ils avancent à la main — une
+attente d'une seconde aurait fait la même chose en plus lent et moins sûr.
 
 **Un piège rencontré pour la troisième fois dans ce dépôt**, et désormais
 nommé dans le code : `@Transactional` ouvre la connexion AVANT que l'on sache de

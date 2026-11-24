@@ -50,16 +50,28 @@ public class ControleurMotDePasse {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void oubli(@Valid @RequestBody DemandeOubli demande,
 			HttpServletRequest requete) {
+		// NORMALISÉ, et exactement comme la recherche en base, qui compare en
+		// minuscules. Sans ça « Asv@Clinique.fr », « asv@clinique.fr » et la
+		// même adresse avec une espace devant sont trois clés de limitation
+		// différentes pour un seul compte : la limite de trois devient neuf,
+		// puis autant que l'imagination de l'appelant.
+		String slug = normaliser(demande.slug());
+		String email = normaliser(demande.email());
+
 		// La limite s'applique à l'adresse appelante ET au couple visé : sans
 		// le second, un script changeant d'adresse pilonnerait la même boîte.
 		if (!limiteur.autoriser("oubli:" + adresses.de(requete), DEMANDES_MAX, FENETRE)
-				|| !limiteur.autoriser("oubli:" + demande.slug() + ":" + demande.email(),
-						DEMANDES_MAX, FENETRE)) {
+				|| !limiteur.autoriser("oubli:" + slug + ":" + email, DEMANDES_MAX,
+						FENETRE)) {
 			// Même en cas de refus : un 429 ici dirait « cette adresse existe
 			// et on lui a déjà écrit ». Le refus est silencieux.
 			return;
 		}
-		reinitialisations.demander(demande.slug().trim(), demande.email().trim());
+		reinitialisations.demander(slug, email);
+	}
+
+	private static String normaliser(String valeur) {
+		return valeur.trim().toLowerCase(java.util.Locale.ROOT);
 	}
 
 	@PostMapping("/api/connexion/reinitialiser")

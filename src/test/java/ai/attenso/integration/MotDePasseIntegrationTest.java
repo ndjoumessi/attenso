@@ -69,6 +69,69 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 			PosteFactice posteFactice() {
 				return new PosteFactice();
 			}
+
+			/**
+			 * Un exécuteur qui exécute sur place.
+			 *
+			 * <p>La demande d'oubli travaille hors du fil de la requête — c'est
+			 * ce qui rend son temps de réponse constant, donc muet sur
+			 * l'existence du compte. Les tests, eux, ont besoin de savoir que
+			 * c'est fini pour regarder la boîte aux lettres : les laisser
+			 * attendre introduirait une course et des échecs aléatoires, qui
+			 * finissent toujours par être relancés plutôt que lus.
+			 */
+			@Bean
+			@Primary
+			ai.attenso.courriel.TravailDiffere travailSurPlace() {
+				return Runnable::run;
+			}
+
+			/**
+			 * Une horloge qu'on avance à la main.
+			 *
+			 * <p>Nécessaire parce que l'instant d'émission d'un JWT est tronqué
+			 * à la SECONDE : avec l'horloge système, connexion et
+			 * réinitialisation tombent dans la même seconde, et l'on ne peut
+			 * plus distinguer « avant » de « après ». Une attente d'une
+			 * seconde ferait la même chose en plus lent et moins sûr.
+			 *
+			 * <p>Elle part de l'instant réel, et non d'une date arbitraire : le
+			 * validateur de jetons de Spring compare, lui, à l'horloge système,
+			 * et une heure inventée ferait rejeter des jetons parfaitement
+			 * valables.
+			 */
+			// Nom distinct de celui de ConfigurationHorloge : deux définitions
+			// du même nom de bean sont refusées, @Primary ou pas.
+			@Bean
+			@Primary
+			HorlogeMobile horlogeMobile() {
+				return new HorlogeMobile();
+			}
+		}
+	}
+
+	/** Horloge de test : part de maintenant, avance sur commande. */
+	static class HorlogeMobile extends java.time.Clock {
+
+		private java.time.Instant instant = java.time.Instant.now();
+
+		void avancer(java.time.Duration pas) {
+			instant = instant.plus(pas);
+		}
+
+		@Override
+		public java.time.ZoneId getZone() {
+			return java.time.ZoneOffset.UTC;
+		}
+
+		@Override
+		public java.time.Clock withZone(java.time.ZoneId zone) {
+			return this;
+		}
+
+		@Override
+		public java.time.Instant instant() {
+			return instant;
 		}
 	}
 
@@ -84,6 +147,9 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 
 	@Autowired
 	ServiceReinitialisation reinitialisations;
+
+	@Autowired
+	HorlogeMobile horloge;
 
 	@Autowired
 	tools.jackson.databind.ObjectMapper json;
@@ -222,6 +288,57 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 		demander("clinique-oubli", "asv@oubli.fr");
 
 		assertThat(poste.boite()).hasSize(3);
+	}
+
+	@Test
+	@DisplayName("la réinitialisation ferme les sessions déjà ouvertes")
+	void laReinitialisationFermeLesSessions() throws Exception {
+		// LE cas qui justifie tout ça : on change son mot de passe PARCE QU'ON
+		// LE CROIT VOLÉ. Un mot de passe changé qui laisse la session du
+		// voleur ouverte douze heures de plus ne sert à rien.
+		String jetonAvant = http.perform(post("/api/connexion")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"slug":"clinique-oubli","email":"asv@oubli.fr",
+								 "motDePasse":"%s"}
+								""".formatted(MDP)))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+		String jeton = json.readTree(jetonAvant).get("jeton").asText();
+		http.perform(get("/api/file").header("Authorization", "Bearer " + jeton))
+				.andExpect(status().isOk());
+
+		// Deux secondes plus tard : assez pour que l'instant d'émission du
+		// jeton, tronqué à la seconde, soit nettement antérieur.
+		horloge.avancer(java.time.Duration.ofSeconds(2));
+		demander("clinique-oubli", "asv@oubli.fr");
+		assertThat(reinitialiser(jetonRecu(), NOUVEAU)).isTrue();
+
+		http.perform(get("/api/file").header("Authorization", "Bearer " + jeton))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	@DisplayName("une session ouverte après le changement reste valable")
+	void uneSessionPosterieureResteValable() throws Exception {
+		demander("clinique-oubli", "asv@oubli.fr");
+		assertThat(reinitialiser(jetonRecu(), NOUVEAU)).isTrue();
+
+        // Le pendant du test précédent : une révocation qui coupe AUSSI les
+        // sessions ouvertes ensuite empêcherait simplement de se reconnecter.
+		String corps = http.perform(post("/api/connexion")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"slug":"clinique-oubli","email":"asv@oubli.fr",
+								 "motDePasse":"%s"}
+								""".formatted(NOUVEAU)))
+				.andExpect(status().isOk())
+				.andReturn().getResponse().getContentAsString();
+
+		http.perform(get("/api/file")
+						.header("Authorization", "Bearer "
+								+ json.readTree(corps).get("jeton").asText()))
+				.andExpect(status().isOk());
 	}
 
 	@Test
