@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<title>Mentions légales — Attenso</title>
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite">
+  <p class="discret"><a href="/">← Attenso</a></p>
+  <h1>Mentions légales</h1>
+
+  <h2>Éditeur du site</h2>
+  <dl class="liste-def">
+    <dt>Dénomination</dt><dd id="denomination">—</dd>
+    <dt>Forme juridique</dt><dd id="forme-juridique">—</dd>
+    <dt>Capital social</dt><dd id="capital">—</dd>
+    <dt>Siège social</dt><dd id="siege">—</dd>
+    <dt>SIRET</dt><dd id="siret">—</dd>
+    <dt>RCS</dt><dd id="rcs">—</dd>
+    <dt>TVA intracommunautaire</dt><dd id="tva">—</dd>
+    <dt>Directeur de la publication</dt><dd id="directeur">—</dd>
+    <dt>Contact</dt><dd id="email">—</dd>
+    <dt>Téléphone</dt><dd id="telephone">—</dd>
+  </dl>
+
+  <h2>Hébergement</h2>
+  <p>
+    Le service est hébergé par <strong id="hebergeur">—</strong>,
+    <span id="hebergeur-adresse">—</span>.
+  </p>
+  <p class="discret">
+    Les serveurs qui exécutent Attenso et la base de données sont situés dans
+    l'Union européenne. Le service n'appelle aucun prestataire hors Union
+    européenne pour fonctionner, à l'exception du prestataire de paiement
+    mentionné dans la <a href="/confidentialite">politique de
+    confidentialité</a>.
+  </p>
+
+  <h2>Propriété intellectuelle</h2>
+  <p>
+    Le code source d'Attenso est publié sur
+    <a href="https://github.com/ndjoumessi/attenso">GitHub</a>. Le contenu de
+    ce site — textes, mise en page — reste la propriété de l'éditeur.
+  </p>
+
+  <h2>Signaler un contenu</h2>
+  <p>
+    Pour toute réclamation concernant ce site, écrivez à l'adresse de contact
+    ci-dessus. Une réponse est apportée sous deux jours ouvrés.
+  </p>
+
+  <p class="discret" style="margin-top: var(--pas-8);">
+    <a href="/cgv">Conditions générales</a> ·
+    <a href="/confidentialite">Confidentialité</a>
+  </p>
+</main>
+
+<script type="module">
+import { remplirEditeur } from '/app/editeur.js';
+await remplirEditeur();
+</script>
+</body>
+</html>

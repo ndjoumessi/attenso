@@ -113,9 +113,11 @@ public class ServiceInscription {
 			Palier palier, String email, String jetonEcran) {
 		jdbc.update("""
 				INSERT INTO tenant (id, slug, nom, fuseau, delai_grace_secondes,
-				                    seuil_prevenir, actif, expediteur_sms, jeton_ecran)
-				VALUES (?, ?, ?, 'Europe/Paris', 180, 2, false, NULL, ?)
-				""", tenantId, slug, demande.nom().trim(), jetonEcran);
+				                    seuil_prevenir, actif, expediteur_sms, jeton_ecran,
+				                    cgv_acceptees_le)
+				VALUES (?, ?, ?, 'Europe/Paris', 180, 2, false, NULL, ?, ?)
+				""", tenantId, slug, demande.nom().trim(), jetonEcran,
+				java.sql.Timestamp.from(horloge.instant()));
 
 		// La table « utilisateur » est soumise au RLS : sans tenant lié, la
 		// politique refuse l'insertion. C'est la preuve que la seconde

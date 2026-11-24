@@ -75,6 +75,24 @@ public class PaiementDao {
 	}
 
 	/**
+	 * Referme une clinique dont le tout premier paiement n'a jamais abouti.
+	 *
+	 * <p>À distinguer d'un impayé ordinaire, qui ne coupe rien : là, la
+	 * clinique a été ouverte sur un prélèvement qui s'est retourné quelques
+	 * jours plus tard, donc elle n'a jamais réellement payé. La refermer n'est
+	 * pas une sanction, c'est l'annulation d'une ouverture qui n'aurait pas dû
+	 * avoir lieu.
+	 */
+	public boolean refermerFauteDePaiement(UUID tenantId) {
+		jdbc.update("""
+				UPDATE abonnement SET statut = 'IMPAYE'
+				WHERE tenant_id = ? AND fin IS NULL AND statut <> 'RESILIE'
+				""", tenantId);
+		return jdbc.update("UPDATE tenant SET actif = false WHERE id = ? AND actif = true",
+				tenantId) > 0;
+	}
+
+	/**
 	 * Ferme la clinique si son abonnement résilié est arrivé à son terme.
 	 *
 	 * <p>Par clinique et non d'un seul UPDATE balayant la table : les

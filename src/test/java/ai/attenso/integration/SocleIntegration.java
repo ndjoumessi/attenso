@@ -88,6 +88,18 @@ public abstract class SocleIntegration {
 		registre.add("attenso.paiement.prix.clinique", () -> "price_clinique");
 		registre.add("attenso.paiement.prix.centre", () -> "price_centre");
 		registre.add("attenso.paiement.cron-fin", () -> JAMAIS);
+
+		// Une identité d'éditeur complète, sinon chaque test journaliserait une
+		// ERROR « vous vendez sans mentions légales » — et une ERROR à chaque
+		// exécution apprend à ignorer les ERROR. La règle elle-même est testée
+		// à part, dans VeilleMentionsLegalesTest.
+		registre.add("attenso.editeur.denomination", () -> "Attenso (tests)");
+		registre.add("attenso.editeur.siege", () -> "1 rue de Test, 13000 Marseille");
+		registre.add("attenso.editeur.siret", () -> "00000000000000");
+		registre.add("attenso.editeur.directeur-publication", () -> "Prénom Nom");
+		registre.add("attenso.editeur.email", () -> "contact@attenso.test");
+		registre.add("attenso.editeur.hebergeur", () -> "Hébergeur de test");
+		registre.add("attenso.editeur.hebergeur-adresse", () -> "2 rue de Test, 75000 Paris");
 	}
 
 	@Autowired

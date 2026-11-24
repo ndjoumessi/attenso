@@ -68,6 +68,7 @@ public class ServicePaiement {
 			case "checkout.session.completed" -> paiementConfirme(evenement);
 			case "invoice.paid", "invoice.payment_succeeded" -> changerEtat(evenement, "ACTIF");
 			case "invoice.payment_failed" -> changerEtat(evenement, "IMPAYE");
+			case "checkout.session.async_payment_failed" -> paiementJamaisAbouti(evenement);
 			case "customer.subscription.deleted" -> resiliation(evenement);
 			default -> {
 				JOURNAL.debug("événement {} ignoré", evenement.getType());
@@ -93,6 +94,36 @@ public class ServicePaiement {
 			JOURNAL.info("abonnement {} pour la clinique {}",
 					fait ? "activé" : "déjà actif", tenantId);
 			return fait;
+		});
+	}
+
+	/**
+	 * Le prélèvement qui a ouvert la clinique s'est retourné.
+	 *
+	 * <p>Ici, et ICI SEULEMENT, un défaut de paiement referme la clinique. La
+	 * règle générale — un impayé ne coupe rien — protège un client qui a payé
+	 * des mois et dont la carte vient d'expirer. Elle n'a pas à couvrir une
+	 * ouverture obtenue sur un paiement qui n'a jamais abouti : la clinique a
+	 * eu quelques jours de service, personne n'a construit sa salle d'attente
+	 * dessus, et la laisser ouverte reviendrait à offrir l'abonnement à qui
+	 * donne un IBAN invalide.
+	 */
+	private boolean paiementJamaisAbouti(Event evenement) {
+		Optional<StripeObject> objet = evenement.getDataObjectDeserializer().getObject();
+		if (objet.isEmpty() || !(objet.get() instanceof Session session)) {
+			return illisible(evenement);
+		}
+		UUID tenantId = lireTenant(session.getClientReferenceId());
+		if (tenantId == null) {
+			JOURNAL.error("paiement différé en échec sans clinique identifiable : "
+					+ "session {}", session.getId());
+			return false;
+		}
+		return sousClinique(tenantId, () -> {
+			boolean ferme = dao.refermerFauteDePaiement(tenantId);
+			JOURNAL.warn("clinique {} refermée : le paiement d'ouverture n'a jamais "
+					+ "abouti", tenantId);
+			return ferme;
 		});
 	}
 

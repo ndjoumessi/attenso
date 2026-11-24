@@ -52,6 +52,18 @@
       </label>
     </p>
 
+    <!-- Acceptation explicite, et « required » : une vente à distance sans
+         acceptation des conditions est un contrat contestable. Le serveur la
+         refuse aussi, car une case HTML se contourne en trois secondes. -->
+    <p>
+      <label class="case">
+        <input type="checkbox" id="cgv" name="cgvAcceptees" required>
+        J'accepte les <a href="/cgv" target="_blank" rel="noopener">conditions
+        générales</a> et la <a href="/confidentialite" target="_blank"
+        rel="noopener">politique de confidentialité</a>
+      </label>
+    </p>
+
     <details class="mention">
       <summary>Vos données et celles de vos clients</summary>
       <p>
@@ -174,6 +186,7 @@ el('formulaire').addEventListener('submit', async (evenement) => {
         motDePasse: el('mdp').value,
         palier: document.querySelector('input[name="palier"]:checked').value,
         avecEcran: el('avec-ecran').checked,
+        cgvAcceptees: el('cgv').checked,
       }),
     });
     // Le mot de passe quitte la mémoire de la page dès qu'il est parti.

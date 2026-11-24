@@ -47,6 +47,11 @@ public class ConfigurationSecurite {
 						// serrée, et c'est elle qui porte la protection.
 						.requestMatchers(HttpMethod.POST, "/api/inscription").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/inscription/paliers").permitAll()
+						// Les pages légales et l'identité de l'éditeur : publier ces
+						// informations est précisément ce que la loi impose.
+						.requestMatchers("/mentions-legales", "/cgv", "/confidentialite")
+						.permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/editeur").permitAll()
 						.requestMatchers("/inscription").permitAll()
 						// EF-905 : la réservation en ligne est publique par
 						// construction — c'est un client qui n'a pas de compte.

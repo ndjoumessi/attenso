@@ -61,6 +61,26 @@ public class ControleurPages {
 	}
 
 	/** La vitrine publique. */
+	/**
+	 * Les pages légales. Obligatoires pour vendre, donc servies au même titre
+	 * que la vitrine — et non reléguées dans un coin du pied de page qui
+	 * renverrait un 404 le jour où quelqu'un les cherche vraiment.
+	 */
+	@GetMapping("/mentions-legales")
+	String mentionsLegales() {
+		return "forward:/app/mentions.html";
+	}
+
+	@GetMapping("/cgv")
+	String conditionsGenerales() {
+		return "forward:/app/cgv.html";
+	}
+
+	@GetMapping("/confidentialite")
+	String confidentialite() {
+		return "forward:/app/confidentialite.html";
+	}
+
 	@GetMapping("/")
 	String vitrine() {
 		return "forward:/app/vitrine.html";

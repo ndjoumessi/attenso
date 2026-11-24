@@ -51,7 +51,7 @@ class PaiementIntegrationTest extends SocleIntegration {
 	private ReponseInscription inscrire(String nom) {
 		return inscriptions.inscrire(new DemandeInscription(nom,
 				"vet@" + nom.toLowerCase().replaceAll("[^a-z]", "") + ".fr",
-				"un-mot-de-passe-assez-long", Palier.COMPTOIR.name(), false));
+				"un-mot-de-passe-assez-long", Palier.COMPTOIR.name(), false, true));
 	}
 
 	private UUID tenantDe(String slug) {
@@ -168,7 +168,7 @@ class PaiementIntegrationTest extends SocleIntegration {
 						.content("""
 								{"nom":"Clinique Sans Paiement","email":"a@sp.fr",
 								 "motDePasse":"un-mot-de-passe-assez-long",
-								 "palier":"COMPTOIR","avecEcran":false}
+								 "palier":"COMPTOIR","avecEcran":false,"cgvAcceptees":true}
 								"""))
 				.andExpect(status().isServiceUnavailable())
 				.andExpect(content().string(org.hamcrest.Matchers.containsString(
@@ -255,6 +255,28 @@ class PaiementIntegrationTest extends SocleIntegration {
 		envoyer(evenement("evt_c", "invoice.paid", facture("sub_moulin")));
 
 		assertThat(statut(tenantId)).isEqualTo("ACTIF");
+	}
+
+	@Test
+	@DisplayName("un prélèvement qui se retourne referme la clinique qu'il avait ouverte")
+	void lePrelevementRetourneRefermeLaClinique() throws Exception {
+		ReponseInscription reponse = inscrire("Clinique du Sepa");
+		UUID tenantId = tenantDe(reponse.slug());
+		// Le cas réel : un prélèvement SEPA se dénoue en plusieurs jours. On
+		// ouvre à la confirmation de session, sinon la clinique patienterait
+		// une semaine devant une file fermée.
+		envoyer(evenement("evt_s1", "checkout.session.completed",
+				session(tenantId, "sub_sepa")));
+		assertThat(actif(tenantId)).isTrue();
+
+		envoyer(evenement("evt_s2", "checkout.session.async_payment_failed",
+				session(tenantId, "sub_sepa")));
+
+		// ICI, et ici seulement, un défaut de paiement referme : l'ouverture
+		// reposait sur un paiement qui n'a jamais abouti. La règle « un impayé
+		// ne coupe rien » protège un client qui a payé, pas un IBAN invalide.
+		assertThat(actif(tenantId)).isFalse();
+		assertThat(statut(tenantId)).isEqualTo("IMPAYE");
 	}
 
 	@Test

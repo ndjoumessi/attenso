@@ -107,6 +107,13 @@ p  { margin: var(--pas-2) 0; }
                line-height: var(--interligne-serre); }
 .compteur--depart dd { color: var(--alerte); }
 
+/* Listes de définitions des pages légales. Rien à voir avec .compteur, qui
+   met en forme un CHIFFRE : ici le terme est un intitulé et la définition une
+   phrase, donc ni capitales ni chiffres tabulaires. */
+.liste-def { margin: var(--pas-4) 0; }
+.liste-def dt { font-weight: 600; margin-top: var(--pas-3); }
+.liste-def dd { margin: var(--pas-1) 0 0; color: var(--sur-fond-doux); }
+
 /* --- Lignes de file ----------------------------------------------------- */
 .file { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--pas-3); }
 

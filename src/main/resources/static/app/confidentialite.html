@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<title>Confidentialité — Attenso</title>
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite">
+  <p class="discret"><a href="/">← Attenso</a></p>
+  <h1>Politique de confidentialité</h1>
+  <p>
+    Attenso collecte le minimum nécessaire pour prévenir quelqu'un que son tour
+    approche&nbsp;: <strong>un numéro de mobile et un numéro de ticket</strong>.
+    Cette page dit exactement ce qui est conservé, combien de temps, et par qui.
+  </p>
+
+  <h2>Deux rôles à ne pas confondre</h2>
+  <p>
+    Pour les personnes qui se présentent dans un établissement,
+    <strong>l'établissement est responsable de traitement</strong> et
+    <span id="denomination">—</span> agit comme <strong>sous-traitant</strong> :
+    l'éditeur ne traite ces données que sur instruction de l'établissement, pour
+    le seul fonctionnement de la file.
+  </p>
+  <p>
+    Pour les données de l'établissement lui-même — compte, abonnement,
+    facturation — <strong>l'éditeur est responsable de traitement</strong>.
+  </p>
+
+  <h2>Ce qui est collecté, et pourquoi</h2>
+  <dl class="liste-def">
+    <dt>Numéro de mobile</dt>
+    <dd>
+      Facultatif. Sert uniquement à envoyer les messages d'avancement du jour.
+      Sans lui, la personne reste dans la file et est appelée à la voix.
+    </dd>
+    <dt>Numéro de ticket et horodatages</dt>
+    <dd>
+      Position dans la file, heures d'arrivée, d'appel et de départ. Servent à
+      faire fonctionner la file et à compter les départs sans consultation.
+    </dd>
+    <dt>Compte de l'établissement</dt>
+    <dd>
+      Adresse de connexion, mot de passe chiffré, formule souscrite.
+    </dd>
+  </dl>
+  <p>
+    <strong>Aucune adresse IP n'est conservée.</strong> Elle est utilisée en
+    mémoire pour limiter les abus, puis oubliée ; un test automatisé vérifie
+    qu'elle n'est jamais écrite.
+  </p>
+  <p>
+    <strong>Aucune donnée de santé humaine</strong> n'est collectée. Si
+    l'établissement active le carnet de santé animal, le nom de l'animal, son
+    espèce, ses vaccinations et le mobile de son propriétaire sont conservés
+    tant que le carnet est actif — la finalité, un rappel de vaccin des mois
+    plus tard, impose une durée différente de celle de la file. Le propriétaire
+    peut demander la révocation du carnet à tout moment.
+  </p>
+
+  <h2>Combien de temps</h2>
+  <dl class="liste-def">
+    <dt>Numéro de mobile d'un ticket</dt>
+    <dd>
+      <strong>Effacé le lendemain</strong>, par une tâche quotidienne. La ligne
+      du ticket demeure, sans le numéro&nbsp;: c'est elle qui porte les
+      statistiques de fréquentation.
+    </dd>
+    <dt>Statistiques de la file</dt>
+    <dd>Conservées tant que l'établissement est client, puis effacées.</dd>
+    <dt>Données de facturation</dt>
+    <dd>Dix ans, durée légale de conservation des pièces comptables.</dd>
+  </dl>
+
+  <h2>Qui d'autre y a accès</h2>
+  <dl class="liste-def">
+    <dt>Opérateur SMS</dt>
+    <dd>
+      Reçoit le numéro et le texte du message, pour l'acheminer. Prestataire
+      français, données traitées en France.
+    </dd>
+    <dt>Prestataire de paiement</dt>
+    <dd>
+      Reçoit les données de l'abonnement de l'établissement, jamais celles de
+      ses clients. Les coordonnées bancaires sont saisies chez lui et ne
+      transitent jamais par Attenso.
+    </dd>
+    <dt>Hébergeur</dt>
+    <dd>
+      Héberge les serveurs et la base, dans l'Union européenne. Voir les
+      <a href="/mentions-legales">mentions légales</a>.
+    </dd>
+  </dl>
+  <p>
+    Les données ne sont ni vendues, ni cédées, ni utilisées à des fins
+    publicitaires. Aucun traqueur publicitaire, aucun cookie de mesure
+    d'audience, aucune police de caractères chargée depuis un tiers&nbsp;: les
+    pages d'Attenso ne font aucune requête vers un autre domaine.
+  </p>
+
+  <h2>Vos droits</h2>
+  <p>
+    Vous pouvez demander l'accès, la rectification, l'effacement ou la
+    limitation de vos données, et vous opposer à leur traitement. Adressez-vous
+    d'abord à l'établissement qui vous a reçu&nbsp;; il peut nous solliciter si
+    une intervention technique est nécessaire. Pour les données de compte d'un
+    établissement, écrivez à <a data-courriel href="#">—</a>.
+  </p>
+  <p>
+    Vous pouvez également introduire une réclamation auprès de la
+    <a href="https://www.cnil.fr">CNIL</a>.
+  </p>
+
+  <h2>Sécurité</h2>
+  <p>
+    Les échanges sont chiffrés. Les données de chaque établissement sont
+    cloisonnées par une politique appliquée <strong>dans la base de données
+    elle-même</strong>, et non seulement dans le code&nbsp;: une erreur de
+    programmation ne peut pas faire apparaître la file d'un établissement chez
+    un autre. Les mots de passe sont stockés sous forme d'empreinte, jamais en
+    clair.
+  </p>
+
+  <p class="discret" style="margin-top: var(--pas-8);">
+    <a href="/mentions-legales">Mentions légales</a> ·
+    <a href="/cgv">Conditions générales</a>
+  </p>
+</main>
+
+<script type="module">
+import { remplirEditeur } from '/app/editeur.js';
+await remplirEditeur();
+</script>
+</body>
+</html>

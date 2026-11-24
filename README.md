@@ -658,6 +658,44 @@ Les tests ne demandent ni compte ni réseau — la passerelle est remplacée par
 fausse — à deux exceptions près, vérifiées pour de bon : la signature des
 webhooks, avec un vrai HMAC, et le fait qu'un impayé ne ferme pas la clinique.
 
+### Pages légales, et ce qu'elles ne peuvent pas être
+
+Vendre en ligne en France impose de publier des mentions légales, des
+conditions générales et une politique de confidentialité. Les trois pages
+existent, sont servies sans authentification, et sont liées depuis le pied de
+page — une page légale parfaite derrière un 404 ne protège personne, et un test
+vérifie les deux.
+
+**L'identité de l'éditeur ne vit pas dans le dépôt.** Raison sociale, siège,
+SIRET, nom du directeur de publication : ce sont des données réelles, et ce
+dépôt est public. Les écrire dans du HTML versionné les publierait sur GitHub
+avant même la mise en ligne, et les rendrait quasi ineffaçables de l'historique.
+Elles arrivent donc par l'environnement (`ATTENSO_EDITEUR_*`), comme les
+secrets, à cette différence près qu'elles ne sont pas secrètes : simplement, ce
+n'est pas au dépôt de les porter. Un champ absent s'affiche « à compléter »
+plutôt que de disparaître — un blanc dans des mentions légales donne l'air
+d'une page en règle sans l'être.
+
+**Le démarrage le dit, et le niveau dépend de ce qui est branché.** Sans
+souscription configurée, une identité incomplète est normale et tient en une
+ligne d'information. Avec la souscription ouverte, c'est une ERREUR : le
+serveur encaisse, et vendre sans ces informations est une infraction.
+
+**L'acceptation des conditions est horodatée en base** (`tenant.cgv_acceptees_le`).
+Une case cochée ne vaut rien si l'on ne peut pas dire quand elle l'a été, et le
+serveur refuse l'inscription sans elle — une case HTML se contourne en trois
+secondes.
+
+**Ce que ces pages ne sont pas : un avis juridique.** Elles sont écrites à
+partir du fonctionnement réel du produit — ce qui est collecté, combien de temps,
+par qui — et c'est leur force : rien n'y est inventé, la durée de purge à J+1 et
+l'absence d'IP journalisée sont vérifiées par des tests. Mais la qualification
+du contrat, les clauses de responsabilité et la répartition
+responsable/sous-traitant méritent une relecture par un juriste avant la
+première vente. Le point le plus structurant y est déjà posé : pour les
+personnes reçues en clinique, **c'est la clinique qui est responsable de
+traitement**, et l'éditeur n'est que sous-traitant.
+
 ### Supervision (EF-903)
 
 Trois contrôles, choisis parce qu'ils correspondent à trois pannes réelles et
