@@ -58,11 +58,19 @@ public class ReinitialisationDao {
 	 * SELECT suivi d'un UPDATE : deux requêtes laisseraient deux appels
 	 * simultanés consommer le même jeton, et poser deux mots de passe
 	 * différents dont un seul serait connu de son auteur.
+	 *
+	 * <p>Le compte doit être ACTIF. La désactivation clôt déjà les demandes en
+	 * cours, donc cette condition est une seconde barrière — mais c'est
+	 * exactement le genre d'endroit où un futur chemin de désactivation
+	 * oublierait la première.
 	 */
 	public Optional<UUID> consommer(String empreinte, Instant maintenant) {
 		return jdbc.query("""
 				UPDATE reinitialisation SET utilise_le = ?
 				WHERE jeton_hash = ? AND utilise_le IS NULL AND expire_le > ?
+				  AND EXISTS (SELECT 1 FROM utilisateur u
+				              WHERE u.id = reinitialisation.utilisateur_id
+				                AND u.actif = true)
 				RETURNING utilisateur_id
 				""",
 				ligne -> ligne.next() ? Optional.ofNullable(ligne.getObject(1, UUID.class))

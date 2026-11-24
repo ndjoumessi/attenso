@@ -230,8 +230,11 @@ class PaiementIntegrationTest extends SocleIntegration {
 		// paiement n'a jamais abouti : il n'y a rien à gérer, et le dire vaut
 		// mieux que de rediriger vers une page d'erreur du prestataire.
 		UUID tenantId = creerClinique("sans-abonnement", "Sans abonnement", 2, 180);
+		// GÉRANT : gérer l'abonnement est devenu une action d'acheteur, donc
+		// un compte d'accueil se fait refuser plus tôt, par le rôle, et ce
+		// n'est pas ce que ce cas vérifie.
 		creerUtilisateur(tenantId, "a@sa.fr", "un-mot-de-passe-assez-long",
-				ai.attenso.utilisateur.Role.ACCUEIL);
+				ai.attenso.utilisateur.Role.GERANT);
 		String jeton = connecter("sans-abonnement", "a@sa.fr",
 				"un-mot-de-passe-assez-long");
 

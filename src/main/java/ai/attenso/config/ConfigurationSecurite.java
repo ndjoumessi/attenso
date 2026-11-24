@@ -79,10 +79,20 @@ public class ConfigurationSecurite {
 								"/api/connexion/reinitialiser").permitAll()
 						.requestMatchers("/reinitialisation/**").permitAll()
 						.requestMatchers("/actuator/health").permitAll()
-						// Les comptes du personnel : le GÉRANT seul. C'est le premier
+						// Ce qui relève de l'ACHETEUR et non de l'utilisatrice : les
+						// comptes, l'abonnement, et l'export complet. C'est le premier
 						// endroit où les deux rôles cessent d'être décoratifs — jusqu'ici
 						// ils ouvraient exactement les mêmes portes.
-						.requestMatchers("/api/equipe/**").hasRole("GERANT")
+						//
+						// L'export mérite d'y être autant que la facturation : il emporte
+						// TOUT, numéros compris, dans un fichier qui sort de la clinique.
+						// C'est la porte de sortie du client, et elle n'a pas à être à
+						// portée de clic de quiconque tient le comptoir un après-midi.
+						//
+						// Le tableau de bord et la supervision restent ouverts aux deux :
+						// ce sont des chiffres du jour, utiles à qui fait avancer la file.
+						.requestMatchers("/api/equipe/**", "/api/facturation/**",
+								"/api/export/**").hasRole("GERANT")
 						// Tout le reste est le back-office de la clinique.
 						.anyRequest().hasAnyRole("ACCUEIL", "GERANT"))
 				// Sans point d'entrée déclaré, une requête sans jeton reçoit 403.

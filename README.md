@@ -716,7 +716,25 @@ quelqu'un part qu'on veut pouvoir relire ce qu'il a fait.
 **Le rôle n'est pas lu côté navigateur pour décider de l'affichage** : la page
 demande la liste, et masque la section si le serveur refuse. Un contrôle
 d'accès qui vit dans la page se contourne avec la console, et finirait par être
-pris pour la vraie règle.
+pris pour la vraie règle. Le même appel révèle les trois zones du gérant —
+comptes, abonnement, export — puisque le serveur les protège par le même rôle.
+
+**L'export complet est passé côté gérant lui aussi**, et c'est le genre de
+décision qu'on prend une fois pour toutes. Il emporte TOUT, numéros compris,
+dans un fichier qui sort de la clinique ; c'est la porte de sortie du client,
+et elle n'a pas à être à portée de clic de quiconque tient le comptoir un
+après-midi. Le tableau de bord et la supervision restent ouverts aux deux
+rôles : ce sont des chiffres du jour, utiles à qui fait avancer la file. Tout
+verrouiller aurait été aussi faux que ne rien verrouiller.
+
+**Une désactivation annule les invitations et demandes d'oubli en cours.** Sans
+ça, une personne invitée puis désactivée avant d'avoir suivi son lien le
+garderait valable sept jours : elle ne pourrait pas se connecter — la connexion
+exige un compte actif — mais elle POSERAIT son mot de passe, et le jour d'une
+réactivation le compte s'ouvrirait sur un secret qu'elle est seule à connaître.
+La consommation d'un jeton exige en plus que le compte soit actif : la première
+barrière suffit, la seconde est là pour le futur chemin de désactivation qui
+oublierait la première.
 
 ### Récupération de mot de passe
 

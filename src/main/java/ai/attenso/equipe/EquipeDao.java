@@ -83,6 +83,19 @@ public class EquipeDao {
 				UPDATE utilisateur SET actif = ?, jeton_version = jeton_version + 1
 				WHERE tenant_id = ? AND id = ?
 				""", actif, tenantId, id);
+		if (!actif) {
+			// Les invitations et demandes d'oubli EN COURS sont closes avec le
+			// compte. Sans ça, une personne invitée puis désactivée avant
+			// d'avoir suivi son lien garderait un lien valable pendant sept
+			// jours : elle ne pourrait pas se connecter — la connexion exige
+			// un compte actif — mais elle POSERAIT son mot de passe, et le
+			// jour d'une réactivation le compte s'ouvrirait sur un secret
+			// qu'elle est seule à connaître.
+			jdbc.update("""
+					UPDATE reinitialisation SET utilise_le = now()
+					WHERE tenant_id = ? AND utilisateur_id = ? AND utilise_le IS NULL
+					""", tenantId, id);
+		}
 	}
 
 	/** Combien de gérants actifs, hors celui qu'on s'apprête à changer. */

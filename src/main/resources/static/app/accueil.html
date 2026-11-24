@@ -162,11 +162,13 @@
       factures, résilier.
     </span>
   </p>
-  <p><button id="bouton-export-complet">Exporter toutes mes données (ZIP)</button></p>
-  <p class="discret">
-    Ces données sont les vôtres. L'export s'ouvre dans un tableur, et rien
-    n'oblige à nous prévenir pour l'emporter ailleurs.
-  </p>
+  <div id="bloc-export" hidden>
+    <p><button id="bouton-export-complet">Exporter toutes mes données (ZIP)</button></p>
+    <p class="discret">
+      Ces données sont les vôtres. L'export s'ouvre dans un tableur, et rien
+      n'oblige à nous prévenir pour l'emporter ailleurs.
+    </p>
+  </div>
 
   <!-- Comptes du personnel. La section entière est masquée pour un compte
        d'accueil : le serveur refuse de toute façon, mais afficher des boutons
@@ -810,15 +812,27 @@ async function relireExploitation() {
 // être pris pour la vraie règle.
 const LIBELLE_ROLE = { ACCUEIL: 'Accueil', GERANT: 'Gérant' };
 
+/**
+ * Révèle ce qui relève du gérant, et sert aussi de test de droit.
+ *
+ * <p>Un seul appel décide pour les trois zones — comptes, abonnement, export
+ * — parce que le serveur les protège par le même rôle. Si la liste est
+ * refusée, elles restent masquées : afficher des boutons qui répondent 403
+ * serait une invitation à les essayer.
+ */
 async function relireEquipe() {
   let membres;
   try {
     membres = await appel('/api/equipe', { headers: { 'Authorization': `Bearer ${jeton}` } });
   } catch {
-    el('bloc-equipe').hidden = true;
+    for (const zone of ['bloc-equipe', 'bloc-export', 'bloc-espace-client']) {
+      el(zone).hidden = true;
+    }
+    el('bloc-abonnement').textContent = '';
     return;
   }
   el('bloc-equipe').hidden = false;
+  el('bloc-export').hidden = false;
   el('liste-equipe').replaceChildren(...membres.map((membre) => {
     const item = document.createElement('li');
     item.className = 'ligne';

@@ -180,6 +180,60 @@ class EquipeIntegrationTest extends SocleIntegration {
 				.andExpect(status().isOk());
 	}
 
+	@Test
+	@DisplayName("l'accueil n'atteint ni la facturation ni l'export complet")
+	void lAccueilNAtteintPasCeQuiRelevaDeLAcheteur() throws Exception {
+		creerUtilisateur(tenantId, "asv@equipe.fr", MDP, Role.ACCUEIL);
+		String asv = connecter("asv@equipe.fr", MDP);
+		String gerant = connecter("gerant@equipe.fr", MDP);
+
+		// L'export emporte TOUT, numéros compris, dans un fichier qui sort de
+		// la clinique. Il n'a pas à être à portée de clic de quiconque tient
+		// le comptoir un après-midi.
+		for (String route : new String[] { "/api/facturation", "/api/export/complet" }) {
+			http.perform(get(route).header("Authorization", "Bearer " + asv))
+					.andExpect(status().isForbidden());
+			http.perform(get(route).header("Authorization", "Bearer " + gerant))
+					.andExpect(status().isOk());
+		}
+	}
+
+	@Test
+	@DisplayName("le tableau de bord reste ouvert à l'accueil")
+	void leTableauDeBordResteOuvert() throws Exception {
+		creerUtilisateur(tenantId, "asv@equipe.fr", MDP, Role.ACCUEIL);
+
+		// Ce sont des chiffres du jour, utiles à qui fait avancer la file :
+		// tout verrouiller aurait été aussi faux que ne rien verrouiller.
+		http.perform(get("/api/tableau-de-bord")
+						.header("Authorization", "Bearer " + connecter("asv@equipe.fr", MDP)))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("désactiver un compte annule son invitation en cours")
+	void laDesactivationAnnuleLInvitation() throws Exception {
+		String gerant = connecter("gerant@equipe.fr", MDP);
+		inviterParHttp(gerant, "partie@equipe.fr", "ACCUEIL")
+				.andExpect(status().isCreated());
+		UUID invitee = ContexteTenant.avec(tenantId, () -> equipe.lister(tenantId)).stream()
+				.filter(membre -> membre.email().equals("partie@equipe.fr"))
+				.findFirst().orElseThrow().id();
+
+		http.perform(post("/api/equipe/" + invitee + "/desactiver")
+						.header("Authorization", "Bearer " + gerant))
+				.andExpect(status().isNoContent());
+
+		// Sans ça, la personne garderait un lien valable sept jours : elle ne
+		// pourrait pas se connecter, mais elle POSERAIT son mot de passe, et
+		// une réactivation ouvrirait le compte sur un secret qu'elle est seule
+		// à connaître.
+		assertThat(proprietaire.queryForObject("""
+				SELECT count(*) FROM reinitialisation
+				WHERE utilisateur_id = ? AND utilise_le IS NULL
+				""", Integer.class, invitee)).isZero();
+	}
+
 	// --- Le garde du dernier gérant --------------------------------------
 
 	@Test
