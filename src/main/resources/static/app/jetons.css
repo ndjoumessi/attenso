@@ -137,7 +137,7 @@
   --sur-barre-active: #1b5e4b;    /*  6.15:1 sur --barre-active */
   /* Une bordure qui dit « ici finit la navigation » porte une information :
      elle est soumise au 3:1, comme une bordure de contrôle. */
-  --barre-bordure: #89919e;       /*  3.07:1 sur --fond */
+  --barre-bordure: #828a97;       /*  3.36:1 sur --fond ; 3.06:1 sur --barre */
 }
 
 /* --- Mode sombre -------------------------------------------------------
@@ -180,7 +180,7 @@
     --sur-barre-doux: #a8b1be;    /*  8.22:1 sur --barre ; 6.04:1 sur --barre-active */
     --barre-active: #2b313b;
     --sur-barre-active: #f2f4f7;  /* 11.87:1 sur --barre-active */
-    --barre-bordure: #646d7b;     /*  3.16:1 sur --fond */
+    --barre-bordure: #646d7b;     /*  3.16:1 sur --fond ; 3.41:1 sur --barre */
 
     --bande-contraste: #2b313b;          /* 1.4:1 de séparation avec --fond */
     --sur-bande-contraste: #f2f4f7;      /* 11.76:1 */

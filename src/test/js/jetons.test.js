@@ -85,6 +85,12 @@ const PAIRES = [
   // La bordure de la barre sépare deux surfaces porteuses d'information : elle
   // dit « ici finit la navigation ». Soumise au 3:1 comme une bordure de contrôle.
   ['barre : bordure sur fond', 'barre-bordure', 'fond', 3],
+  // La bordure touche aussi la barre : un trait qui sépare deux surfaces doit
+  // se lire contre chacune, pas contre une seule.
+  ['barre : bordure sur fond de barre', 'barre-bordure', 'barre', 3],
+  // Le libellé doux existe aussi sur l'entrée active (une mention, un compteur
+  // posés à côté du libellé courant) : un couple réel, donc mesuré.
+  ['barre : libellé doux sur l\'entrée active', 'sur-barre-doux', 'barre-active', 4.5],
 ];
 
 for (const mode of ['clair', 'sombre']) {
