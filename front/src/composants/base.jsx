@@ -59,7 +59,7 @@ export function Fleche() {
 export function Bande({ children, id, aria, className = '' }) {
   return (
     <section id={id} aria-labelledby={aria}
-             className={`py-[var(--pas-12)] sm:py-[var(--pas-24)] ${className}`}>
+             className={`py-[var(--pas-16)] sm:py-[var(--pas-24)] ${className}`}>
       <Colonne>{children}</Colonne>
     </section>
   );

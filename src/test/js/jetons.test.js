@@ -88,9 +88,10 @@ const PAIRES = [
   // La bordure touche aussi la barre : un trait qui sépare deux surfaces doit
   // se lire contre chacune, pas contre une seule.
   ['barre : bordure sur fond de barre', 'barre-bordure', 'barre', 3],
-  // Le libellé doux existe aussi sur l'entrée active (une mention, un compteur
-  // posés à côté du libellé courant) : un couple réel, donc mesuré.
-  ['barre : libellé doux sur l\'entrée active', 'sur-barre-doux', 'barre-active', 4.5],
+  // L'ÉTAT « page courante » : le test de libellé ne le voit pas, il mesure le
+  // texte, pas la distinction. Un voile à 1.09:1 de la barre passait tout et
+  // restait invisible ; WCAG 1.4.11 attend 3:1 pour un indicateur d'état.
+  ['barre : l\'entrée active se distingue de la barre', 'barre-active', 'barre', 3],
 ];
 
 for (const mode of ['clair', 'sombre']) {
@@ -126,12 +127,34 @@ describe('la bande de rupture', () => {
   });
 });
 
+describe('l\'entrée active de la barre', () => {
+  for (const mode of ['clair', 'sombre']) {
+    it(`ne repose pas sur la teinte du libellé seule, en mode ${mode}`, () => {
+      // Même patron que la bande de rupture : on affirme une propriété que le
+      // ratio ne dit pas. Avec un libellé identique à celui des autres entrées,
+      // l'aplat serait le seul signal ; avec une teinte seule, WCAG 1.4.1 refuse.
+      const palette = jetons(mode);
+      assert.notEqual(palette['sur-barre-active'], palette['sur-barre']);
+      assert.ok(Math.abs(luminance(palette['sur-barre-active']) - luminance(palette['sur-barre'])) > 0.2,
+        'le libellé actif doit différer en LUMINANCE, pas seulement en teinte');
+    });
+  }
+});
+
 describe('les règles non négociables du socle', () => {
   it('garde une cible tactile au-dessus du minimum des deux plateformes', () => {
     const cible = source.match(/--cible:\s*(\d+)px/);
     assert.ok(cible, '--cible absent');
     assert.ok(Number(cible[1]) >= 48,
       '48px est le plancher Material ; 44 celui d\'Apple');
+  });
+
+  it('garde la cible minimale à 44px, plancher d\'Apple', () => {
+    // Appel taille="petit" en dépend : sans cette garde, la contrainte restait
+    // annoncée et non tenue.
+    const min = source.match(/--cible-min:\s*(\d+)px/);
+    assert.ok(min, '--cible-min absent');
+    assert.ok(Number(min[1]) >= 44, '44px est le plancher d\'Apple');
   });
 
   it('respecte le mouvement réduit globalement, pas écran par écran', () => {

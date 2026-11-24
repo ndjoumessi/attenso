@@ -132,9 +132,14 @@
      et non le fond seul, qui porte la séparation. */
   --barre: #eef1ef;
   --sur-barre: #15181d;           /* 15.64:1 sur --barre */
-  --sur-barre-doux: #4a515c;      /*  7.04:1 sur --barre ; 6.45:1 sur --barre-active */
-  --barre-active: #dfe9e4;        /* l'entrée courante : le voile du vert, pas un gris */
-  --sur-barre-active: #1b5e4b;    /*  6.15:1 sur --barre-active */
+  --sur-barre-doux: #4a515c;      /*  7.04:1 sur --barre */
+  /* L'entrée courante est un APLAT plein, pas un voile : « où suis-je » est un
+     état, donc soumis au 3:1 contre la barre (WCAG 1.4.11), et il ne doit pas
+     reposer sur la teinte du libellé seule (1.4.1). Un voile à 1.09:1 passait
+     tous les tests de texte et restait invisible. Pas de libellé doux dessus :
+     l'entrée active n'en porte qu'un, --sur-barre-active. */
+  --barre-active: #1b5e4b;        /*  6.72:1 sur --barre */
+  --sur-barre-active: #ffffff;    /*  7.64:1 sur --barre-active */
   /* Une bordure qui dit « ici finit la navigation » porte une information :
      elle est soumise au 3:1, comme une bordure de contrôle. */
   --barre-bordure: #828a97;       /*  3.36:1 sur --fond ; 3.06:1 sur --barre */
@@ -177,9 +182,9 @@
        barre plus claire que le contenu volerait l'attention au contenu. */
     --barre: #14181e;
     --sur-barre: #f2f4f7;         /* 16.16:1 sur --barre */
-    --sur-barre-doux: #a8b1be;    /*  8.22:1 sur --barre ; 6.04:1 sur --barre-active */
-    --barre-active: #2b313b;
-    --sur-barre-active: #f2f4f7;  /* 11.87:1 sur --barre-active */
+    --sur-barre-doux: #a8b1be;    /*  8.22:1 sur --barre */
+    --barre-active: #4ea88a;      /*  6.18:1 sur --barre : l'aplat vert, clair sur barre profonde */
+    --sur-barre-active: #10231c;  /*  5.70:1 sur --barre-active */
     --barre-bordure: #646d7b;     /*  3.16:1 sur --fond ; 3.41:1 sur --barre */
 
     --bande-contraste: #2b313b;          /* 1.4:1 de séparation avec --fond */
