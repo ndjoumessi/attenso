@@ -1,0 +1,64 @@
+# Déploiement de production (jalon L2).
+#
+# ENF-04 EXIGE un hébergement en France ou dans l'Union européenne. Ce fichier
+# ne peut pas le garantir — c'est la machine qui l'exécute qui décide — mais il
+# ne contient volontairement AUCUN service tiers : pas de base gérée hors UE,
+# pas de CDN, pas de télémétrie sortante. Le seul appel sortant du produit est
+# celui de l'agrégateur SMS, et Octopush est français.
+#
+#   docker compose -f compose.deploiement.yaml up -d
+#
+# Les secrets viennent de l'environnement, jamais de ce fichier : il est
+# versionné, et un mot de passe versionné est un mot de passe public.
+services:
+  base:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: attenso
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?mot de passe propriétaire requis}
+    volumes:
+      - donnees:/var/lib/postgresql/data
+    # Pas de ports publiés : seule l'application y accède, par le réseau
+    # interne. Exposer 5432 sur une machine publique est la faute la plus
+    # courante de ce genre de fichier.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d attenso"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  application:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      base:
+        condition: service_healthy
+    environment:
+      # Le rôle APPLICATIF, soumis au RLS. Les politiques de cloisonnement ne
+      # s'appliquent pas au propriétaire : lancer l'application en « postgres »
+      # rendrait toute la seconde barrière décorative.
+      DB_URL: jdbc:postgresql://base:5432/attenso
+      DB_USER: ${DB_USER:-attenso_app}
+      DB_PASSWORD: ${DB_PASSWORD:?mot de passe applicatif requis}
+      # Le rôle PROPRIÉTAIRE, pour Flyway uniquement.
+      DB_OWNER: postgres
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?mot de passe propriétaire requis}
+
+      ATTENSO_JWT_SECRET: ${ATTENSO_JWT_SECRET:?secret de signature requis}
+      # Doit rester COURTE : elle entre dans chaque SMS, et un segment fait
+      # 160 caractères.
+      ATTENSO_BASE_URL: ${ATTENSO_BASE_URL:?URL publique requise}
+
+      # Facultatifs. Chacun absent éteint sa fonction sans arrêter la file.
+      ATTENSO_OCTOPUSH_LOGIN: ${ATTENSO_OCTOPUSH_LOGIN:-}
+      ATTENSO_OCTOPUSH_CLE: ${ATTENSO_OCTOPUSH_CLE:-}
+      ATTENSO_PUSH_CLE_PUBLIQUE: ${ATTENSO_PUSH_CLE_PUBLIQUE:-}
+      ATTENSO_PUSH_CLE_PRIVEE: ${ATTENSO_PUSH_CLE_PRIVEE:-}
+      ATTENSO_SUPERVISION_WEBHOOK: ${ATTENSO_SUPERVISION_WEBHOOK:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  donnees:
