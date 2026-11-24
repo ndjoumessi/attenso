@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { ACTIONS, CIBLES, CLASSES, DEPLACEMENTS, LIBELLES, OUVERTS, actionsPour,
-  avecEnAttente, deplacementsPour, signature }
+  avecEnAttente, deplacementsPour, doitOublierLeJournal, signature }
   from '../../main/resources/static/app/vue-file.js';
 
 const STATUT_JAVA = 'src/main/java/ai/attenso/ticket/Statut.java';
@@ -202,5 +202,25 @@ describe('le déplacement manuel dans la file', () => {
       assert.ok(libelle.length > 0);
       assert.ok(fleche.length > 0);
     }
+  });
+});
+
+describe("le journal local d'une tablette", () => {
+  it("s'oublie quand on ouvre une session sur une AUTRE clinique", () => {
+    // Le journal porte le dernier tableau connu et les gestes pas encore
+    // partis. Les garder montrerait la file de l'une à l'autre sur la même
+    // tablette, et rejouerait les gestes de la première avec le jeton de la
+    // seconde.
+    assert.equal(doitOublierLeJournal('cerisiers', 'tilleuls'), true);
+  });
+
+  it('se garde quand la même clinique se reconnecte', () => {
+    // C'est le cas qui compte : une session expirée pendant une panne, et des
+    // gestes en attente qu'il ne faut surtout pas jeter.
+    assert.equal(doitOublierLeJournal('cerisiers', 'cerisiers'), false);
+  });
+
+  it("s'oublie au tout premier usage, quand la tablette ne retient rien", () => {
+    assert.equal(doitOublierLeJournal(null, 'cerisiers'), true);
   });
 });

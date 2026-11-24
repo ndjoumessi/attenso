@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
+import { vider as viderJournal } from '../../../src/main/resources/static/app/journal.js';
+import {
+  doitOublierLeJournal,
+} from '../../../src/main/resources/static/app/vue-file.js';
 import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from '../composants/formulaire.jsx';
 import { CLE_CLINIQUE, CLE_JETON, CLE_SLUG } from './session.js';
 
@@ -22,9 +26,18 @@ export function Connexion({ surConnexion }) {
           motDePasse: f.mdp.value,
         }),
       });
+      // Clinique différente : on ne garde ni le tableau ni les gestes en
+      // attente de la précédente. Les laisser montrerait la file de l'une à
+      // l'autre sur la même tablette, et rejouerait les gestes de la première
+      // avec le jeton de la seconde.
+      if (doitOublierLeJournal(localStorage.getItem(CLE_SLUG), reponse.slug)) {
+        await viderJournal();
+      }
       localStorage.setItem(CLE_JETON, reponse.jeton);
       localStorage.setItem(CLE_SLUG, reponse.slug);
       localStorage.setItem(CLE_CLINIQUE, reponse.clinique);
+      // Le mot de passe quitte la mémoire de la page dès qu'il est parti.
+      f.mdp.value = '';
       surConnexion(reponse.jeton);
     } catch (echec) {
       setErreur(echec.reseau ? 'Serveur injoignable.' : echec.message);

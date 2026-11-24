@@ -133,3 +133,22 @@ export function signature(lignes) {
   return JSON.stringify(lignes.map((l) =>
     [l.id, l.statut, l.position, l.enAttenteEnvoi, l.joignable, l.priorite]));
 }
+
+/**
+ * Faut-il oublier le journal local en ouvrant une session ?
+ *
+ * <p>Oui dès que la clinique change. Le journal porte DEUX choses : le dernier
+ * tableau connu, qui s'affiche avant le premier appel réseau, et les gestes
+ * pas encore partis. Les garder d'une clinique à l'autre montrerait la file de
+ * l'une à l'autre — sur la même tablette, ce qui est exactement le cas d'un
+ * poste partagé ou revendu — et tenterait de rejouer les gestes de la première
+ * avec le jeton de la seconde.
+ *
+ * <p>Ici plutôt que dans la page : c'est une règle, elle se teste.
+ *
+ * @param slugEnCache ce que la tablette avait retenu, ou null au premier usage
+ * @param slugRecu    la clinique que le serveur vient d'authentifier
+ */
+export function doitOublierLeJournal(slugEnCache, slugRecu) {
+  return slugEnCache !== slugRecu;
+}

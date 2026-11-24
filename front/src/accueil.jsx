@@ -14,6 +14,7 @@ import { Connexion } from './accueil/Connexion.jsx';
 import { File } from './accueil/File.jsx';
 import { Agenda, Carnets, Saisies, Titre } from './accueil/Sections.jsx';
 import { Compteurs, Exploitation } from './accueil/Exploitation.jsx';
+import { Mesure } from './accueil/Mesure.jsx';
 import {
   CLE_CLINIQUE, CLE_JETON, CLE_MDP_CHANGE, CLE_SLUG, entete, oublierSession,
 } from './accueil/session.js';
@@ -201,6 +202,7 @@ function Tableau({ jeton, surDeconnexion }) {
         </p>
 
         <Exploitation jeton={jeton} surErreur={setErreur} />
+        <Mesure jeton={jeton} surErreur={setErreur} />
         <MotDePasse jeton={jeton} />
       </main>
     </>
