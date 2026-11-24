@@ -191,6 +191,19 @@ les pages légales et les tarifs, et rien d'autre n'est atteignable. Les
 mentions légales s'affichent « à compléter » — y compris le champ *hébergeur*,
 qui doit maintenant nommer Railway.
 
+**Une clinique de démonstration y est amorcée.** Slug `demo`, nommée
+« Clinique de démonstration » pour que personne ne la prenne pour un client,
+avec un écran de salle d'attente appairé ; son compte est un GÉRANT, sans
+expéditeur SMS validé — l'affiche du comptoir ne promet donc pas de message.
+Elle existe parce que l'inscription en ligne est fermée tant que Stripe n'est
+pas configuré : sans elle, rien du produit n'est atteignable. Le mot de passe a
+été tiré au hasard et vit dans les variables Railway (`ATTENSO_AMORCE_*`) ;
+l'URL de l'écran n'apparaît qu'une fois, dans les journaux de ce déploiement.
+**À faire une fois le mot de passe changé depuis le tableau** : retirer
+`ATTENSO_AMORCE_ACTIVE` et `ATTENSO_AMORCE_MOT_DE_PASSE`, qui n'ont plus
+d'objet — l'amorce est idempotente — et qui laissent sinon un mot de passe en
+clair dans l'environnement.
+
 **Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18** là où la CI
 teste sur 16 : les vingt et une migrations passent et Hibernate valide le
 schéma, mais la suite ne s'exécute jamais sur la version de production. Et le
