@@ -14,7 +14,12 @@
 <a class="evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
-  <div class="colonne">
+  <!-- Le lien de connexion vit ICI, et pas seulement au pied de page. Il y
+       était rangé entre les mentions légales et les CGV, sous le nom « Accès
+       clinique » : personne ne cherche à se connecter dans un pied de page
+       juridique, et le mot « connexion » n'apparaissait nulle part sur le
+       site. Un client s'est retrouvé devant une vitrine sans porte. -->
+  <div class="colonne entete-barre">
     <span class="marque">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"
@@ -24,6 +29,7 @@
       </svg>
       Attenso
     </span>
+    <a class="appel appel--discret appel--petit" href="/connexion">Se connecter</a>
   </div>
 </header>
 
@@ -257,7 +263,7 @@
       et sont effacés le lendemain.
     </p>
     <ul>
-      <li><a href="/accueil">Accès clinique</a></li>
+      <li><a href="/connexion">Se connecter</a></li>
       <li><a href="/mentions-legales">Mentions légales</a></li>
       <li><a href="/cgv">Conditions générales</a></li>
       <li><a href="/confidentialite">Confidentialité</a></li>

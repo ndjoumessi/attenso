@@ -41,6 +41,22 @@ class PagesLegalesIntegrationTest extends SocleIntegration {
 	ServiceInscription inscriptions;
 
 	@Test
+	@DisplayName("la vitrine offre une porte d'entrée visible, et /connexion la sert")
+	void laVitrineOffreUnePorteVisible() throws Exception {
+		String vitrine = Files.readString(VITRINE, StandardCharsets.UTF_8);
+		String entete = vitrine.substring(vitrine.indexOf("<header"),
+				vitrine.indexOf("</header>"));
+
+		// Dans l'EN-TÊTE, et pas seulement au pied de page. Le lien y a vécu
+		// rangé entre les mentions légales et les CGV, sous le nom « Accès
+		// clinique » : le mot « connexion » n'était écrit nulle part sur le
+		// site, et un client est resté devant une vitrine sans porte.
+		assertThat(entete).contains("href=\"/connexion\"");
+		assertThat(entete).containsIgnoringCase("Se connecter");
+		http.perform(get("/connexion")).andExpect(status().isOk());
+	}
+
+	@Test
 	@DisplayName("les trois pages légales sont servies sans authentification")
 	void lesPagesSontPubliques() throws Exception {
 		for (String route : new String[] { "/mentions-legales", "/cgv",

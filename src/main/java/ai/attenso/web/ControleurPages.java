@@ -114,4 +114,17 @@ public class ControleurPages {
 	String accueil() {
 		return "forward:/app/accueil.html";
 	}
+
+	/**
+	 * La même page, sous le nom qu'on tape.
+	 *
+	 * <p>« Accueil » désigne le comptoir de la clinique, pas une page d'accueil
+	 * ni une connexion. Quelqu'un qui cherche à se connecter essaie
+	 * {@code /connexion} ; l'y envoyer coûte trois lignes et évite une porte
+	 * close.
+	 */
+	@GetMapping("/connexion")
+	String connexion() {
+		return "forward:/app/accueil.html";
+	}
 }

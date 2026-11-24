@@ -59,6 +59,9 @@ public class ConfigurationSecurite {
 						// navigateur de poser un en-tête sur une navigation, ce
 						// qu'il ne sait pas faire.
 						.requestMatchers("/affiche").permitAll()
+						// Même page que /accueil, et même raison d'être publique :
+						// c'est l'écran de connexion lui-même.
+						.requestMatchers("/connexion").permitAll()
 						// EF-905 : la réservation en ligne est publique par
 						// construction — c'est un client qui n'a pas de compte.
 						// La référence opaque du rendez-vous vaut ensuite

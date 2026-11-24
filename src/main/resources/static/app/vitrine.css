@@ -54,6 +54,11 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
 
 /* --- En-tête ------------------------------------------------------------ */
 .entete { padding: var(--pas-6) var(--pas-4) 0; }
+/* La marque à gauche, l'entrée des cliniques à droite : la seule disposition
+   que personne n'a à apprendre. Elle passe à la ligne sur un écran étroit
+   plutôt que de comprimer l'un des deux. */
+.entete-barre { display: flex; align-items: center; justify-content: space-between;
+                gap: var(--pas-4); flex-wrap: wrap; }
 .marque { font-size: var(--txt-xl); font-weight: 700; letter-spacing: -0.03em;
           display: inline-flex; align-items: center; gap: var(--pas-2); }
 .marque svg { flex: none; }
@@ -80,6 +85,10 @@ a:focus-visible, button:focus-visible, .bouton:focus-visible {
 .appel:hover { filter: brightness(1.12); box-shadow: var(--ombre-2); }
 .appel:active { filter: brightness(0.95); }
 .appel--discret { background: transparent; color: var(--accent); box-shadow: none; }
+/* Pour l'en-tête : plus petit que l'appel à l'action de la page, sans
+   descendre sous les 44 px qui restent le plancher d'une cible tactile. */
+.appel--petit { min-height: var(--cible-min); padding: 0 var(--pas-4);
+                font-size: var(--txt-base); font-weight: 600; }
 .appel--discret:hover { background: var(--accent-voile); filter: none; }
 
 .sous-appel { font-size: var(--txt-sm); color: var(--sur-fond-doux);
