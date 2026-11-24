@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/ndjoumessi/attenso/actions/workflows/ci.yml/badge.svg)](https://github.com/ndjoumessi/attenso/actions/workflows/ci.yml)
 
-File d'attente virtuelle pour cabinets à flux libre. **V0 : la file seule.**
+File d'attente virtuelle pour cabinets à flux libre. **V0, V1a et V1b implémentés.**
 
 Ce fichier dit comment le faire tourner, et surtout **pourquoi le code est
 écrit comme il l'est** : chaque décision non évidente est expliquée ici ou en
@@ -34,6 +34,7 @@ MDP_ACCUEIL='choisir-un-mot-de-passe-solide' \
 --attenso.amorce.slug=cerisiers \
 --attenso.amorce.nom='Clinique des Cerisiers' \
 --attenso.amorce.email=accueil@cerisiers.fr \
+--attenso.amorce.avec-ecran=true \
 --attenso.amorce.mot-de-passe=$MDP_ACCUEIL"
 ```
 
@@ -45,7 +46,21 @@ Puis :
 | Tableau de l'accueil | `/accueil` | l'ASV, sur tablette |
 | QR du comptoir | `/t/cerisiers` | le client, à l'arrivée |
 | Suivi du client | `/s/{reference}` | le client, par SMS |
-| Écran du mur | `/ecran/cerisiers` | la salle d'attente |
+| Écran du mur | `/ecran/{jeton}` | la salle d'attente |
+| Inscription autonome | `/inscription` | une clinique qui s'installe seule |
+| Réservation | `/rdv/{slug}` | le client, pour un rendez-vous |
+| Son rendez-vous | `/r/{reference}` | le client, par SMS |
+| Carnet de santé | `/carnet/{jeton}` | le propriétaire, par QR |
+
+Le jeton de l'écran est tiré à l'installation et journalisé **une seule fois**,
+avec son URL. `--attenso.amorce.avec-ecran` vaut `false` par défaut : une
+clinique sans téléviseur en salle n'a pas d'écran, et aucune route d'écran ne
+répond pour elle. Pour en appairer un plus tard :
+
+```sql
+UPDATE tenant SET jeton_ecran = encode(gen_random_bytes(9), 'base64')
+WHERE slug = 'cerisiers' RETURNING jeton_ecran;
+```
 
 Tests : `./mvnw test` lance les deux suites — serveur et écrans. Celle des
 écrans seule : `npm test`. Elle n'a aucune dépendance, le runner intégré de
@@ -58,6 +73,75 @@ développeur finit par diverger de lui, et c'est elle qu'on croit.
 Les tests du serveur exigent Docker — les invariants de ce système sont
 des contraintes PostgreSQL (index unique, index partiel, *row level security*),
 et une base en mémoire ne les porte pas.
+
+## Déployer (jalon L2)
+
+```bash
+cp .env.example .env     # puis remplir les secrets
+set -a; source .env; set +a
+docker compose -f compose.deploiement.yaml up -d
+```
+
+L'image se construit en deux étages : le JDK, Maven et le dépôt `.m2` restent
+dans l'étage de construction, et l'image finale ne porte qu'un JRE et le jar —
+environ 400 Mo de surface d'attaque en moins. Elle tourne sous un utilisateur
+**sans privilège**, et son contrôle de vivacité interroge `/actuator/health`
+plutôt que le port : Tomcat répond avant que Flyway n'ait fini de migrer, et un
+conteneur déclaré prêt trop tôt reçoit du trafic qu'il ne peut pas servir.
+
+**La base n'expose aucun port.** Seule l'application y accède, par le réseau
+interne. Publier 5432 sur une machine publique est la faute la plus courante de
+ce genre de fichier, et elle donnerait accès à toutes les cliniques d'un coup.
+
+**Base Jammy et non Alpine**, délibérément : Temurin ne publie pas de JRE
+Alpine pour arm64, et l'image ne se construirait donc ni sur un Mac Apple
+Silicon ni sur un serveur ARM — qui sont justement les machines les moins
+chères à louer en Europe. Quelques dizaines de mégaoctets contre une image qui
+se construit partout.
+
+Vérifié de bout en bout, pile complète et volume vierge : les 16 migrations
+passent, l'application atteint `healthy`, sert la vitrine, tourne en
+utilisateur `attenso`, ne journalise **aucune ligne d'erreur**, et le rôle
+`attenso_app` est confirmé non privilégié — la seconde barrière survit donc à
+la conteneurisation, ce qui est tout l'enjeu.
+
+### Deux pièges rencontrés en le vérifiant
+
+**Changer un mot de passe de base après le premier démarrage casse la pile, et
+l'erreur ment.** Postgres n'applique `POSTGRES_PASSWORD` qu'à l'initialisation
+d'un répertoire de données vide ; sur un volume existant il garde l'ancien. On
+obtient alors `password authentication failed for user "postgres"`, qui
+désigne l'authentification là où le vrai coupable est le volume. Pour changer
+un mot de passe, il faut le changer *dans Postgres* (`ALTER ROLE`), pas
+seulement dans l'environnement. Et attention au diagnostic : `psql` depuis
+l'intérieur du conteneur réussit quand même, parce que l'image officielle fait
+confiance aux connexions locales — le test doit donc venir du **réseau**.
+
+**`docker compose down` exige les mêmes variables que `up`.** Les gardes `:?`
+du descripteur refusent toute commande sans les secrets, démontage compris.
+C'est voulu — un descripteur qui démarre sans mot de passe en démarrerait un
+sans mot de passe — mais ça surprend, et un `down` qui échoue en silence laisse
+un volume périmé derrière lui, ce qui ramène au piège précédent.
+
+### Ce que ce fichier ne peut pas garantir : ENF-04
+
+L'exigence demande un hébergement en France ou dans l'Union européenne. Aucun
+descripteur ne décide de ça — c'est la machine qui l'exécute. Ce qui est fait,
+en revanche, c'est de n'enfermer **aucune dépendance hors UE** : pas de base
+gérée tierce, pas de CDN, pas de télémétrie sortante. Le seul appel sortant du
+produit est celui de l'agrégateur SMS, et Octopush est français.
+
+La seule exception est la déclaration des polices (voir plus bas), et c'est la
+raison pour laquelle elle est signalée comme une dette plutôt que comme un
+détail d'habillage.
+
+### Ce qui reste hors du code pour atteindre L2
+
+Le jalon dit « V0 déployé **et exploité** chez l'établissement pilote ». La
+moitié technique est là et vérifiée. L'autre moitié ne s'écrit pas :
+louer une machine en UE, y pointer un nom de domaine, et surtout trouver la
+clinique qui accepte d'être pilote — ce que le planning place en semaines 1-2,
+avant toute ligne de code.
 
 ## Variables d'environnement
 
@@ -341,6 +425,202 @@ Les deux réglages sont indépendants : on peut activer le HLR sans l'envoi rée
 par exemple pour mesurer la qualité des numéros d'une clinique avant d'ouvrir
 les SMS.
 
+## L'écran du mur est appairé, et optionnel
+
+La première version servait l'écran sur `/ecran/{slug}`, en accès libre. Le
+slug, c'est le nom de la clinique : qui le devinait lisait sa file en direct, et
+ouvrait un flux SSE au passage. Rien de nominatif n'y figure — l'écran n'affiche
+que des numéros, c'est sa raison d'être — mais **l'affluence d'un cabinet est
+une donnée commerciale**, et elle n'a pas à être servie à qui la demande.
+
+La donnée de l'écran passe donc par un jeton d'appairage
+(`/api/ecran/jeton/{jeton}`), colonne `tenant.jeton_ecran`. Elle est
+**nullable**, et c'est elle qui porte EF-603 : pas de jeton, pas d'écran, 404.
+Il n'y a rien à désactiver puisque rien n'est activé par défaut.
+
+Un jeton inconnu et une clinique sans écran rendent **la même réponse**.
+Les distinguer dirait à qui sonde laquelle des deux il vient de toucher, donc
+quelles cliniques ont un écran. Un test le garde.
+
+**Le flux SSE du tableau reste résolu par slug**, et c'est délibéré. Les deux
+abonnés n'ont pas le même justificatif : le tableau est authentifié par JWT,
+mais `EventSource` ne sait pas poser d'en-tête `Authorization`, et un jeton en
+paramètre d'URL finirait dans les journaux d'accès du serveur et des proxys.
+Surtout, une clinique sans écran n'a aucun jeton, et son tableau doit quand
+même se rafraîchir. Ce flux **ne transporte aucune donnée** : il dit « ça a
+bougé », et l'abonné relit par une route qui, elle, contrôle l'accès.
+
+## La mesure du pilote
+
+C'est le chiffre qui décide du projet en semaine 10, et il ne se déduit
+d'aucune donnée que le système possède déjà. Attenso voit les gens qui
+**prennent un ticket** ; il ne voit pas ceux qui franchissent la porte. Le
+dénominateur du taux d'auto-enregistrement est donc une saisie humaine, faite
+par l'ASV sur son tableau, et la table `mesure_jour` ne contient que ça.
+
+Trois décisions qui tiennent tout le calcul :
+
+- **Le numérateur ne compte que les tickets pris par le client lui-même.** Un
+  ticket saisi par l'accueil pour quelqu'un sans smartphone prouve précisément
+  que le client ne s'est *pas* enregistré seul : le compter gonflerait le taux
+  et invaliderait la décision. D'où la colonne `ticket.origine`, qui distingue
+  `COMPTOIR` de `ACCUEIL` — les urgences saisies par l'ASV comptent comme
+  `ACCUEIL`.
+- **Un dénominateur absent n'est pas un zéro.** Tant que personne n'a compté
+  les arrivants, le taux vaut `null` et l'interface demande la saisie. Afficher
+  « 0 % » ferait conclure à l'échec du pilote là où il manque seulement un
+  comptage — et le critère d'arrêt est justement « sous 30 % ».
+- **La jointure est pleine, dans les deux sens.** Une première version partait
+  des tickets : une journée où l'accueil a compté vingt arrivants sans qu'aucun
+  ticket ne soit pris — QR code décroché, affiche tombée — disparaissait
+  purement et simplement de la vue et de l'export. C'est le 0 % le plus
+  éloquent du pilote, et c'était le seul qu'on effaçait. Au passage, la saisie
+  du matin s'évaporait dès qu'on rouvrait l'écran avant le premier client,
+  ce qui aurait fait cesser de compter. Deux tests gardent les deux cas.
+
+L'export CSV (`GET /api/mesure/export.csv`) est le critère de recette R9. Il
+sépare au **point-virgule** et commence par une marque d'ordre des octets :
+sans le premier, un tableur français ouvre tout en une colonne ; sans la
+seconde, Excel lit l'UTF-8 en latin-1 et affiche « DÃ©parts ». Les valeurs
+absentes restent **vides** et ne deviennent pas zéro, pour la raison ci-dessus.
+Le téléchargement passe par `fetch` et non par un lien : la route exige
+l'en-tête `Authorization`, et un jeton glissé dans l'URL finirait dans les
+journaux d'accès du serveur et des proxys.
+
+Le déplacement manuel dans la file (`monter` / `descendre`) échange deux rangs
+**à l'intérieur d'une même bande de priorité** : une urgence ne se fait pas
+doubler par un geste de confort. Aux extrémités, le geste ne fait rien et ne
+lève pas d'erreur — bloquer l'ASV sur une action sans conséquence serait pire
+que de l'ignorer. Il est refusé hors réseau, contrairement aux autres gestes :
+l'ordre est arbitré par le serveur, et deux tablettes qui réordonnent à
+l'aveugle pendant une panne produiraient deux files différentes, chacune
+persuadée d'avoir raison.
+
+## Les paliers V1a et V1b
+
+Le V0 — la file seule — est le périmètre du pilote. Les paliers suivants ont
+été construits ensuite, sur demande explicite, **avant** que le pilote n'ait
+rendu son verdict. Le cahier des charges les conditionnait : V1a après une
+mesure à ≥ 50 % d'auto-enregistrement en semaine 10, V1b après trois clients
+payants sur V1a. Ces portes n'ont pas été franchies, elles ont été contournées,
+et c'est une décision assumée du commanditaire — pas un oubli.
+
+### Inscription autonome (EF-901), et ce qu'elle ne peut pas faire
+
+Une clinique s'inscrit seule sur `/inscription` et repart avec l'adresse de son
+QR. Le §15 du cahier des charges avait repéré la collision : l'expéditeur SMS
+au nom de la clinique exige une autorisation écrite et une validation opérateur
+de plusieurs jours, **ce qu'aucune inscription en ligne ne peut produire**.
+
+La sortie était déjà dans le schéma : `expediteur_sms` reste `NULL`, la clinique
+tourne *sans SMS* — file, écran et page de suivi compris — et la page de
+confirmation le dit en toutes lettres plutôt que de laisser découvrir le
+silence. C'est la seule étape qui n'est pas autonome, et elle est annoncée dès
+la première minute.
+
+**Ce qui manque encore, et qu'il faut savoir :** l'adresse de courriel n'est pas
+vérifiée. Le compte est utilisable immédiatement, ce qui est le comportement
+voulu, mais rien n'empêche quelqu'un d'inscrire une clinique sous une adresse
+qui n'est pas la sienne. La limite de débit (trois inscriptions par adresse IP
+et par heure) borne l'abus de masse, pas l'usurpation ponctuelle. Un envoi de
+courriel de confirmation est le prochain pas, et il n'est pas fait.
+
+### Facturation (EF-902) — et un défaut des prix du §13
+
+Trois paliers, facturés au **volume de visites** et non au nombre de
+praticiens, avec dépassement à 0,15 €. Les montants sont des **centimes
+entiers** : un prix en flottant finit toujours par produire une facture à
+68,99 €, ce qui n'est pas un arrondi acceptable quand le client la lit.
+
+**Les prix du cahier des charges ont un palier dominé.** Avec le dépassement à
+0,15 €, rester au palier Comptoir et payer le dépassement revient moins cher
+que Clinique *à tous les volumes*, et Centre ne devient intéressant qu'au-delà
+d'environ 1 434 visites :
+
+| Visites/mois | Comptoir | Clinique | Centre | Le moins cher |
+| --- | --- | --- | --- | --- |
+| 800 | 144 € | 149 € | 239 € | Comptoir |
+| 1 400 | 234 € | 239 € | 239 € | Comptoir |
+| 1 500 | 249 € | 254 € | **239 €** | Centre |
+
+Aucun client qui compte n'a de raison de prendre Clinique. Ce n'est pas corrigé
+— les prix sont une décision commerciale, pas technique — mais le constat est
+**figé dans un test** (`PalierTest`), qui échouera dès que la grille changera,
+pour qu'on le revoie à ce moment-là.
+
+Conséquence directe dans le code : le conseil de palier ne propose jamais un
+changement qui coûterait plus cher, et ne conseille une *baisse* que sur un mois
+complet — la première version poussait une clinique inscrite la veille à
+descendre de formule, sur un compteur à zéro parce que le mois commençait.
+
+### Supervision (EF-903)
+
+Trois contrôles, choisis parce qu'ils correspondent à trois pannes réelles et
+non à des métriques génériques : la base répond, les SMS partent, l'ordonnanceur
+tourne. Le deuxième et le troisième sont les sournois — l'application peut
+répondre parfaitement pendant que la file d'envoi est bloquée ou que plus aucun
+absent n'est détecté.
+
+L'alerte ne part qu'au **changement** d'état. Répéter le message toutes les
+minutes pendant une panne de nuit fait couper les notifications, et la panne
+suivante passe alors inaperçue. Un webhook est facultatif ; sans lui, tout est
+journalisé, ce qu'un agrégateur de journaux exploite très bien.
+
+### Export complet (EF-904)
+
+Une archive ZIP de CSV, en un clic, sans rien demander à personne. C'est un
+argument de vente autant qu'une fonction : le §14 traite la réticence face à un
+éditeur seul en montrant la porte de sortie, et une porte qu'on promet sans la
+montrer ne rassure personne.
+
+**Les empreintes de mots de passe n'y sont pas**, et la requête de la table
+`utilisateur` nomme donc ses colonnes au lieu de prendre `*`. Un export circule :
+il part par courriel, atterrit sur une clé USB, finit dans un dossier partagé.
+
+### Agenda et réservation (EF-905)
+
+Un modèle hebdomadaire produit des créneaux **matérialisés** par date : une
+clinique qui change ses horaires ne doit pas voir disparaître les rendez-vous
+déjà pris sur l'ancienne grille.
+
+Le quota tient par un `UPDATE ... WHERE prises < places` atomique, pas par un
+compte suivi d'une insertion — même raisonnement que le budget HLR, et un test
+lance vingt réservations simultanées contre un quota de trois pour le prouver.
+L'annulation **rend la place**, sans quoi l'agenda se viderait tout seul et la
+clinique refuserait des clients devant des créneaux qu'elle croit pleins.
+
+L'agenda **ne remplace pas la file** : un rendez-vous réserve une heure, et c'est
+l'accueil qui crée le ticket quand la personne se présente. Faire entrer
+automatiquement un rendez-vous dans la file à l'heure dite produirait des
+tickets fantômes pour tous les clients en retard.
+
+### Carnet de santé (EF-906) — et une contradiction du cahier des charges
+
+**EC-05 dit « aucune donnée de santé n'est traitée en V0, V1a ni V1b », et
+EF-906 — classé V1b — demande un carnet de santé.** Les deux ne peuvent pas
+être vrais ensemble. Le §3.4 tranche : il met hors périmètre « toute donnée de
+santé **humaine**, et tout hébergement HDS ». Un carnet de vaccination de chat
+est une donnée de santé *animale*, qui n'est pas une catégorie particulière au
+sens du RGPD et n'appelle aucun agrément HDS. C'est cette lecture qui est
+implémentée. Si l'intention était d'exclure aussi le vétérinaire, il faut
+retirer EF-906 du périmètre plutôt que de l'écrire à moitié.
+
+**Le QR est révocable, et c'est le cœur de l'exigence.** Un QR imprimé sur une
+médaille se photographie : révoquer fait tourner le jeton, l'ancienne adresse
+cesse de répondre, et le propriétaire recolle une médaille neuve sans qu'on lui
+refasse quoi que ce soit. Révoquer *sans* réémettre ferme le carnet
+définitivement — c'est ce que demande quelqu'un qui ne veut plus d'accès par QR
+du tout, et le lui refuser viderait le mot « révocable » de son sens.
+
+**La durée de conservation n'est pas celle de la file**, et c'est voulu. Le
+numéro d'un ticket est effacé à J+1 ; celui d'un carnet ne l'est pas, parce
+qu'un rappel de vaccin se déclenche des mois plus tard. Deux finalités, deux
+durées : c'est exactement ce que le RGPD demande d'articuler, et non une entorse
+à la minimisation.
+
+Le SMS de rappel ne nomme **ni l'animal ni le vaccin** : il s'affiche sur un
+écran verrouillé, et le détail reste derrière le lien, lui-même révocable.
+
 ## Garde-fous
 
 - **La référence d'un lien SMS ne vaut que pour sa journée**, vérifié et non
@@ -360,6 +640,95 @@ les SMS.
 Pas de CAPTCHA à l'enregistrement, et c'est un choix : il détruirait les dix
 secondes de prise de ticket qui sont tout le produit. La protection utile est
 la limite de deux tickets par numéro, tenue en base.
+
+## Exigences non fonctionnelles : ce qui est tenu, et ce qui ne peut pas l'être ici
+
+Onze ENF au cahier des charges. Six sont portées par le code et vérifiées ;
+quatre sont opérationnelles et ne se décident pas dans un dépôt ; une est
+tenue par construction.
+
+| Réf. | État | Preuve ou raison |
+| --- | --- | --- |
+| ENF-01 | **mesuré** | p95 à **68 ms** côté serveur (médiane 30 ms, p99 91 ms), 600 lectures sur 20 clients simultanés, base à 225 000 tickets |
+| ENF-02 | tenu | le tick est à 5 s, donc toujours sous les 10 s exigées |
+| ENF-03 | **mode dégradé fait** | la disponibilité est opérationnelle ; le mode dégradé, lui, est obligatoire et il existe |
+| ENF-04 | **rien à corriger côté code** | plus aucune dépendance hors UE : ni CDN, ni polices distantes, ni télémétrie |
+| ENF-05 | vérifié | RLS **et** politique sur les 8 tables porteuses de `tenant_id`, contrôlé dans la base réelle |
+| ENF-06 | vérifié | référence opaque dans le lien SMS, jeton opaque pour l'écran, aucun identifiant brut |
+| ENF-07 | vérifié | `journal_acces` sur chaque transition ; `notification` porte canal, statut, identifiant fournisseur et coût |
+| ENF-08 | vérifié | aucune syntaxe postérieure à Safari iOS 16 dans les modules |
+| ENF-09 | vérifié | contrastes mesurés et testés, cibles à 56 px, aucune taille de police en px fixe |
+| ENF-10 | vérifié | index unique `(ticket_id, type)` ; `cout_centimes` et `cout_fournisseur` en base |
+| ENF-11 | **éprouvé** | 50 établissements, 3 mois, 225 000 tickets (81 Mo) : aucun balayage séquentiel, tout passe par index |
+
+### Ce que la campagne de charge a mesuré
+
+Les chiffres ci-dessus viennent d'une base chargée à la cible d'ENF-11 : 50
+établissements, 1 500 visites par mois chacun, trois mois d'historique, soit
+225 000 tickets et 81 Mo. Mesuré sous le rôle **applicatif**, donc avec le RLS
+actif — mesurer en propriétaire aurait contourné les politiques et donné des
+chiffres faux :
+
+| Requête | Temps | Plan |
+| --- | --- | --- |
+| Tableau du jour (lecture principale de l'accueil) | 0,27 ms | index |
+| Position d'un client par sa référence | 0,07 ms | index |
+| Numéro du jour suivant (chemin d'insertion) | 0,06 ms | index |
+| Tableau de bord sur 30 jours | 2,4 ms | index |
+| Mesure du pilote, jointure pleine sur 30 jours | 0,8 ms | index |
+| Export complet d'une clinique (4 500 tickets) | 3,8 ms | index |
+
+Aucune de ces requêtes ne tombe en balayage séquentiel sur `ticket` à ce
+volume. **ENF-11 tient**, et sans refonte.
+
+**Ce que la mesure d'ENF-01 ne prouve pas.** Les 68 ms sont la part du serveur,
+mesurée en local : il reste 930 ms de budget pour le réseau mobile dégradé que
+l'exigence vise. Le serveur consomme donc 7 % de l'enveloppe. La part réseau,
+elle, dépend du poids de la page et du nombre d'allers-retours — ce qui mène au
+point suivant.
+
+### Les polices distantes ont été retirées
+
+Les neuf pages chargeaient Lexend et Source Sans 3 depuis `fonts.googleapis.com`.
+Le rendu n'était pas bloqué — `display=swap` et une pile système étaient en
+place — donc ce n'était pas un problème de vitesse. C'en était un de
+**transfert** : chaque chargement de page envoyait l'adresse IP du client à un
+tiers hors UE, sur un produit dont toute la position tient en « nous ne
+collectons qu'un mobile et un numéro de ticket, effacés le lendemain ».
+
+Les déclarations sont supprimées et la pile système est devenue le choix assumé.
+Ce qui a été rattrapé au passage, parce que ça venait des polices et non du
+CSS : les **chiffres tabulaires**, désormais déclarés explicitement — sans eux
+la file tressaute quand un rang passe de 9 à 10 et le grand nombre du mur danse
+à chaque appel — et les graisses **650 et 750**, qui n'existent dans aucune
+police système et retombaient sur 400, aplatissant la hiérarchie des titres.
+
+**Pour revenir aux polices de marque, il faut les AUTO-HÉBERGER**, pas rétablir
+le lien distant. Les deux sont sous licence SIL OFL, qui autorise la
+redistribution : déposer les `woff2` dans `app/polices/` et déclarer les
+`@font-face` localement. La note est dans `attenso.css`, à l'endroit où
+quelqu'un serait tenté de recoller le lien.
+
+Mesure de la page client après retrait : **44 Ko sur 7 requêtes, une seule
+origine**, et tout passe au cache du service worker après la première visite.
+Les deux origines tierces supprimées, c'est deux poignées de main DNS + TLS en
+moins avant que le texte ne soit mis en forme — ce qui compte précisément sur
+le « réseau mobile dégradé » que vise ENF-01.
+
+**La colonne `journal_acces.ip` reste vide, et ce n'est pas un oubli.** EC-03
+limite la collecte à un numéro de mobile et un numéro de ticket : y ajouter une
+adresse IP serait une troisième donnée personnelle, interdite par le cahier des
+charges. L'adresse sert uniquement, en mémoire, à la limite de débit. Un test
+vérifie qu'aucune IP n'est consignée — précisément pour que personne ne
+« répare » cette colonne.
+
+**EC-04 manquait.** Le formulaire du comptoir disait la finalité et la durée de
+conservation, mais ne nommait pas le **responsable de traitement** — et ce
+responsable est la clinique, pas l'éditeur : c'est elle qui décide de la
+finalité. Son nom vient donc du serveur (`GET /t/{slug}/clinique`), et la
+mention est dépliable sous le bouton plutôt que derrière un lien qui ferait
+quitter la prise de ticket. Si le nom ne se charge pas, la mention reste vraie
+mais générique : on n'affiche jamais un faux responsable.
 
 ## Ce qui n'est pas fait
 
@@ -386,6 +755,14 @@ tombe à 2,16:1 sur fond sombre : chaque accent a donc sa propre valeur, mesuré
 à part. Et une surface qui doit trancher avec le fond doit y être plus
 *claire*, pas plus foncée — le premier jet faisait l'inverse et la bande
 disparaissait. Un test le garde maintenant dans les deux sens.
+
+Une seconde faute est venue de la même famille, trouvée en ajoutant le bloc de
+mesure : le texte des bandeaux d'information est posé sur le *voile* d'accent,
+pas sur le fond, et en mode sombre la paire ne donnait que **4,28:1**. Le vert
+d'un aplat et le vert d'un texte posé sur ce voile sont deux rôles distincts —
+d'où `--accent-texte`, séparé de `--accent`. La classe concernée porte aussi le
+bandeau des gestes en attente, donc l'écran de panne, là où la lecture compte le
+plus. La paire est maintenant dans le test.
 
 **La couleur n'est jamais seule à porter l'information.** Chaque étiquette de
 la file a un pictogramme en plus de sa teinte : une flèche pour « appelé », un
@@ -438,6 +815,7 @@ procédure de répétition est plus haut, et elle a été jouée dans Chrome.
 | `web` | routes, SSE, limiteur de débit, traduction des erreurs |
 | `journal` | journal d'accès et journal des commandes, en ajout seul |
 | `numero` | vérification HLR et interprétation des verdicts |
+| `mesure` | instrumentation du pilote : origine, arrivants, taux, export |
 | `amorce` | installation de la première clinique |
 
 L'expéditeur SMS d'une clinique se règle à l'installation
@@ -447,6 +825,9 @@ Côté client, `app/journal.js` porte IndexedDB (les gestes et le dernier
 tableau), `app/attenso.js` la file de rejeu et l'état de la liaison, `sw.js` la
 coquille hors réseau.
 
-Les deux migrations se lisent comme de la documentation : `V1__socle.sql` porte
-le schéma et dit pourquoi il n'y a ni colonne de rang ni table de compteurs,
-`V2__rls.sql` porte le cloisonnement et dit pourquoi il faut deux rôles.
+Les migrations se lisent comme de la documentation : `V1__socle.sql` porte le
+schéma et dit pourquoi il n'y a ni colonne de rang ni table de compteurs,
+`V2__rls.sql` porte le cloisonnement et dit pourquoi il faut deux rôles, et
+`V6__mesure_pilote.sql` ajoute l'origine du ticket et le comptage des
+arrivants — avec sa politique RLS, qu'un test de cloisonnement vérifie comme
+les autres.
