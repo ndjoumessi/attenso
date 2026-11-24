@@ -39,10 +39,13 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
 
   return (
     <Sidebar collapsible="offcanvas">
-      {/* `pr-10` dégage la place du bouton de fermeture du tiroir, posé en
-          `absolute top-4 right-4` par `sheet.jsx` : un nom de clinique long
-          passerait sous la croix. */}
-      <SidebarHeader className="px-3 py-4 pr-10">
+      {/* Le dégagement de la croix de fermeture, et SEULEMENT dans le tiroir.
+          Elle est posée en `absolute top-4 right-4` par `sheet.jsx` et mesure
+          44 px, donc elle occupe les 60 premiers pixels depuis le bord droit :
+          `pr-16` (64 px) la dégage avec un cheveu de marge. Au-dessus du seuil
+          il n'y a pas de croix, et prendre 64 px sur un en-tête de 256 px
+          ferait replier le nom de la clinique pour rien. */}
+      <SidebarHeader className={`px-3 py-4 ${isMobile ? 'pr-16' : ''}`}>
         <p className="text-base font-bold leading-tight">{clinique}</p>
       </SidebarHeader>
       <SidebarSeparator />

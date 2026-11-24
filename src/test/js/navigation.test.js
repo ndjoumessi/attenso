@@ -230,6 +230,59 @@ describe('la barre reste une barre à libellés', () => {
     });
   });
 
+  /**
+   * Les cibles tactiles des contrôles que la barre introduit.
+   *
+   * <p>`jetons.test.js` tient les JETONS `--cible` (56 px, la cible du produit)
+   * et `--cible-min` (44 px, le plancher) ; personne ne vérifiait qu'un contrôle
+   * s'en serve. C'est ainsi qu'est passée une croix de fermeture de 16 px —
+   * remise pour élargir une cible, et plus étroite que la bande de pellicule
+   * qu'elle remplaçait.
+   *
+   * <p>Le piège à garder en tête : `cible-min` ne pose qu'un `min-height`. Un
+   * contrôle carré doit AUSSI tenir sa largeur, sans quoi il reste large comme
+   * son icône. Les deux sont donc vérifiés séparément.
+   */
+  describe('les contrôles de la barre tiennent le plancher tactile', () => {
+    const HAUTEUR = /\bcible(-min)?\b|\bh-1[12]\b|\bsize-1[12]\b/;
+    const LARGEUR = /w-\(--cible(-min)?\)|\bw-1[12]\b|\bsize-1[12]\b|\bw-full\b/;
+
+    /** Le source d'une fonction ou d'un élément, depuis son ancre. */
+    const depuis = (fichier, ancre) => {
+      const source = sansCommentaires(lire(fichier));
+      const i = source.indexOf(ancre);
+      assert.notEqual(i, -1, `${ancre} introuvable dans ${fichier}`);
+      return source.slice(i);
+    };
+
+    it('le bouton qui ouvre le tiroir', () => {
+      assert.match(depuis('front/src/accueil/Barre.jsx', 'export function OuvreLaBarre'),
+        HAUTEUR, 'le bouton « Menu » n\'annonce aucune cible tactile');
+    });
+
+    it('chaque entrée de la barre', () => {
+      assert.match(depuis('front/src/accueil/Barre.jsx', 'function Entree'),
+        HAUTEUR, 'une entrée de navigation sous le plancher tactile');
+    });
+
+    it('la croix du tiroir, en hauteur ET en largeur', () => {
+      const sheet = sansCommentaires(lire('front/src/ui/sheet.jsx'));
+      const bouton = sheet.match(/<SheetPrimitive\.Close\s+className="([^"]*)"/);
+      assert.ok(bouton, 'bouton de fermeture du tiroir introuvable');
+      assert.match(bouton[1], HAUTEUR, 'croix sans hauteur de cible');
+      assert.match(bouton[1], LARGEUR,
+        'croix sans largeur de cible : elle reste large comme son icône, '
+        + 'donc plus étroite que la pellicule qu\'elle remplace');
+    });
+
+    it('et l\'en-tête de la barre dégage la place de cette croix', () => {
+      // Sinon un nom de clinique long passe sous un contrôle devenu large.
+      const entete = depuis('front/src/accueil/Barre.jsx', '<SidebarHeader');
+      assert.match(entete.slice(0, 200), /pr-1[5-9]|pr-2[0-9]|pr-\[/,
+        'le dégagement ne couvre plus la croix élargie');
+    });
+  });
+
   it('annonce le tiroir en français, et laisse de quoi en sortir', () => {
     // Les deux chaînes que le lecteur d'écran lit à l'ouverture du tiroir,
     // dans un produit qui n'a pas une autre phrase en anglais.

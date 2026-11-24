@@ -73,7 +73,13 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce">
+          /* UNE CIBLE, pas une icône. L'icône reste à 16 px, la zone cliquable
+             fait `--cible-min` (44 px) dans les DEUX dimensions : `cible-min`
+             seul ne pose qu'un `min-height`, et laissait un contrôle large
+             comme son icône — plus étroit que la bande de pellicule qu'il est
+             censé remplacer, et sous le plancher que ce produit tient partout
+             ailleurs. */
+          <SheetPrimitive.Close className="cible-min absolute top-4 right-4 flex w-(--cible-min) items-center justify-center rounded opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce">
             <XIcon className="size-4" />
             <span className="sr-only">Fermer</span>
           </SheetPrimitive.Close>
