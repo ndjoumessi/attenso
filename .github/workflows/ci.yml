@@ -1,6 +1,6 @@
 # Intégration continue : une seule commande, les deux suites.
 #
-# `./mvnw verify` lance les 107 tests du serveur ET les 32 tests des écrans,
+# `./mvnw verify` lance les 281 tests du serveur ET les 112 tests des écrans,
 # puis construit le jar. C'est délibérément la même commande qu'en local : une
 # CI qui fait autre chose que le développeur finit par diverger de lui, et
 # c'est elle qu'on croit.
@@ -49,6 +49,19 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '20'
+          # Met en cache ~/.npm d'après le verrou du front.
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      # `npm run build` est lancé par exec-maven-plugin en generate-resources,
+      # et il appelle vite, qui vit dans front/node_modules. Sans cette étape
+      # la construction s'arrête sur « vite: not found » : c'est arrivé sur
+      # 056d84f, parce que le Dockerfile avait reçu son npm ci et pas la CI.
+      # Les deux chemins de fabrication doivent installer les mêmes
+      # dépendances, sinon l'un valide ce que l'autre ne sait pas construire.
+      - name: Dépendances du front
+        run: npm ci --no-fund --no-audit
+        working-directory: front
 
       # Testcontainers démarre postgres:16-alpine. Docker est préinstallé sur
       # les exécuteurs Ubuntu ; on le vérifie explicitement pour que l'échec
