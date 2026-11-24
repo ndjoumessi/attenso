@@ -15,9 +15,36 @@ export default defineConfig({
   root: import.meta.dirname,
   plugins: [react(), tailwind()],
   build: {
-    // emptyOutDir FAUX : le répertoire contient encore les pages écrites à la
-    // main, qui continuent d'être servies tant qu'elles ne sont pas migrées.
-    // Vite le viderait sans prévenir.
+    // CIBLES FIGÉES, et non la valeur par défaut de Vite.
+    //
+    // Sans cette déclaration, Vite retombe sur « baseline-widely-available »,
+    // qui est une FENÊTRE GLISSANTE : ce que ce mot désigne avance tout seul
+    // avec le temps. Une reconstruction dans six mois pourrait donc relever le
+    // plancher sans que rien ne change dans ce dépôt, et casser la tablette de
+    // l'accueil sans qu'aucun test ne rougisse. ENF-08 demande Safari iOS 16+,
+    // Chrome Android et bureau (deux dernières versions) : on l'écrit.
+    //
+    // Les planchers Chrome, Edge et Firefox sont du mou — « deux dernières
+    // versions » est très au-dessus. Le seul qui contraigne est safari16.
+    target: ['safari16', 'chrome107', 'edge107', 'firefox104'],
+
+    // LE CSS NE TIENT PAS LE MÊME PLANCHER, et c'est une dette assumée.
+    //
+    // Tailwind 4 annonce Safari 16.4, et la feuille produite le confirme :
+    // 48 règles @property (Safari 16.4) et 6 color-mix() (Safari 16.2).
+    // Baisser cette cible n'y changerait rien — esbuild abaisse de la syntaxe,
+    // il ne remplace pas une fonctionnalité absente. La déclarer sert donc à
+    // deux choses : empêcher la dérive vers le haut, et inscrire l'écart avec
+    // ENF-08 à l'endroit où il se décide. Sur iOS 16.0 à 16.3, les propriétés
+    // personnalisées de Tailwind perdent leur valeur initiale et la mise en
+    // forme se dégrade ; la page reste lisible et utilisable.
+    cssTarget: ['safari16.4', 'chrome111', 'edge111', 'firefox128'],
+
+    // emptyOutDir FAUX : le répertoire de sortie contient aussi des SOURCES
+    // suivies par git — jetons.css, attenso.js, journal.js, les vue-*.js, les
+    // icônes et le manifeste — que le front importe. Vite les effacerait sans
+    // prévenir. (Le motif d'origine, les pages écrites à la main, a disparu
+    // avec la migration : il n'en reste aucune.)
     outDir: resolve(import.meta.dirname, '../src/main/resources/static'),
     emptyOutDir: false,
     // Sous /app/ : c'est le seul préfixe que la configuration de sécurité
