@@ -226,6 +226,20 @@ summary:focus-visible {
               line-height: 1; }
 .b-pleine-largeur { width: 100%; }
 
+/* Un bouton qui a l'apparence d'un lien. C'est une ACTION — elle envoie un
+   courriel — donc un <button> et non un <a> : un lecteur d'écran annonce
+   « bouton », et rien ne s'ouvre dans un nouvel onglet par mégarde. Seule
+   l'apparence change, la cible tactile reste celle d'un bouton.
+
+   --accent-texte est mesuré AILLEURS sur --accent-voile ; ici il est sur le
+   fond de page, donc remesuré : 7,38:1 en clair, 6,93:1 en sombre. Au-dessus
+   des 4,5:1 de WCAG 1.4.3 dans les deux thèmes. */
+.b-lien {
+  background: none; border: none; padding: 0; min-height: var(--cible);
+  color: var(--accent-texte); text-decoration: underline; font-size: inherit;
+}
+.b-lien:hover:not(:disabled), .b-lien:active:not(:disabled) { background: none; }
+
 /* La mention d'information (EC-04). Repliée par défaut mais présente AVANT la
    validation, et non derrière un lien qui mènerait ailleurs : le client doit
    pouvoir l'ouvrir sans quitter sa prise de ticket. */

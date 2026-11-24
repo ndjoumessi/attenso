@@ -671,6 +671,57 @@ Les tests ne demandent ni compte ni réseau — la passerelle est remplacée par
 fausse — à deux exceptions près, vérifiées pour de bon : la signature des
 webhooks, avec un vrai HMAC, et le fait qu'un impayé ne ferme pas la clinique.
 
+### Récupération de mot de passe
+
+Sans elle, une clinique qui perd son mot de passe est enfermée dehors
+**définitivement** : il n'existe aucun autre chemin vers son tableau. Pour un
+produit qu'on vend, c'est un ticket de support au mieux, un client perdu au
+plus probable.
+
+**Le formulaire ne dit jamais si le compte existe.** Un message différent selon
+le cas en ferait un annuaire : on essaie des adresses, et l'on apprend
+lesquelles sont clientes — information qui se revend. La réponse est donc
+identique pour une clinique inconnue, une adresse inconnue et un envoi réussi.
+Le dépassement de la limite de débit est lui aussi **silencieux**, pour la même
+raison : un 429 dirait « cette adresse existe et on lui a déjà écrit ».
+
+**Le jeton n'est jamais stocké en clair.** Il vaut un mot de passe pendant une
+heure ; une base lue par un tiers — sauvegarde égarée, injection, curiosité d'un
+exploitant — donnerait sinon la main sur tous les comptes en cours de
+réinitialisation. L'empreinte est un SHA-256 nu et non un bcrypt, et c'est
+délibéré : 24 caractères tirés au hasard n'ont ni dictionnaire ni réutilisation
+à redouter, et un bcrypt par vérification coûterait du calcul pour une
+résistance dont ce jeton n'a pas besoin.
+
+**Un lien ne sert qu'une fois**, et une nouvelle demande annule la précédente —
+trois demandes faites dans la panique laisseraient sinon trois liens actifs,
+dont deux que personne ne surveille. La consommation se fait par
+`UPDATE ... RETURNING` conditionnel : un SELECT puis un UPDATE laisserait deux
+appels simultanés poser deux mots de passe différents, dont un seul serait connu
+de son auteur.
+
+**SMTP et non l'API d'un prestataire.** Le choix du serveur d'envoi reste à
+l'exploitant, qui peut en prendre un européen sans que ce dépôt ait à le
+connaître. Lier le code à une API américaine aurait démenti la politique de
+confidentialité, qui promet qu'aucun prestataire hors UE n'est appelé pour faire
+fonctionner le service.
+
+**Ce que ça ne fait pas, et qu'il faut savoir : les sessions ouvertes
+survivent.** Les jetons du personnel durent douze heures — une journée de
+travail — et ne sont pas révocables sans une lecture en base à chaque requête,
+qui coûterait sur le chemin le plus chaud du produit. Changer son mot de passe
+parce qu'on le croit volé laisse donc jusqu'à douze heures à une session déjà
+ouverte. C'est borné, c'est écrit, et le jour où ça ne suffira plus, la réponse
+est une version de jeton par utilisateur, pas un rustine.
+
+**Un piège rencontré pour la troisième fois dans ce dépôt**, et désormais
+nommé dans le code : `@Transactional` ouvre la connexion AVANT que l'on sache de
+quelle clinique on parle, donc lier le `ThreadLocal` ne suffit pas — les
+politiques RLS masquaient la table `utilisateur` et la demande d'oubli ne
+trouvait jamais personne. Le réglage se pose sur la connexion courante, en
+portée transactionnelle. Même parade qu'à l'inscription et dans le webhook de
+paiement.
+
 ### Pages légales, et ce qu'elles ne peuvent pas être
 
 Vendre en ligne en France impose de publier des mentions légales, des

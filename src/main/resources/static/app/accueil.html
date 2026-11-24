@@ -35,6 +35,17 @@
     <input id="mdp" name="mdp" type="password" autocomplete="current-password" required>
     <div class="message message--erreur" id="erreur-connexion" role="alert" hidden></div>
     <p><button class="b-principal b-pleine-largeur" type="submit">Entrer</button></p>
+    <p class="discret">
+      <button type="button" class="b-lien" id="bouton-oubli">
+        Mot de passe oublié ?
+      </button>
+    </p>
+    <!-- Même message qu'il y ait un compte ou non : sinon ce formulaire
+         devient un annuaire des cliniques clientes. -->
+    <div class="message message--info" id="oubli-envoye" role="status" hidden>
+      Si un compte correspond à cette clinique et à cette adresse, un lien de
+      réinitialisation vient d'être envoyé. Il est valable une heure.
+    </div>
   </form>
 </section>
 
@@ -213,6 +224,34 @@ let signatureListe = null;
 const liaison = etatLiaison((enPanne) => {
   el('bandeau').hidden = !enPanne;
   peindre();
+});
+
+// --- Mot de passe oublié ------------------------------------------------
+el('bouton-oubli').addEventListener('click', async () => {
+  const slug = el('slug').value.trim();
+  const email = el('email').value.trim();
+  const erreur = el('erreur-connexion');
+  if (!slug || !email) {
+    // Le serveur ne dira jamais ce qui manque — il répond la même chose à
+    // tout le monde — donc c'est à la page de demander les deux champs.
+    erreur.textContent = 'Indiquez la clinique et votre adresse, puis '
+      + 'redemandez un lien.';
+    erreur.hidden = false;
+    return;
+  }
+  erreur.hidden = true;
+  const bouton = el('bouton-oubli');
+  bouton.disabled = true;
+  try {
+    await appel('/api/connexion/oubli', {
+      method: 'POST',
+      body: JSON.stringify({ slug, email }),
+    });
+  } catch {
+    // Même en cas d'échec : afficher autre chose révélerait l'existence du
+    // compte. L'exploitant le voit dans les journaux, pas le visiteur.
+  }
+  el('oubli-envoye').hidden = false;
 });
 
 // --- Connexion ----------------------------------------------------------

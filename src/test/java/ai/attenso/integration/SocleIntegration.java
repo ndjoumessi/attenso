@@ -111,8 +111,16 @@ public abstract class SocleIntegration {
 	/** Connexion propriétaire : sert au nettoyage, hors RLS. */
 	protected JdbcTemplate proprietaire;
 
+	@Autowired
+	protected ai.attenso.web.LimiteurDebit limiteur;
+
 	@BeforeEach
 	void preparerLeSocle() {
+		// Le limiteur est en mémoire et vit aussi longtemps que le contexte
+		// Spring, donc d'un cas de test au suivant : sans ce nettoyage, le
+		// quatrième appel d'une classe se fait refuser pour une raison qui
+		// n'a rien à voir avec ce qu'elle teste.
+		limiteur.vider();
 		DriverManagerDataSource source = new DriverManagerDataSource(POSTGRES.getJdbcUrl(),
 				POSTGRES.getUsername(), POSTGRES.getPassword());
 		this.proprietaire = new JdbcTemplate(source);

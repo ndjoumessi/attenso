@@ -111,6 +111,17 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Courriel : uniquement pour la récupération de mot de passe. SMTP
+		     et non l'API d'un prestataire, délibérément — le choix du serveur
+		     d'envoi reste à l'exploitant, qui peut en prendre un européen sans
+		     que ce dépôt ait à le connaître. La politique de confidentialité
+		     promet qu'aucun prestataire hors UE n'est appelé ; lier le code à
+		     une API américaine l'aurait démentie. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- Souscription payante. Le SDK sert à deux choses et deux seulement :
 		     ouvrir une page de paiement hébergée par Stripe, et VÉRIFIER LA
 		     SIGNATURE des webhooks. Aucune donnée de carte ne transite par

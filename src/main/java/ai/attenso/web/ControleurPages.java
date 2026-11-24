@@ -2,6 +2,7 @@ package ai.attenso.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * Les trois écrans du V0, servis en statique. Le routage est côté serveur
@@ -66,6 +67,12 @@ public class ControleurPages {
 	 * que la vitrine — et non reléguées dans un coin du pied de page qui
 	 * renverrait un 404 le jour où quelqu'un les cherche vraiment.
 	 */
+	/** Le lien reçu par courriel. Le jeton vit dans l'URL, lu par la page. */
+	@GetMapping("/reinitialisation/{jeton}")
+	String reinitialisation(@PathVariable String jeton) {
+		return "forward:/app/reinitialisation.html";
+	}
+
 	@GetMapping("/mentions-legales")
 	String mentionsLegales() {
 		return "forward:/app/mentions.html";

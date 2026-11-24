@@ -64,6 +64,19 @@ public class LimiteurDebit {
 		}
 	}
 
+	/**
+	 * Oublie tout.
+	 *
+	 * <p>Existe pour les tests, et l'alternative était pire : relever les
+	 * limites dans la configuration de test ferait que les vraies limites — 3
+	 * demandes d'oubli, 10 tentatives de connexion — ne seraient jamais
+	 * exercées. Ici, chaque cas repart d'un compteur vide et peut donc vérifier
+	 * la limite réelle.
+	 */
+	public void vider() {
+		fenetres.clear();
+	}
+
 	@Scheduled(fixedDelay = 600_000)
 	void oublierLesInactifs() {
 		long limite = horloge.millis() - RETENTION.toMillis();

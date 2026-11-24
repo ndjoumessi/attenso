@@ -80,6 +80,14 @@ services:
       ATTENSO_EDITEUR_TELEPHONE: ${ATTENSO_EDITEUR_TELEPHONE:-}
       ATTENSO_EDITEUR_HEBERGEUR: ${ATTENSO_EDITEUR_HEBERGEUR:-}
       ATTENSO_EDITEUR_HEBERGEUR_ADRESSE: ${ATTENSO_EDITEUR_HEBERGEUR_ADRESSE:-}
+
+      # Courriel. Absent, une clinique qui perd son mot de passe ne peut pas
+      # le récupérer seule — le reste du service fonctionne.
+      SMTP_HOTE: ${SMTP_HOTE:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_UTILISATEUR: ${SMTP_UTILISATEUR:-}
+      SMTP_MOT_DE_PASSE: ${SMTP_MOT_DE_PASSE:-}
+      ATTENSO_COURRIEL_EXPEDITEUR: ${ATTENSO_COURRIEL_EXPEDITEUR:-}
     # Publié sur la BOUCLE LOCALE seulement. L'application parle du HTTP en
     # clair — jetons du personnel compris — et la lier à 0.0.0.0 sur une
     # machine publique exposerait ce clair à l'Internet. Le TLS est terminé par

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e4b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1f26" media="(prefers-color-scheme: dark)">
+<!-- Pas d'indexation : cette page n'a de sens qu'avec un jeton, et un moteur
+     qui la référencerait n'y trouverait qu'un formulaire mort. -->
+<meta name="robots" content="noindex">
+<title>Nouveau mot de passe — Attenso</title>
+<link rel="stylesheet" href="/app/attenso.css">
+</head>
+<body>
+<main class="enveloppe enveloppe--etroite" id="bloc-formulaire">
+  <h1>Choisir un nouveau mot de passe</h1>
+  <form id="formulaire">
+    <label for="mdp">Nouveau mot de passe</label>
+    <input id="mdp" type="password" required minlength="12" maxlength="200"
+           autocomplete="new-password">
+    <p class="discret">
+      12 caractères au minimum. C'est le seul identifiant de votre
+      établissement&nbsp;: notez-le dans votre gestionnaire de mots de passe.
+    </p>
+    <div class="message message--erreur" id="erreur" role="alert" hidden></div>
+    <p><button class="b-principal b-pleine-largeur" id="valider" type="submit">
+      Enregistrer
+    </button></p>
+  </form>
+</main>
+
+<main class="enveloppe enveloppe--etroite" id="bloc-fait" hidden>
+  <h1>C'est fait</h1>
+  <div class="message message--info" role="status">
+    Votre mot de passe est changé. Connectez-vous avec le nouveau.
+  </div>
+  <p><a class="bouton b-principal b-pleine-largeur" href="/accueil">
+    Aller au tableau d'accueil
+  </a></p>
+</main>
+
+<script type="module">
+import { appel } from '/app/attenso.js';
+
+const el = (id) => document.getElementById(id);
+// Le jeton vient de l'URL : c'est le lien du courriel, et rien d'autre ne
+// l'accompagne — ni slug, ni compte.
+const jeton = location.pathname.split('/').filter(Boolean)[1] ?? '';
+
+el('formulaire').addEventListener('submit', async (evenement) => {
+  evenement.preventDefault();
+  const bouton = el('valider');
+  bouton.disabled = true;
+  el('erreur').hidden = true;
+  try {
+    const reponse = await appel('/api/connexion/reinitialiser', {
+      method: 'POST',
+      body: JSON.stringify({ jeton, motDePasse: el('mdp').value }),
+    });
+    // Le mot de passe quitte la mémoire de la page dès qu'il est parti.
+    el('mdp').value = '';
+    if (!reponse.fait) {
+      // Lien périmé, déjà utilisé, ou inventé : le dire est utile ici, et ne
+      // révèle rien — il faut déjà détenir un jeton pour poser la question.
+      el('erreur').textContent = "Ce lien n'est plus valable. Les liens "
+        + 'expirent au bout d\'une heure et ne servent qu\'une fois : '
+        + 'redemandez-en un depuis la page de connexion.';
+      el('erreur').hidden = false;
+      bouton.disabled = false;
+      return;
+    }
+    el('bloc-formulaire').hidden = true;
+    el('bloc-fait').hidden = false;
+  } catch (echec) {
+    el('erreur').textContent = echec.reseau
+      ? 'Serveur injoignable : réessayez dans un instant.' : echec.message;
+    el('erreur').hidden = false;
+    bouton.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

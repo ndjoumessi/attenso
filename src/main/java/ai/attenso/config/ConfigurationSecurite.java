@@ -72,6 +72,12 @@ public class ConfigurationSecurite {
 						// un filtre mais au contrôleur lui-même.
 						.requestMatchers(HttpMethod.POST, "/api/paiement/webhook").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/connexion").permitAll()
+						// Récupération de mot de passe : publique par nature — celui qui
+						// l'utilise ne peut justement pas se connecter. La protection
+						// tient au jeton envoyé par courriel et aux limites de débit.
+						.requestMatchers(HttpMethod.POST, "/api/connexion/oubli",
+								"/api/connexion/reinitialiser").permitAll()
+						.requestMatchers("/reinitialisation/**").permitAll()
 						.requestMatchers("/actuator/health").permitAll()
 						// Tout le reste est le back-office de la clinique.
 						.anyRequest().hasAnyRole("ACCUEIL", "GERANT"))
