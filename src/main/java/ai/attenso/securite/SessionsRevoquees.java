@@ -1,17 +1,25 @@
 package ai.attenso.securite;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Refuse les jetons émis avant le dernier changement de mot de passe.
+ * Refuse les jetons dont la version n'est plus celle du compte.
  *
  * <p>Sans ce contrôle, changer son mot de passe PARCE QU'ON LE CROIT VOLÉ ne
  * fermait rien : le voleur gardait sa session jusqu'à douze heures, la durée
  * d'un jeton du personnel, c'est-à-dire tout le temps qu'il lui fallait.
+ *
+ * <p><strong>Un compteur, et non une comparaison de dates.</strong> La
+ * première version comparait l'instant d'émission du jeton à la date du
+ * changement, et deux granularités s'y rencontraient — un JWT porte son
+ * émission à la seconde, la colonne portait les millisecondes. Cette rencontre
+ * a produit deux erreurs successives : d'abord le rejet des reconnexions faites
+ * dans la même seconde que le changement, puis, une fois les deux côtés
+ * tronqués, la survie d'un jeton émis pendant cette seconde-là. Un compteur n'a
+ * pas de granularité : il s'incrémente, on compare pour égalité, et il n'y a
+ * plus de fenêtre à raisonner.
  *
  * <p><strong>Oui, c'est une lecture en base par requête authentifiée</strong>,
  * et c'est le prix assumé d'un jeton révocable. Elle porte sur une clé
@@ -31,38 +39,14 @@ public class SessionsRevoquees {
 	}
 
 	/**
-	 * @param emisLe l'instant d'émission du jeton.
-	 * @return vrai si le jeton a été émis avant le dernier changement de mot
-	 *         de passe, et doit donc être refusé.
+	 * @return vrai si le jeton doit être refusé : version périmée, ou compte
+	 *         disparu depuis l'émission — ce second cas coupe aussi l'accès
+	 *         d'un compte supprimé sans attendre l'expiration.
 	 */
-	public boolean revoque(UUID utilisateurId, Instant emisLe) {
-		java.sql.Timestamp change = jdbc.query("""
-				SELECT mdp_change_le FROM utilisateur WHERE id = ?
-				""", ligne -> ligne.next() ? ligne.getTimestamp(1) : null, utilisateurId);
-		// Pas de ligne : le compte a disparu depuis l'émission du jeton. Le
-		// refuser est la bonne réponse — c'est aussi ce qui coupe l'accès d'un
-		// compte supprimé sans attendre l'expiration.
-		if (change == null) {
-			return estInconnu(utilisateurId);
-		}
-		// LES DEUX CÔTÉS À LA SECONDE. L'instant d'émission d'un JWT est
-		// tronqué à la seconde par la spécification ; la date en base, elle,
-		// porte les millisecondes. Comparer l'un à l'autre tel quel rejetait
-		// une connexion faite dans la MÊME seconde que la réinitialisation —
-		// c'est-à-dire le cas le plus courant, puisqu'on se reconnecte juste
-		// après avoir changé son mot de passe. Un test l'a attrapé ; le
-		// raisonnement, lui, disait l'inverse.
-		//
-		// Ce qui subsiste : un jeton émis dans la même seconde que le
-		// changement survit. Une seconde contre l'impossibilité de se
-		// reconnecter, le choix est vite fait.
-		return emisLe.isBefore(change.toInstant().truncatedTo(ChronoUnit.SECONDS));
-	}
-
-	private boolean estInconnu(UUID utilisateurId) {
-		Integer compte = jdbc.queryForObject(
-				"SELECT count(*) FROM utilisateur WHERE id = ?", Integer.class,
-				utilisateurId);
-		return compte == null || compte == 0;
+	public boolean revoque(UUID utilisateurId, int versionDuJeton) {
+		Integer version = jdbc.query("""
+				SELECT jeton_version FROM utilisateur WHERE id = ?
+				""", ligne -> ligne.next() ? ligne.getInt(1) : null, utilisateurId);
+		return version == null || version != versionDuJeton;
 	}
 }

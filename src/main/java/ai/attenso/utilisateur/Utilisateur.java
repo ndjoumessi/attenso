@@ -35,6 +35,14 @@ public class Utilisateur {
 	@Column(name = "cree_le", nullable = false)
 	private Instant creeLe;
 
+	/**
+	 * Incrémenté à chaque changement de mot de passe. Le jeton porte cette
+	 * valeur ; un jeton qui ne la porte plus est refusé, et c'est ainsi que
+	 * changer son mot de passe ferme les sessions déjà ouvertes.
+	 */
+	@Column(name = "jeton_version", nullable = false)
+	private int jetonVersion;
+
 	protected Utilisateur() {
 	}
 
@@ -71,5 +79,9 @@ public class Utilisateur {
 
 	public boolean actif() {
 		return actif;
+	}
+
+	public int jetonVersion() {
+		return jetonVersion;
 	}
 }

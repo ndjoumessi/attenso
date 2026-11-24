@@ -68,7 +68,8 @@ public class ControleurConnexion {
 				.filter(u -> motsDePasse.matches(demande.motDePasse(), u.mdpHash()))
 				.orElseThrow(IdentifiantsRefuses::new);
 		return new ReponseConnexion(
-				jetons.emettre(utilisateur.id(), clinique.id(), utilisateur.role()),
+				jetons.emettre(utilisateur.id(), clinique.id(), utilisateur.role(),
+						utilisateur.jetonVersion()),
 				utilisateur.role().name(), clinique.nom(), clinique.slug());
 	}
 }

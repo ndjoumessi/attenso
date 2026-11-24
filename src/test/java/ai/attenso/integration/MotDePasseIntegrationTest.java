@@ -100,38 +100,6 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 			 * et une heure inventée ferait rejeter des jetons parfaitement
 			 * valables.
 			 */
-			// Nom distinct de celui de ConfigurationHorloge : deux définitions
-			// du même nom de bean sont refusées, @Primary ou pas.
-			@Bean
-			@Primary
-			HorlogeMobile horlogeMobile() {
-				return new HorlogeMobile();
-			}
-		}
-	}
-
-	/** Horloge de test : part de maintenant, avance sur commande. */
-	static class HorlogeMobile extends java.time.Clock {
-
-		private java.time.Instant instant = java.time.Instant.now();
-
-		void avancer(java.time.Duration pas) {
-			instant = instant.plus(pas);
-		}
-
-		@Override
-		public java.time.ZoneId getZone() {
-			return java.time.ZoneOffset.UTC;
-		}
-
-		@Override
-		public java.time.Clock withZone(java.time.ZoneId zone) {
-			return this;
-		}
-
-		@Override
-		public java.time.Instant instant() {
-			return instant;
 		}
 	}
 
@@ -148,8 +116,6 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 	@Autowired
 	ServiceReinitialisation reinitialisations;
 
-	@Autowired
-	HorlogeMobile horloge;
 
 	@Autowired
 	tools.jackson.databind.ObjectMapper json;
@@ -308,9 +274,6 @@ class MotDePasseIntegrationTest extends SocleIntegration {
 		http.perform(get("/api/file").header("Authorization", "Bearer " + jeton))
 				.andExpect(status().isOk());
 
-		// Deux secondes plus tard : assez pour que l'instant d'émission du
-		// jeton, tronqué à la seconde, soit nettement antérieur.
-		horloge.avancer(java.time.Duration.ofSeconds(2));
 		demander("clinique-oubli", "asv@oubli.fr");
 		assertThat(reinitialiser(jetonRecu(), NOUVEAU)).isTrue();
 

@@ -47,10 +47,10 @@ public class FiltreJetonPersonnel extends OncePerRequestFilter {
 				// « utilisateur » est soumise au RLS, donc une lecture sans
 				// liage ne verrait rien et révoquerait tout le monde.
 				ContexteTenant.lier(principal.tenantId());
-				if (revocations.revoque(principal.utilisateurId(), principal.emisLe())) {
-					// Jeton plus ancien que le dernier changement de mot de
-					// passe : la requête continue SANS authentification, et la
-					// chaîne répondra 401. Rien à expliquer de plus au porteur.
+				if (revocations.revoque(principal.utilisateurId(), principal.jetonVersion())) {
+					// Version périmée : la requête continue SANS
+					// authentification, et la chaîne répondra 401. Rien à
+					// expliquer de plus au porteur.
 					ContexteTenant.delier();
 				}
 				else {

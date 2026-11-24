@@ -731,15 +731,21 @@ touche QUE les requêtes du personnel : le chemin client, celui qui porte la
 contrainte de latence d'ENF-01, n'a pas de jeton de personnel et n'est pas
 concerné.
 
-Un détail qui a coûté deux allers-retours : l'instant d'émission d'un JWT est
-tronqué à la seconde, la date en base porte les millisecondes. Comparer l'un à
-l'autre tel quel rejetait la connexion faite dans la MÊME seconde que la
-réinitialisation — c'est-à-dire le cas le plus courant, puisqu'on se reconnecte
-juste après. Les deux côtés sont donc ramenés à la seconde ; ce qui subsiste,
-c'est qu'un jeton émis dans la même seconde que le changement survit. Une
-seconde contre l'impossibilité de se reconnecter : le choix est vite fait. Deux
-tests tiennent les deux bords, sur une horloge qu'ils avancent à la main — une
-attente d'une seconde aurait fait la même chose en plus lent et moins sûr.
+**Un compteur, et non une comparaison de dates** — et le détour vaut d'être
+raconté, parce qu'il montre ce que coûte une granularité mal placée. La
+première version comparait l'instant d'émission du jeton à la date du
+changement. Or un JWT porte son émission à la SECONDE et la colonne portait les
+millisecondes : comparer l'un à l'autre rejetait la reconnexion faite dans la
+même seconde que la réinitialisation, c'est-à-dire le cas le plus courant.
+Tronquer les deux côtés corrigeait ça mais laissait survivre un jeton émis
+pendant cette seconde-là. Deux erreurs successives, pour une fenêtre d'une
+seconde que personne n'avait demandée.
+
+Un compteur n'a pas de granularité : `utilisateur.jeton_version` s'incrémente à
+chaque changement, le jeton le porte, on compare pour égalité. Plus de fenêtre,
+plus de raisonnement sur les arrondis — et les tests n'ont plus besoin de
+manipuler l'horloge. La date du changement reste en base, mais comme
+information : ce n'est plus elle qui ferme les sessions.
 
 **Un piège rencontré pour la troisième fois dans ce dépôt**, et désormais
 nommé dans le code : `@Transactional` ouvre la connexion AVANT que l'on sache de

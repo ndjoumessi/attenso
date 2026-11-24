@@ -29,6 +29,9 @@ public class JetonPersonnel {
 
 	private static final String CLAIM_ROLE = "rol";
 
+	/** Version du jeton : voir SessionsRevoquees. */
+	private static final String CLAIM_VERSION = "ver";
+
 	private final JwtEncoder encodeur;
 
 	private final JwtDecoder decodeur;
@@ -45,13 +48,14 @@ public class JetonPersonnel {
 		this.horloge = horloge;
 	}
 
-	public String emettre(UUID utilisateurId, UUID tenantId, Role role) {
+	public String emettre(UUID utilisateurId, UUID tenantId, Role role, int version) {
 		Instant maintenant = horloge.instant();
 		JwtClaimsSet revendications = JwtClaimsSet.builder()
 				.issuer(EMETTEUR)
 				.subject(utilisateurId.toString())
 				.claim(CLAIM_TENANT, tenantId.toString())
 				.claim(CLAIM_ROLE, role.name())
+				.claim(CLAIM_VERSION, version)
 				.issuedAt(maintenant)
 				.expiresAt(maintenant.plus(proprietes.dureePersonnel()))
 				.build();
@@ -75,7 +79,8 @@ public class JetonPersonnel {
 					UUID.fromString(decode.getSubject()),
 					UUID.fromString(decode.getClaimAsString(CLAIM_TENANT)),
 					Role.valueOf(decode.getClaimAsString(CLAIM_ROLE)),
-					decode.getIssuedAt());
+					decode.getClaim(CLAIM_VERSION) == null ? 0
+							: ((Number) decode.getClaim(CLAIM_VERSION)).intValue());
 		}
 		catch (JwtException | IllegalArgumentException | NullPointerException invalide) {
 			return null;

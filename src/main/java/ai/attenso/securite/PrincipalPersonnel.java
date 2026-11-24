@@ -1,14 +1,14 @@
 package ai.attenso.securite;
 
 import ai.attenso.utilisateur.Role;
-import java.time.Instant;
 import java.util.UUID;
 
 /**
- * @param emisLe l'instant d'émission du jeton. Porté jusqu'ici parce qu'un
- *        jeton plus ancien que le dernier changement de mot de passe doit être
- *        refusé — sans quoi changer son mot de passe ne ferme aucune session.
+ * @param jetonVersion la version portée par le jeton. Comparée à celle du
+ *        compte à chaque requête : un jeton qui ne porte plus la bonne est
+ *        refusé, et c'est ainsi que changer son mot de passe ferme les
+ *        sessions déjà ouvertes.
  */
 public record PrincipalPersonnel(UUID utilisateurId, UUID tenantId, Role role,
-		Instant emisLe) {
+		int jetonVersion) {
 }
