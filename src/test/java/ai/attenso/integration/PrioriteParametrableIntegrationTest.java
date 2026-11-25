@@ -64,6 +64,24 @@ class PrioriteParametrableIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
+	@DisplayName("un rang intermédiaire autre que 5 est accepté et se place entre le 5 et la file normale")
+	void unRangGradueEstAccepteEtOrdonne() {
+		UUID id = installer("gradue");
+		Ticket normal = creation.creerPourClient(clinique, jour, null, null);
+		MotifPriorite age = motifs.actifs(id).get(0);
+		Ticket rang5 = creation.creerPourClient(clinique, jour, null,
+				Priorisation.motivee(age.rang(), age.libelle()), null);
+		// Le rang 7 de « Chat stressé en caisse » : la contrainte de V1
+		// n'admettait que 0, 5 et 10 et refusait tout motif gradué.
+		Ticket rang7 = creation.creerPourClient(clinique, jour, null,
+				Priorisation.motivee((short) 7, "Chat stressé en caisse"), null);
+
+		assertThat(file.position(file.exiger(clinique.id(), rang7.id()))).isEqualTo(1);
+		assertThat(file.position(file.exiger(clinique.id(), rang5.id()))).isEqualTo(2);
+		assertThat(file.position(file.exiger(clinique.id(), normal.id()))).isEqualTo(3);
+	}
+
+	@Test
 	@DisplayName("le motif est COPIÉ sur le ticket : le renommer ne réécrit pas l'histoire")
 	void leMotifEstCopieSurLeTicket() {
 		UUID id = installer("copie");

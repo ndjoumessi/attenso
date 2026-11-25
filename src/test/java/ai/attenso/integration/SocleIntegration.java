@@ -65,7 +65,11 @@ public abstract class SocleIntegration {
 	 * moyen de lire la version de la production depuis un test. À revoir quand
 	 * Railway passera une majeure.
 	 */
-	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine");
+	static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine")
+			// Chaque contexte Spring distinct garde son propre pool, mis en cache jusqu'à la
+			// fin de la JVM : à 100 connexions (le défaut) la suite s'y heurtait dès qu'une
+			// configuration de plus s'ajoutait, et le contexte suivant ne se chargeait plus.
+			.withCommand("postgres", "-c", "max_connections=300");
 
 	static {
 		POSTGRES.start();

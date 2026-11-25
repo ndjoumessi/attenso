@@ -49,6 +49,18 @@ function cheminConcret(declare) {
   return declare.replace(/\{[^}]+\}/g, 'ABC123');
 }
 
+/** Les pages hors réseau, FIGÉES : accueil, suivi, comptoir, ecran. Une cinquième
+ *  veut dire qu'une entrée a été ajoutée contre la conception. */
+describe('la liste des pages hors réseau est figée', () => {
+  it('compte exactement quatre pages', () => {
+    const pages = [...pagesEnCache()].sort();
+    assert.deepEqual(pages, ['/app/accueil.html', '/app/comptoir.html',
+      '/app/ecran.html', '/app/suivi.html'],
+    `les pages hors réseau ont changé : ${pages}. Vérifier qu'aucune entrée Vite `
+    + "n'a été ajoutée contre la conception, puis mettre cette liste à jour si c'est voulu.");
+  });
+});
+
 describe('la coquille hors ligne est un miroir fidèle des routes du serveur', () => {
   it('connaît toutes les routes qui servent une page mise en cache', () => {
     // C'est la promesse du mode dégradé : si la tablette recharge pendant une

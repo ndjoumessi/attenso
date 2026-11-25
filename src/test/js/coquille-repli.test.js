@@ -18,6 +18,13 @@ import { describe, it } from 'node:test';
 const LIVREE = 'src/main/resources/static/sw.js';
 const ORIGINE = 'https://attenso.test';
 
+/**
+ * Le nombre de fichiers du précache, FIGÉ. 15 jusqu'à la refonte du tableau,
+ * 16 depuis : le chunk partagé qr-*.js, extrait du tracé du QR et importé par
+ * l'accueil. Légitime ; la prochaine croissance doit se voir.
+ */
+const FICHIERS_DE_LA_COQUILLE = 16;
+
 /** Une réponse factice, assez pour distinguer d'où elle vient. */
 function reponse(provenance, chemin) {
   return { provenance, chemin };
@@ -200,8 +207,13 @@ describe('la coquille s\'installe et se nettoie', () => {
     await Promise.all(evenement.attentes);
 
     assert.ok(Array.isArray(coquille.journal.ajoutes), 'rien n\'a été mis en cache');
-    assert.ok(coquille.journal.ajoutes.length >= 10,
-      `liste suspecte : ${coquille.journal.ajoutes.length} fichiers`);
+    assert.equal(coquille.journal.ajoutes.length, FICHIERS_DE_LA_COQUILLE,
+      `la coquille compte ${coquille.journal.ajoutes.length} fichiers, pas `
+      + `${FICHIERS_DE_LA_COQUILLE}. Le nombre a changé : vérifier d'abord qu'aucune `
+      + 'entrée Vite n\'a été ajoutée contre la conception (vite.config.js, '
+      + 'PAGES_HORS_RESEAU de prerender.mjs), puis, si la croissance est légitime '
+      + '(un module partagé devenu chunk, comme qr-*.js), mettre FICHIERS_DE_LA_COQUILLE '
+      + 'à jour en disant pourquoi.');
     assert.ok(coquille.journal.ajoutes.includes('/app/accueil.html'));
   });
 

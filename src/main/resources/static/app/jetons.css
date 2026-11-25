@@ -124,6 +124,25 @@
   --papier: #ffffff;
   --sur-papier: #15181d;          /* 17.79:1 — lu de l'autre bout d'un comptoir */
   --sur-papier-doux: #4a515c;     /*  8.01:1 */
+
+  /* La barre latérale de l'application. Du CHROME, pas du contenu : elle a
+     son propre fond, à peine plus profond que --fond (1.10:1), pour se lire
+     comme un cadre sans devenir une seconde surface de contenu — --surface
+     reste réservée aux cartes. Ce faible écart est voulu : c'est la bordure,
+     et non le fond seul, qui porte la séparation. */
+  --barre: #eef1ef;
+  --sur-barre: #15181d;           /* 15.64:1 sur --barre */
+  --sur-barre-doux: #4a515c;      /*  7.04:1 sur --barre */
+  /* L'entrée courante est un APLAT plein, pas un voile : « où suis-je » est un
+     état, donc soumis au 3:1 contre la barre (WCAG 1.4.11), et il ne doit pas
+     reposer sur la teinte du libellé seule (1.4.1). Un voile à 1.09:1 passait
+     tous les tests de texte et restait invisible. Pas de libellé doux dessus :
+     l'entrée active n'en porte qu'un, --sur-barre-active. */
+  --barre-active: #1b5e4b;        /*  6.72:1 sur --barre */
+  --sur-barre-active: #ffffff;    /*  7.64:1 sur --barre-active */
+  /* Une bordure qui dit « ici finit la navigation » porte une information :
+     elle est soumise au 3:1, comme une bordure de contrôle. */
+  --barre-bordure: #828a97;       /*  3.36:1 sur --fond ; 3.06:1 sur --barre */
 }
 
 /* --- Mode sombre -------------------------------------------------------
@@ -157,6 +176,16 @@
     --attention: #e0a93c;         /*  7.80:1 */
     --sur-attention: #2b1f00;
     --attention-voile: #352a12;
+
+    /* En sombre la barre est plus PROFONDE que le fond, à l'inverse de la
+       bande de rupture : un cadre qui s'enfonce se lit comme un cadre, une
+       barre plus claire que le contenu volerait l'attention au contenu. */
+    --barre: #14181e;
+    --sur-barre: #f2f4f7;         /* 16.16:1 sur --barre */
+    --sur-barre-doux: #a8b1be;    /*  8.22:1 sur --barre */
+    --barre-active: #4ea88a;      /*  6.18:1 sur --barre : l'aplat vert, clair sur barre profonde */
+    --sur-barre-active: #10231c;  /*  5.70:1 sur --barre-active */
+    --barre-bordure: #646d7b;     /*  3.16:1 sur --fond ; 3.41:1 sur --barre */
 
     --bande-contraste: #2b313b;          /* 1.4:1 de séparation avec --fond */
     --sur-bande-contraste: #f2f4f7;      /* 11.76:1 */

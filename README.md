@@ -38,6 +38,14 @@ MDP_ACCUEIL='choisir-un-mot-de-passe-solide' \
 --attenso.amorce.mot-de-passe=$MDP_ACCUEIL"
 ```
 
+**Ne jamais ajouter `--attenso.amorce.demonstration=true` à cette commande.**
+Cette propriété, fausse par défaut, sème une file de 19 tickets fictifs, trois
+rendez-vous, deux animaux avec leurs vaccinations, une mesure inventée et trois
+motifs de priorité de démonstration — sans commande pour les retirer ensuite.
+`active` installe la clinique et ses deux motifs de priorité ; seule
+`demonstration` y verse le jeu de démonstration. Elle ne sert qu'à une clinique
+de démonstration (voir plus bas).
+
 Puis :
 
 | Écran | URL | Qui |
@@ -123,7 +131,7 @@ Silicon ni sur un serveur ARM — qui sont justement les machines les moins
 chères à louer en Europe. Quelques dizaines de mégaoctets contre une image qui
 se construit partout.
 
-Vérifié de bout en bout, pile complète et volume vierge : les 16 migrations
+Vérifié de bout en bout, pile complète et volume vierge : les 22 migrations
 passent, l'application atteint `healthy`, sert la vitrine, tourne en
 utilisateur `attenso`, ne journalise **aucune ligne d'erreur**, et le rôle
 `attenso_app` est confirmé non privilégié — la seconde barrière survit donc à
@@ -196,17 +204,66 @@ qui doit maintenant nommer Railway.
 avec un écran de salle d'attente appairé ; son compte est un GÉRANT, sans
 expéditeur SMS validé — l'affiche du comptoir ne promet donc pas de message.
 Elle existe parce que l'inscription en ligne est fermée tant que Stripe n'est
-pas configuré : sans elle, rien du produit n'est atteignable. Le mot de passe a
+pas configuré : sans elle, rien du produit n'est atteignable. Elle n'est plus
+une coquille vide : avec `ATTENSO_AMORCE_DEMONSTRATION=true` elle reçoit une
+file en cours, une veille et sa mesure, un agenda et deux carnets de santé, et
+aucun numéro de téléphone — aucun SMS ne peut donc partir. Le mot de passe a
 été tiré au hasard et vit dans les variables Railway (`ATTENSO_AMORCE_*`) ;
 l'URL de l'écran n'apparaît qu'une fois, dans les journaux de ce déploiement.
-**À faire une fois le mot de passe changé depuis le tableau** : retirer
-`ATTENSO_AMORCE_ACTIVE` et `ATTENSO_AMORCE_MOT_DE_PASSE`, qui n'ont plus
-d'objet — l'amorce est idempotente — et qui laissent sinon un mot de passe en
-clair dans l'environnement.
 
-**Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18** là où la CI
-teste sur 16 : les vingt et une migrations passent et Hibernate valide le
-schéma, mais la suite ne s'exécute jamais sur la version de production. Et le
+**Avertissement : redéployer ne repose PAS la démonstration.** La clinique
+`demo` existe déjà sur Railway, donc `run()` sort au garde-fou du slug
+(« déjà installée ») avant de rien semer, même avec
+`ATTENSO_AMORCE_DEMONSTRATION=true`. Pour la rejouer, il y a une commande.
+
+**Rejouer la démonstration : `attenso.amorce.reinitialiser`.** Elle efface ce
+que la clinique `demo` a accumulé (tickets, mesures, rendez-vous et créneaux,
+plages horaires, animaux et vaccinations, notifications et abonnements push
+qui en dépendent), puis ressème la file du jour, la veille, l'agenda et les
+carnets, **en une seule transaction** : un semis qui échoue rend la
+démonstration d'avant. Sont gardés, pour ne pas refaire la clinique ni
+redonner un mot de passe : la clinique, son compte, ses motifs de priorité,
+son écran appairé, son abonnement et ses factures, et les deux journaux en
+ajout seul (leur ligne reste, détachée du ticket). Les compteurs de dépense HLR
+restent aussi : les remettre à zéro rouvrirait un budget payant.
+
+Sur Railway : poser `ATTENSO_AMORCE_REINITIALISER=true` (à côté de
+`ATTENSO_AMORCE_ACTIVE`, `ATTENSO_AMORCE_DEMONSTRATION=true`,
+`ATTENSO_AMORCE_SLUG=demo` et du mot de passe, déjà là), redéployer, lire dans
+les journaux « démonstration `demo` rejouée », **puis retirer la variable** :
+laissée posée, chaque redémarrage du service rejouerait tout. En local, avec les
+mêmes propriétés : `--attenso.amorce.reinitialiser=true`. Si la clinique n'existe
+pas encore, la commande n'a rien à vider et l'amorce l'installe, démonstration
+comprise.
+
+Elle détruit des données, donc elle est verrouillée trois fois, et un refus est
+journalisé (`réinitialisation REFUSÉE`) sans rien toucher :
+
+1. `attenso.amorce.reinitialiser` est fausse par défaut ; tant qu'elle ne l'est
+   pas, la commande n'existe tout simplement pas dans l'application.
+2. `attenso.amorce.demonstration` doit être vraie aussi (et l'amorce active).
+3. **Elle ne vide qu'une clinique dont le slug, relu en base, est littéralement
+   `demo`.** Ce nom est écrit en dur dans le code, pas lu dans la
+   configuration : `ATTENSO_AMORCE_SLUG=cerisiers` avec les deux autres verrous
+   posés est refusé, et aucune variable d'environnement ne peut le contourner.
+   La propriété `slug` dit quelle clinique on vise ; la constante dit la seule
+   qu'on a le droit de viser ; les deux doivent coïncider. Une démonstration
+   sous un autre nom exige de changer le code.
+
+**Ce qui reste vrai même avec la commande.** La mise en scène périme : le
+ticket qui montre la priorité graduée porte une grâce de **deux minutes**, que
+`TacheGrace` fait passer en ABSENT, sauf à poser
+`ATTENSO_AMORCE_DELAI_GRACE_SECONDES` assez long pour la démonstration. Et la
+file n'est celle d'un moment vraisemblable que si on l'installe dans la fenêtre
+sûre : **10 h 35 à 12 h, ou 15 h 35 à 18 h, heure de Paris**. Hors de ces
+heures elle se date sur la fin de la plage la plus proche ; rejouer juste avant
+de montrer, pas la veille.
+
+**Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18**, comme la CI
+(testcontainers `postgres:18-alpine`) et `compose.deploiement.yaml` : la suite
+s'exécute donc sur la version de production. Seul `compose.yaml`, le fichier
+de développement, reste en 16 — le basculer ferait refuser le démarrage du
+conteneur local de chaque développeur, dont le volume est au format 16. Et le
 domaine `*.up.railway.app` fait 56 caractères dans un SMS contre 33 pour
 `attenso.fr` : les cinq modèles tiennent encore en un segment, mais le message
 correctif atteint **exactement 160 caractères**, c'est-à-dire zéro marge. Un

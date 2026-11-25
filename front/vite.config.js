@@ -14,6 +14,11 @@ import { resolve } from 'node:path';
 export default defineConfig({
   root: import.meta.dirname,
   plugins: [react(), tailwind()],
+  // `@` désigne front/src : c'est l'alias que shadcn écrit dans les composants
+  // qu'il ajoute (components.json). Les pages des clients ne s'en servent pas.
+  resolve: {
+    alias: { '@': resolve(import.meta.dirname, 'src') },
+  },
   build: {
     // CIBLES FIGÉES, et non la valeur par défaut de Vite.
     //
