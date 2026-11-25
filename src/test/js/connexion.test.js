@@ -97,3 +97,70 @@ describe("la connexion au tableau", () => {
     }
   });
 });
+
+describe('la connexion ne doit pas être un cul-de-sac', () => {
+  /**
+   * On arrive ici depuis la vitrine — son en-tête et son pied y mènent tous
+   * deux — et rien n'en ressortait. Quelqu'un qui atterrit sur cette page sans
+   * compte, ou qui veut seulement relire les tarifs, n'avait que le bouton
+   * « précédent » du navigateur.
+   *
+   * Trois destinations, et trois seulement. Chaque contrôle ajouté à un écran
+   * de connexion concurrence la seule action qui compte : entrer.
+   */
+  it('offre un retour au site, un chemin vers l\'inscription, et la bande légale', () => {
+    const source = sansCommentaires(lire(CONNEXION));
+    // La DESTINATION, pas la forme de l'attribut : la bande légale est écrite
+    // comme une table parcourue, à l'image du pied de la vitrine, donc son
+    // `href` est une variable. Exiger `href="/cgv"` littéral tiendrait une
+    // façon d'écrire plutôt que la propriété.
+    for (const [chemin, quoi] of [
+      ['/', 'le retour au site'],
+      ['/inscription', "le chemin vers l'inscription"],
+      ['/mentions-legales', 'les mentions légales'],
+      ['/cgv', 'les conditions générales'],
+      ['/confidentialite', 'la politique de confidentialité'],
+    ]) {
+      assert.ok(source.includes(`'${chemin}'`) || source.includes(`"${chemin}"`),
+        `${quoi} manque`);
+    }
+    // Et qu'elles soient réellement rendues : une table de chemins que
+    // personne ne parcourt ne mène nulle part.
+    assert.match(source, /<a href=\{href\}/, 'la bande légale n\'est pas rendue');
+  });
+
+  /**
+   * Les destinations qui exigent un slug ou un jeton — l'affiche, le comptoir,
+   * le suivi d'un ticket — seraient INERTES pour un visiteur non connecté :
+   * elles le mèneraient à une erreur. Et le tableau est ce que cette page sert
+   * à atteindre ; y renvoyer serait circulaire.
+   */
+  it("ne propose aucune destination qu'un visiteur non connecté ne peut pas atteindre", () => {
+    const source = sansCommentaires(lire(CONNEXION));
+    for (const inerte of ['href="/affiche"', 'href="/accueil"', 'href="/t/', 'href="/s/']) {
+      assert.ok(!source.includes(inerte),
+        `« ${inerte} » mène à une erreur sans jeton : ce n'est pas une navigation, c'est une impasse`);
+    }
+  });
+
+  /**
+   * Trouvé en MESURANT, pas en regardant : « Inscrire ma clinique » faisait
+   * 17 px de haut et les liens légaux 14, alors que la classe `cible-min`
+   * était bien posée. Elle règle une hauteur MINIMALE, qui n'a aucun effet sur
+   * un élément en ligne — il faut `inline-flex` ou `inline-block` pour qu'elle
+   * s'applique.
+   *
+   * C'est la deuxième fois dans la même journée que ce projet rate une cible
+   * tactile en posant la bonne classe au mauvais endroit.
+   */
+  it('donne une vraie cible tactile à chaque lien de navigation', () => {
+    const source = sansCommentaires(lire(CONNEXION));
+    const liens = source.match(/<a href=[^>]*>/g) ?? [];
+    assert.ok(liens.length >= 3, 'les liens de navigation ont disparu');
+    for (const lien of liens) {
+      assert.match(lien, /cible-min/, `lien sans cible minimale : ${lien.slice(0, 60)}`);
+      assert.match(lien, /inline-flex|inline-block/,
+        `« cible-min » est sans effet sur un élément en ligne : ${lien.slice(0, 60)}`);
+    }
+  });
+});
