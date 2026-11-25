@@ -71,10 +71,10 @@ class PrioriteParametrableIntegrationTest extends SocleIntegration {
 		MotifPriorite age = motifs.actifs(id).get(0);
 		Ticket rang5 = creation.creerPourClient(clinique, jour, null,
 				Priorisation.motivee(age.rang(), age.libelle()), null);
-		// Le rang 7 de « Chat en caisse depuis plus de 30 min » : la contrainte de V1
+		// Le rang 7 de « Chat stressé en caisse » : la contrainte de V1
 		// n'admettait que 0, 5 et 10 et refusait tout motif gradué.
 		Ticket rang7 = creation.creerPourClient(clinique, jour, null,
-				Priorisation.motivee((short) 7, "Chat en caisse depuis plus de 30 min"), null);
+				Priorisation.motivee((short) 7, "Chat stressé en caisse"), null);
 
 		assertThat(file.position(file.exiger(clinique.id(), rang7.id()))).isEqualTo(1);
 		assertThat(file.position(file.exiger(clinique.id(), rang5.id()))).isEqualTo(2);

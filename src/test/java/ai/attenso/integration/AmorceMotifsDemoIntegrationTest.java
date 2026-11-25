@@ -72,7 +72,7 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 
 		assertThat(tous).extracting(MotifPriorite::libelle).containsExactly(
 				"Personne âgée", "Personne handicapée",
-				"Animal potentiellement contagieux", "Chat en caisse depuis plus de 30 min",
+				"Animal potentiellement contagieux", "Chat stressé en caisse",
 				"Contrôle post-opératoire court");
 		assertThat(tous).extracting(MotifPriorite::rang).allMatch(r -> r >= 1 && r <= 9);
 		assertThat(tous).extracting(MotifPriorite::rang).containsExactly(
