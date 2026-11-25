@@ -44,4 +44,36 @@ describe("le héros de la page d'accueil", () => {
   it("n'atteint aucun composant du tableau", () => {
     assert.doesNotMatch(lire(VITRINE), /from\s+['"][^'"]*\/ui\//);
   });
+
+  /**
+   * MESURÉ dans le navigateur, après coup : le creux entre le héros et la
+   * première bande faisait 96 px quand toutes les autres bandes en tenaient
+   * 192 — moitié moins, sur la seule jointure que l'œil voit en premier.
+   *
+   * <p>Le commentaire qui justifiait le rembourrage bas nul invoquait « 208 px
+   * là où le reste de la page en tient 192 ». Les 208 venaient de l'ancien
+   * `py-28` de Tailwind, soit 112 px. Avec le jeton de pas, la somme fait
+   * 96 + 96 = 192, c'est-à-dire exactement le rythme. La crainte était fondée
+   * sur une valeur que le changement avait déjà remplacée.
+   *
+   * <p>La garde porte sur l'UNICITÉ : un seul endroit déclare ce rythme, donc
+   * il n'y a qu'un endroit où il peut diverger.
+   */
+  it('respire au même rythme que les bandes, depuis une seule source', () => {
+    const base = sansCommentaires(lire('front/src/composants/base.jsx'));
+    assert.match(base, /export const RYTHME =/,
+      'le rythme vertical du site n\'a pas de source unique');
+    // `Bande` et le héros le CONSOMMENT, aucun ne le réécrit.
+    assert.match(base, /\{RYTHME\}/, '`Bande` n\'emploie pas le rythme partagé');
+
+    const source = sansCommentaires(lire(VITRINE));
+    const debut = source.indexOf('function Heros(');
+    const fin = source.indexOf('function Cout(');
+    assert.ok(debut > 0 && fin > debut, 'le héros est introuvable');
+    const heros = source.slice(debut, fin);
+    assert.match(heros, /\{RYTHME\}/, 'le héros ne suit pas le rythme partagé');
+    // Et n'en réécrit aucune moitié : c'est ainsi qu'il a perdu son bas.
+    assert.doesNotMatch(heros, /\bp[tby]-\[var\(--pas-/,
+      'le héros redéclare son propre rembourrage vertical : il peut redivergera');
+  });
 });

@@ -55,11 +55,21 @@ export function Fleche() {
   );
 }
 
+/**
+ * Le rythme vertical du site, et sa SEULE source.
+ *
+ * Le héros l'avait recopié à moitié — le haut seulement — et le creux qui le
+ * séparait de la première bande faisait donc 96 px quand toutes les autres
+ * jointures en tenaient 192. Un rythme déclaré à deux endroits diverge ; un
+ * rythme déclaré à un seul ne le peut pas.
+ */
+export const RYTHME = 'py-[var(--pas-16)] sm:py-[var(--pas-24)]';
+
 /** Une bande de page : le rythme vertical du site tient dans cette seule classe. */
 export function Bande({ children, id, aria, className = '' }) {
   return (
     <section id={id} aria-labelledby={aria}
-             className={`py-[var(--pas-16)] sm:py-[var(--pas-24)] ${className}`}>
+             className={`${RYTHME} ${className}`}>
       <Colonne>{children}</Colonne>
     </section>
   );
