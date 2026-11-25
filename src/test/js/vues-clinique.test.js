@@ -56,14 +56,34 @@ describe('la vue Affiche', () => {
       "l'aperçu n'est pas conditionné à la réponse");
   });
 
-  it("la vue montre le QR et la promesse, et l'appel porte le jeton", () => {
+  it("la vue montre le QR, l'adresse lisible et la promesse, DANS le bloc chargé", () => {
     const corps = corpsAffiche();
-    assert.match(corps, /\{affiche && \([\s\S]*?<Qr qr=\{affiche\.qr\}/,
-      "le QR n'est pas rendu dans l'aperçu");
-    assert.match(corps, /\{affiche && \([\s\S]*?\{promesse\(affiche\)\}/,
-      "la promesse faite au client n'est pas rendue dans l'aperçu");
+    // Le bloc, de `{affiche && (` à son `)}` (six espaces, seul à ce retrait) :
+    // hors de lui, `affiche.qr` serait lu quand `affiche` vaut `null`.
+    const bloc = corps.match(/\{affiche && \(([\s\S]*?)\n {6}\)\}/);
+    assert.ok(bloc, "le bloc `{affiche && (` est introuvable");
+    assert.match(bloc[1], /<Qr qr=\{affiche\.qr\}/, "le QR n'est pas dans l'aperçu");
+    assert.match(bloc[1], /\{urlLisible\(affiche\.url\)\}/,
+      "l'adresse n'est pas écrite sous sa forme lisible");
+    assert.match(bloc[1], /\{promesse\(affiche\)\}/,
+      "la promesse faite au client n'est pas dans l'aperçu");
+    // Une seule occurrence de chacun, et c'est celle du bloc.
+    assert.equal(corps.split('<Qr ').length, 2, 'un <Qr> hors du bloc chargé');
+    assert.equal(corps.split('promesse(').length, 2, 'un appel à promesse hors du bloc');
+    assert.equal(corps.split('urlLisible(').length, 2, 'un appel à urlLisible hors du bloc');
+    assert.match(sansCommentaires(lire(AFFICHE)), /import \{[^}]*\burlLisible\b[^}]*\} from/);
+  });
+
+  it("l'appel porte le jeton, et la réponse peuple l'aperçu en effaçant l'échec", () => {
+    const corps = corpsAffiche();
     assert.match(corps, /appel\('\/api\/affiche', \{ headers: entete\(jeton\) \}\)/,
       "l'appel part sans le jeton");
+    // UNE expression : le peuplement et la remise à zéro de l'échec sont sur
+    // le chemin de SUCCÈS. Sans le premier, « Chargement » reste affiché pour
+    // toujours ; sans la seconde, l'erreur survit à une relecture réussie.
+    assert.match(corps,
+      /\.then\(\(recu\) => \{ if \(!annule\) \{ setAffiche\(recu\); setEchec\(false\); \} \}\)/,
+      "le succès ne peuple pas l'aperçu, ou ne remet pas l'échec à zéro");
     assert.match(corps, /\}, \[jeton\]\);/,
       "le chargement ne se refait plus quand le jeton change");
   });

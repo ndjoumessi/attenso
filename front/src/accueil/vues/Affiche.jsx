@@ -12,9 +12,8 @@ import { entete } from '../session.js';
  * La vue Affiche du comptoir : le QR par lequel les clients prennent leur tour,
  * et le bouton qui ouvre l'affiche à imprimer.
  *
- * <p>Ouverte aux deux rôles : réimprimer une affiche décollée est un geste de
- * comptoir. `titre` : `false` quand le tableau l'enveloppe, dont l'en-tête dit
- * déjà « Affiche du comptoir ».
+ * <p>`titre` : `false` quand le tableau l'enveloppe, dont l'en-tête dit déjà
+ * « Affiche du comptoir ».
  *
  * <p>Trois états : pas encore chargée (`null`, sans échec), chargée, en échec.
  * Sans cette distinction la vue afficherait un aperçu vide avant la réponse.
@@ -30,9 +29,8 @@ export function Affiche({ jeton, titre = true }) {
 
   useEffect(() => {
     let annule = false;
-    setEchec(false);
     appel('/api/affiche', { headers: entete(jeton) })
-      .then((recu) => { if (!annule) setAffiche(recu); })
+      .then((recu) => { if (!annule) { setAffiche(recu); setEchec(false); } })
       .catch(() => { if (!annule) setEchec(true); });
     return () => { annule = true; };
   }, [jeton]);
