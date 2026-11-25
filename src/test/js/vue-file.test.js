@@ -293,6 +293,35 @@ describe("l'écran de la file", () => {
     assert.match(branche.slice(0, 300), />\s*[A-ZÀ-Ý][^<]{10,}</,
       'la branche de file vide ne rend aucune phrase');
   });
+
+  /**
+   * Trouvé AU DOIGT sur tablette, pas au navigateur : les deux boutons
+   * faisaient bien 44 px — le plancher d'Apple, déjà gardé par
+   * `jetons.test.js` — mais ne laissaient que 4 px entre eux. La TAILLE d'une
+   * cible et son VOISINAGE sont deux problèmes distincts, et seul le premier
+   * était tenu. Une cible de 44 px collée à sa voisine se manque autant
+   * qu'une cible de 30.
+   *
+   * Ce qui rend celui-ci coûteux plutôt que gênant : les deux flèches font
+   * l'inverse l'une de l'autre. Se tromper ne fait pas « rien », cela déplace
+   * le ticket dans le mauvais sens, devant la clinique.
+   */
+  it('les flèches de déplacement sont assez écartées pour le doigt', () => {
+    const source = sansCommentaires(lire('front/src/accueil/File.jsx'));
+    const i = source.indexOf('deplacementsPour(');
+    assert.ok(i > 0, 'les boutons de déplacement sont introuvables');
+    // Fenêtre bornée au conteneur : on remonte au `<div` le plus proche, sans
+    // traverser le JSX voisin, dont les écarts ne gardent pas cette propriété.
+    const avant = source.slice(0, i);
+    const conteneur = avant.slice(avant.lastIndexOf('<div'));
+    const ecart = conteneur.match(/\bgap-([\d.]+)/);
+    assert.ok(ecart, 'le conteneur des flèches ne déclare aucun écart');
+    const pixels = Number(ecart[1]) * 4;
+    assert.ok(pixels >= 8,
+      `les deux flèches ne sont séparées que de ${pixels} px ; Apple et `
+      + 'Material demandent 8 px au minimum entre deux cibles tactiles '
+      + 'voisines, et sous ce seuil on monte un ticket qu\'on voulait descendre');
+  });
 });
 
 describe('les gestes de la file', () => {
