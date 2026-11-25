@@ -261,8 +261,44 @@ describe('la barre reste une barre à libellés', () => {
     const HAUTEUR = ['cible', 'cible-min', 'h-11', 'h-12', 'size-11', 'size-12'];
     const LARGEUR = ['w-(--cible)', 'w-(--cible-min)', 'w-11', 'w-12', 'size-11', 'size-12'];
 
-    /** La croix occupe `right-4` + sa largeur depuis le bord droit. */
-    const PLACE_DE_LA_CROIX = 16 + 44;
+    /** Le pas de l'échelle d'espacement de Tailwind, que le projet ne surcharge pas. */
+    const PAS = 4;
+
+    /** Les jetons de cible, LUS dans jetons.css et non recopiés ici. */
+    function jetonsDeCible() {
+      const css = lire('src/main/resources/static/app/jetons.css');
+      const px = (nom) => {
+        const m = css.match(new RegExp(`--${nom}:\\s*(\\d+)px`));
+        assert.ok(m, `--${nom} introuvable dans jetons.css`);
+        return Number(m[1]);
+      };
+      return { 'w-(--cible)': px('cible'), 'w-(--cible-min)': px('cible-min') };
+    }
+
+    /**
+     * La largeur en pixels que DÉCLARENT les classes d'un contrôle.
+     *
+     * <p>Dérivée du jeton que la garde vient de lire, et non réécrite à côté.
+     * Une constante `16 + 44` recopiée mesurerait le dégagement contre une
+     * largeur qui n'est plus la vraie : passer la croix à `w-(--cible)` la
+     * porterait à 56 px, donc à 72 px de place occupée, et un dégagement de
+     * 64 px passerait à tort.
+     */
+    function largeurDeclaree(classes) {
+      const parJeton = jetonsDeCible();
+      for (const c of classes) {
+        if (c in parJeton) return parJeton[c];
+        const pas = c.match(/^(?:w|size)-(\d+)$/);
+        if (pas) return Number(pas[1]) * PAS;
+      }
+      return null;
+    }
+
+    /** Le décalage depuis le bord droit que déclarent les classes. */
+    function decalageDroite(classes) {
+      const m = classes.map((c) => c.match(/^right-(\d+)$/)).find(Boolean);
+      return m ? Number(m[1]) * PAS : null;
+    }
 
     /**
      * Les classes du premier `className` qui suit l'ancre, en jetons.
@@ -293,8 +329,36 @@ describe('la barre reste une barre à libellés', () => {
         `une entrée de navigation sous le plancher tactile : ${classes.join(' ')}`);
     });
 
+    /**
+     * Les classes de la croix, lues DANS SON PROPRE ÉLÉMENT.
+     *
+     * <p>Deux ancres plus naïves ont été essayées et écartées, chacune par
+     * mutation plutôt que par lecture. `'<SheetPrimitive.Close'` tombe d'abord
+     * sur le composant enveloppe `SheetClose`, qui ne porte aucun `className` :
+     * la lecture avançait jusqu'au premier `className` reconnu et atteignait la
+     * vraie croix par chance. Resserrer en
+     * `'<SheetPrimitive.Close className'` ne suffit pas non plus — il suffit que
+     * l'enveloppe en reçoive un pour que la garde lise SES classes et repasse au
+     * vert sur une croix dépouillée ; vérifié.
+     *
+     * <p>La lecture est donc BORNÉE au rendu conditionnel de la croix et à sa
+     * balise de fermeture. Rien avant ni après ne peut s'y glisser.
+     */
+    function classesDeLaCroix() {
+      const source = sansCommentaires(lire('front/src/ui/sheet.jsx'));
+      const debut = source.indexOf('showCloseButton && (');
+      assert.notEqual(debut, -1, 'le rendu conditionnel de la croix est introuvable');
+      const fin = source.indexOf('</SheetPrimitive.Close>', debut);
+      assert.notEqual(fin, -1, 'la croix n\'est plus un élément fermé');
+      const bloc = source.slice(debut, fin);
+      assert.match(bloc, /<SheetPrimitive\.Close/, 'la croix a changé de nature');
+      const m = bloc.match(/className="([^"]*)"/);
+      assert.ok(m, 'la croix ne porte aucun className');
+      return m[1].split(/\s+/).filter(Boolean);
+    }
+
     it('la croix du tiroir tient sa HAUTEUR', () => {
-      const classes = classesApres('front/src/ui/sheet.jsx', '<SheetPrimitive.Close');
+      const classes = classesDeLaCroix();
       assert.ok(tient(classes, HAUTEUR),
         `croix sans hauteur de cible : ${classes.join(' ')}`);
     });
@@ -304,7 +368,7 @@ describe('la barre reste une barre à libellés', () => {
       // vivaient dans un même `it`, la hauteur rougissait d'abord et la largeur
       // n'était jamais éprouvée seule. `cible-min` ne pose qu'un `min-height`,
       // donc c'est bien cette assertion-ci qui tient le défaut d'origine.
-      const classes = classesApres('front/src/ui/sheet.jsx', '<SheetPrimitive.Close');
+      const classes = classesDeLaCroix();
       assert.ok(tient(classes, LARGEUR),
         'croix sans largeur de cible : elle reste large comme son icône, donc '
         + `plus étroite que la pellicule qu'elle remplace : ${classes.join(' ')}`);
@@ -314,13 +378,22 @@ describe('la barre reste une barre à libellés', () => {
       // La GÉOMÉTRIE, pas une liste de classes permises : `pr-15` valait 60 px
       // et ne laissait pas un pixel de marge, mais satisfaisait le motif
       // `pr-1[5-9]` d'avant.
+      const croix = classesDeLaCroix();
+      const largeur = largeurDeclaree(croix);
+      const decalage = decalageDroite(croix);
+      assert.ok(largeur, `largeur de la croix indéterminable : ${croix.join(' ')}`);
+      assert.ok(decalage !== null, `décalage de la croix indéterminable : ${croix.join(' ')}`);
+      // La place occupée est DÉRIVÉE de la croix qu'on vient de lire : si elle
+      // passe à `w-(--cible)`, l'exigence suit d'elle-même.
+      const place = decalage + largeur;
+
       const classes = classesApres('front/src/accueil/Barre.jsx', '<SidebarHeader');
       const pas = classes.map((c) => c.match(/^'?pr-(\d+)'?$/)).find(Boolean);
       assert.ok(pas, `aucun dégagement à droite sur l'en-tête : ${classes.join(' ')}`);
-      const px = Number(pas[1]) * 4;
-      assert.ok(px > PLACE_DE_LA_CROIX,
-        `pr-${pas[1]} = ${px}px : la croix occupe ${PLACE_DE_LA_CROIX}px depuis le `
-        + 'bord, il en faut davantage');
+      const px = Number(pas[1]) * PAS;
+      assert.ok(px > place,
+        `pr-${pas[1]} = ${px}px : la croix occupe ${place}px depuis le bord `
+        + `(right ${decalage} + largeur ${largeur}), il en faut davantage`);
     });
   });
 
