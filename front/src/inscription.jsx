@@ -24,6 +24,9 @@ function Adresse({ children }) {
 
 export function Inscription() {
   const [paliers, setPaliers] = useState([]);
+  // `null` tant qu'on ne sait pas : ni formulaire ni refus affichés
+  // avant la réponse, sinon la page ment pendant une seconde.
+  const [ouverte, setOuverte] = useState(null);
   const [choisi, setChoisi] = useState(null);
   const [retour, setRetour] = useState(null);
   const [erreur, setErreur] = useState(null);
@@ -39,8 +42,10 @@ export function Inscription() {
     // Les prix viennent du serveur : les recopier ici ferait diverger la page
     // de la facture dès le premier changement de tarif.
     appel('/api/inscription/paliers')
-      .then((liste) => {
+      .then((reponse) => {
+        const liste = reponse.paliers ?? [];
         setPaliers(liste);
+        setOuverte(reponse.ouverte === true);
         // Le premier palier est coché par défaut, et c'est délibéré : avec la
         // grille actuelle, rester au plus petit et payer le dépassement
         // revient moins cher que le palier du milieu à tous les volumes.
@@ -83,6 +88,12 @@ export function Inscription() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-10">
+      {/* La sortie. On arrive ici depuis la vitrine et rien n'en ressortait —
+          le même cul-de-sac que la page de connexion avait. */}
+      <a href="/" className="cible-min mb-4 inline-flex items-center gap-1.5 text-sm
+                             font-semibold text-accent-texte">
+        <span aria-hidden="true">←</span> Attenso
+      </a>
       <h1 className="text-3xl font-bold tracking-tight">Inscrire ma clinique</h1>
 
       {retour && (
@@ -96,6 +107,27 @@ export function Inscription() {
         l'adresse du QR code à imprimer et poser au comptoir.
       </p>
 
+      {/* Fermée : on le dit AVANT la saisie. Remplir nom, adresse, mot de
+          passe de douze caractères, formule et conditions pour apprendre en
+          503 que c'est fermé, c'est faire perdre son temps à quelqu'un qui
+          voulait acheter. Les prix restent affichés plus bas : on dit ce
+          qu'on vend, même quand on ne peut pas le vendre. */}
+      {ouverte === false && (
+        <div className="mt-8 rounded-[var(--rayon-lg)] border border-bordure-douce
+                        bg-surface-douce p-5">
+          <p className="font-semibold">L'inscription en ligne n'est pas encore ouverte.</p>
+          <p className="mt-2 text-sur-fond-doux">
+            Écrivez-nous et nous installons votre clinique à la main, le jour même.
+          </p>
+          <a href="mailto:contact@attenso.fr"
+             className="cible-min mt-4 inline-flex items-center font-semibold
+                        text-accent-texte underline underline-offset-2">
+            contact@attenso.fr
+          </a>
+        </div>
+      )}
+
+      {ouverte === true && (
       <form onSubmit={soumettre} className="mt-8 space-y-6">
         <div>
           <label className={etiquette} htmlFor="nom">Nom de la clinique</label>
@@ -205,6 +237,18 @@ export function Inscription() {
           {envoi ? 'Un instant…' : 'Créer ma file d’attente'}
         </button>
       </form>
+      )}
+
+      {/* « Déjà un compte ? » : l'autre moitié de la sortie. La connexion mène
+          ici depuis sa correction ; l'inverse manquait encore. */}
+      <p className="mt-8 text-center text-sm text-sur-fond-doux">
+        Déjà un compte ?{' '}
+        <a href="/connexion" className="cible-min inline-flex items-center
+                                        font-semibold text-accent-texte
+                                        underline underline-offset-2">
+          Se connecter
+        </a>
+      </p>
     </main>
   );
 }

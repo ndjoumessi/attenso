@@ -4,6 +4,7 @@ import ai.attenso.inscription.DemandeInscription;
 import ai.attenso.inscription.ReponseInscription;
 import ai.attenso.inscription.ServiceInscription;
 import ai.attenso.facturation.Palier;
+import ai.attenso.paiement.PasserellePaiement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Duration;
@@ -39,20 +40,30 @@ public class ControleurInscription {
 
 	private final AdresseAppelant adresses;
 
+	private final PasserellePaiement paiement;
+
 	public ControleurInscription(ServiceInscription inscriptions, LimiteurDebit limiteur,
-			AdresseAppelant adresses) {
+			AdresseAppelant adresses, PasserellePaiement paiement) {
 		this.inscriptions = inscriptions;
 		this.limiteur = limiteur;
 		this.adresses = adresses;
+		this.paiement = paiement;
 	}
 
-	/** Les paliers et leurs prix, pour que la page les affiche sans les recopier. */
+	/**
+	 * Les paliers et leurs prix, et SI l'on peut souscrire.
+	 *
+	 * <p>Le drapeau d'ouverture voyage avec les paliers plutôt que dans un
+	 * appel à part : la page les demande déjà, et une seconde requête sur une
+	 * page tenue à une seconde au 95e centile se paierait pour rien.
+	 */
 	@GetMapping("/api/inscription/paliers")
-	public List<VuePalier> paliers() {
-		return Arrays.stream(Palier.values())
-				.map(p -> new VuePalier(p.name(), p.visitesIncluses(), p.prixCentimes(),
-						Palier.DEPASSEMENT_CENTIMES))
-				.toList();
+	public VueOuvertureInscription paliers() {
+		return new VueOuvertureInscription(paiement.disponible(),
+				Arrays.stream(Palier.values())
+						.map(p -> new VuePalier(p.name(), p.visitesIncluses(),
+								p.prixCentimes(), Palier.DEPASSEMENT_CENTIMES))
+						.toList());
 	}
 
 	@PostMapping("/api/inscription")
