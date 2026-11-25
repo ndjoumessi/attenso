@@ -90,8 +90,13 @@ describe('les vues réservées au gérant', () => {
 
   it('Comptes : un refus est affiché, une panne est une erreur', () => {
     assert.match(corpsDeVue('Comptes'),
-      /catch \((\w+)\) \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{[^}]*?setRefuse\(true\);\s*\} else \{[^}]*?setEchec\(true\);/,
-      'le refus n\'est pas affiché, ou la polarité est inversée');
+      /catch \((\w+)\) \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{[^}]*?setRefuse\(true\);\s*\} else \{\s*setEchec\(true\);\s*\}/,
+      'le refus n\'est pas affiché, la polarité est inversée, ou le else porte autre chose qu\'un échec');
+    // La remise à zéro est liée au chemin de succès : sans elle, un échec
+    // passager resterait affiché à côté d'une liste relue avec succès.
+    assert.match(corpsDeVue('Comptes'),
+      /setEquipe\(await[^;]*\);\s*setRefuse\(false\);\s*setEchec\(false\);/,
+      'le succès de la relecture ne remet pas l\'échec à zéro');
   });
 
   it('Comptes ne se relit pas en boucle : un seul appel, jamais d\'intervalle', () => {
@@ -110,8 +115,9 @@ describe('les vues réservées au gérant', () => {
     it('Exploitation : la facturation démarre à `null`, et son échec se dit', () => {
       const corps = corpsDeVue('Exploitation');
       assert.match(corps, /\[facturation, setFacturation\] = useState\(null\)/);
-      assert.match(corps, /<Erreur>\s*La facturation n'a pas pu être chargée/,
-        'l\'échec de la facturation ne se dit pas');
+      assert.match(corps,
+        /\{!refuse && facturation === null && echecFacturation && \(\s*<div[^>]*>\s*<Erreur>\s*La facturation n'a pas pu être chargée/,
+        'l\'échec de la facturation ne se dit pas, ou sa condition n\'est plus liée');
     });
   });
 });
