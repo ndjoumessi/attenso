@@ -9,6 +9,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * d'environnement, jamais par un fichier de configuration : c'est le seul
  * identifiant de l'installation, et il ne doit pas finir dans un dépôt.
  *
+ * <p>{@code attenso.amorce.reinitialiser} (fausse par défaut) n'est pas un champ de
+ * ce record : elle ne sert que de condition au bean
+ * {@link ReinitialisationDemonstration}, qui n'a donc rien à relire. La relire ici
+ * serait une valeur toujours vraie là où on la lit.
+ *
  * @param demonstration {@code true} seulement pour une clinique de démonstration :
  *        elle reçoit alors une file, des rendez-vous, des carnets, une mesure
  *        de la veille et trois motifs de priorité inventés. Faux par défaut, et
