@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
-import { AIDE, CHAMP, ETIQUETTE } from '../composants/formulaire.jsx';
-import { CLE_SLUG, entete } from './session.js';
+import { CHAMP, ETIQUETTE } from '../composants/formulaire.jsx';
+import { entete } from './session.js';
 
 export function Titre({ children }) {
   return <h2 className="mt-12 text-xl font-bold tracking-tight">{children}</h2>;
@@ -11,8 +11,14 @@ export function Titre({ children }) {
 const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle '
   + 'bg-surface px-4 font-semibold hover:bg-surface-douce disabled:opacity-50';
 
-/** Rendez-vous du jour (EF-905). */
-export function Agenda({ jeton }) {
+/**
+ * Rendez-vous du jour (EF-905).
+ *
+ * <p>`vide` : ce qu'on affiche quand il n'y en a aucun. La section seule
+ * détient la liste chargée, donc seule elle sait qu'elle est vide ; c'est la
+ * vue qui l'enveloppe qui sait quoi dire alors.
+ */
+export function Agenda({ jeton, vide }) {
   const [rdvs, setRdvs] = useState(null);
 
   useEffect(() => {
@@ -24,9 +30,6 @@ export function Agenda({ jeton }) {
     const t = setInterval(relire, 120000);
     return () => clearInterval(t);
   }, [jeton]);
-
-  const lien = typeof location === 'undefined' ? ''
-    : `${location.origin}/rdv/${localStorage.getItem(CLE_SLUG)}`;
 
   return (
     <>
@@ -50,19 +53,20 @@ export function Agenda({ jeton }) {
             </li>
           ))}
         </ul>
-      ) : (
-        <p className={AIDE}>
-          Aucun rendez-vous aujourd'hui. Les clients réservent sur{' '}
-          <code className="break-all font-mono">{lien}</code>.
-        </p>
-      )}
+      ) : vide}
     </>
   );
 }
 
-/** Carnets de santé (EF-906). */
-export function Carnets({ jeton, surErreur }) {
-  const [animaux, setAnimaux] = useState([]);
+/**
+ * Carnets de santé (EF-906).
+ *
+ * <p>`vide` : ce qu'on affiche une fois la liste chargée et vide. Tant qu'elle
+ * n'est pas chargée (`null`), ou si le chargement échoue, rien : un « aucun
+ * carnet » affiché pendant le chargement dirait faux.
+ */
+export function Carnets({ jeton, surErreur, vide }) {
+  const [animaux, setAnimaux] = useState(null);
 
   const relire = () => appel('/api/animaux', { headers: entete(jeton) })
     .then(setAnimaux).catch(() => {});
@@ -133,8 +137,9 @@ export function Carnets({ jeton, surErreur }) {
         <button type="submit" className={`w-full ${secondaire}`}>Ajouter l'animal</button>
       </form>
 
+      {animaux?.length === 0 && vide}
       <ul className="mt-4 space-y-2">
-        {animaux.map((animal) => (
+        {animaux?.map((animal) => (
           <li key={animal.id}
               className="rounded-[var(--rayon)] border border-bordure-douce
                          bg-surface p-3">

@@ -13,7 +13,9 @@ import { SidebarInset, SidebarProvider } from '@/ui/sidebar';
 import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from './composants/formulaire.jsx';
 import { Connexion } from './accueil/Connexion.jsx';
 import { File } from './accueil/File.jsx';
-import { Agenda, Carnets, Titre } from './accueil/Sections.jsx';
+import { Titre } from './accueil/Sections.jsx';
+import { VueRendezVous } from './accueil/vues/VueRendezVous.jsx';
+import { VueCarnets } from './accueil/vues/VueCarnets.jsx';
 import { Gestes } from './accueil/Gestes.jsx';
 import { Compteurs, Exploitation } from './accueil/Exploitation.jsx';
 import { Mesure } from './accueil/Mesure.jsx';
@@ -255,8 +257,8 @@ function Tableau({ jeton, surDeconnexion }) {
                     surDeplacement={deplacer} />
             </>
           )}
-          {vue === 'rendez-vous' && <Agenda jeton={jeton} />}
-          {vue === 'carnets' && <Carnets jeton={jeton} surErreur={setErreur} />}
+          {vue === 'rendez-vous' && <VueRendezVous jeton={jeton} />}
+          {vue === 'carnets' && <VueCarnets jeton={jeton} surErreur={setErreur} />}
           {vue === 'mesure' && <Mesure jeton={jeton} surErreur={setErreur} />}
           {/* UN SEUL écran pour deux entrées, et c'est provisoire :
               « Exploitation » et « Comptes de la clinique » vivent dans le même

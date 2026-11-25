@@ -468,3 +468,93 @@ describe('la barre reste une barre à libellés', () => {
       'le bouton de fermeture s\'annonce encore en anglais');
   });
 });
+
+/**
+ * Les vues du groupe Journée : Rendez-vous et Carnets de santé.
+ *
+ * <p>Leurs états vides sont vus en démonstration — une clinique neuve n'a ni
+ * rendez-vous ni carnet, et la clinique de démonstration n'a aucun créneau —
+ * donc ils doivent nommer l'action à faire, pas rester muets.
+ *
+ * <p>Où vit la décision « c'est vide » : dans la SECTION, qui seule détient la
+ * liste chargée (les sections chargent indépendamment et ne remontent rien).
+ * La VUE fournit le message, par la prop `vide`. Les deux moitiés sont gardées,
+ * chacune sur une lecture bornée : l'une sans l'autre laisserait un message
+ * jamais affiché, ou un affichage sans message.
+ */
+describe('les vues du groupe Journée', () => {
+  const VUES_JOURNEE = [
+    { composant: 'VueRendezVous', section: 'Agenda', apres: 'export function Agenda',
+      jusque: 'export function Carnets' },
+    { composant: 'VueCarnets', section: 'Carnets', apres: 'export function Carnets',
+      jusque: null },
+  ];
+  const fichier = (composant) => `front/src/accueil/vues/${composant}.jsx`;
+
+  /** Le source de la section, de son `export` à celui de la suivante. */
+  function corpsDeSection({ apres, jusque }) {
+    const source = sansCommentaires(lire('front/src/accueil/Sections.jsx'));
+    const debut = source.indexOf(apres);
+    assert.notEqual(debut, -1, `${apres} introuvable`);
+    const fin = jusque ? source.indexOf(jusque, debut) : source.length;
+    assert.notEqual(fin, -1, `${jusque} introuvable`);
+    return source.slice(debut, fin);
+  }
+
+  for (const v of VUES_JOURNEE) {
+    describe(v.composant, () => {
+      it('enveloppe la section existante, sans alias', () => {
+        const source = sansCommentaires(lire(fichier(v.composant)));
+        assert.match(source, new RegExp(`export function ${v.composant}\\b`));
+        assert.match(source, new RegExp(`import \\{[^}]*\\b${v.section}\\b[^}]*\\} from '\\.\\./Sections\\.jsx'`));
+        assert.ok(!/\bas\s+\w+/.test(source.match(/import[\s\S]*?;/g).join('')),
+          'import aliasé : le préfixe Vue existe pour l\'éviter');
+        assert.match(source, new RegExp(`<${v.section}\\b`));
+      });
+
+      it('dit quoi faire quand elle est vide', () => {
+        const source = sansCommentaires(lire(fichier(v.composant)));
+        const i = source.indexOf('vide={');
+        assert.notEqual(i, -1, 'la vue ne fournit aucun état vide à sa section');
+        // Borné à partir de `vide={` : un « Aucun » de l'introduction ne doit
+        // pas faire passer un état vide devenu muet.
+        const message = source.slice(i);
+        assert.match(message, /Aucun|Aucune/);
+        // Un état vide muet laisse croire à une panne : il nomme l'action.
+        assert.match(message, /Les clients réservent sur|formulaire ci-dessus/);
+      });
+
+      it('et sa section l\'affiche vraiment quand la liste est vide', () => {
+        const corps = corpsDeSection(v);
+        assert.match(corps, /export function \w+\(\{[^}]*\bvide\b[^}]*\}\)/,
+          'la section ne reçoit pas `vide`');
+        assert.match(corps, /(?:&&|:)\s*vide\b|\{vide\}/, 'la section n\'affiche jamais `vide`');
+        assert.match(corps, /length/, 'la section ne teste pas la liste vide');
+      });
+    });
+  }
+
+  it('le lien de réservation du vide tient la cible tactile', () => {
+    const classes = (() => {
+      const source = sansCommentaires(lire(fichier('VueRendezVous')));
+      const i = source.indexOf('<a href={lien}');
+      assert.notEqual(i, -1, 'le lien de réservation est introuvable');
+      const m = source.slice(i).match(/className="([^"]*)"/);
+      assert.ok(m, 'le lien de réservation ne porte aucune classe');
+      return m[1].split(/\s+/).filter(Boolean);
+    })();
+    assert.ok(classes.includes('cible-min') || classes.includes('cible'),
+      `lien sans cible tactile : ${classes.join(' ')}`);
+  });
+
+  it('le tableau rend les deux vues, avec les props de leur section', () => {
+    const source = sansCommentaires(lire('front/src/accueil.jsx'));
+    assert.match(source, /vue === 'rendez-vous' && <VueRendezVous jeton=\{jeton\} \/>/);
+    assert.match(source,
+      /vue === 'carnets' && <VueCarnets jeton=\{jeton\} surErreur=\{setErreur\} \/>/);
+    // Les sections ne sont plus montées en direct : elles passent par la vue,
+    // faute de quoi l'état vide ne serait jamais fourni.
+    assert.ok(!/<Agenda\b|<Carnets\b/.test(source),
+      'le tableau monte encore une section en direct, sans état vide');
+  });
+});
