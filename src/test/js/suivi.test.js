@@ -22,15 +22,29 @@ const SUIVI = 'front/src/suivi.jsx';
  * la forme qu'avait le défaut.
  */
 describe('la page de suivi applique les décisions de vue-suivi', () => {
-  it('conditionne la grande carte à doitMontrerLaCarte', () => {
+  it('conditionne la grande carte à lienVivant', () => {
     const source = sansCommentaires(lire(SUIVI));
-    assert.match(source, /doitMontrerLaCarte\(etat,\s*erreur\)/,
+    assert.match(source, /lienVivant\(etat,\s*erreur\)/,
       'la carte ne consulte plus la décision');
     // Fenêtre BORNÉE : la condition doit précéder l'étiquette de la carte.
     // Un simple « les deux chaînes sont présentes » resterait vert si la
     // condition était posée ailleurs et la carte rendue sans elle.
-    assert.match(source, /doitMontrerLaCarte\([\s\S]{0,400}?Personnes avant vous/,
+    assert.match(source, /lienVivant\([\s\S]{0,400}?Personnes avant vous/,
       "la carte s'affiche hors de la condition : un lien mort montrera « chargement… » sans fin");
+  });
+
+  /**
+   * Trouvé en vérifiant le correctif en production, pas en relisant le
+   * fichier : deux lignes sous « Ce lien n'est plus valable », la page disait
+   * encore « le lien reste valable aujourd'hui ». Le même prédicat porte les
+   * deux rendus — c'est pourquoi il ne s'appelle pas « lienVivant ».
+   */
+  it("ne promet pas que le lien reste valable quand il ne l'est plus", () => {
+    const source = sansCommentaires(lire(SUIVI));
+    // Fenêtre volontairement trop courte pour être atteinte depuis l'appel
+    // qui conditionne la carte, deux mille caractères plus haut.
+    assert.match(source, /lienVivant\([\s\S]{0,400}?met à jour toute seule/,
+      "le paragraphe de queue contredit l'erreur affichée juste au-dessus");
   });
 
   it("conditionne « je suis à quelques minutes » au statut", () => {

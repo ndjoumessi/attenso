@@ -84,15 +84,19 @@ export function peutDemanderUneNotification(statut) {
 }
 
 /**
- * La grande carte a-t-elle quelque chose à montrer ?
+ * Ce lien mène-t-il encore quelque part ?
  *
- * Non quand le lien n'a jamais rien rendu : la carte restait alors sur
- * « Personnes avant vous — / chargement… », un chargement qui ne finissait
- * jamais, pendant que l'erreur disait juste en dessous que le lien était mort.
+ * Non quand il n'a jamais rien rendu : la carte restait alors sur « Personnes
+ * avant vous — / chargement… », un chargement qui ne finissait jamais,
+ * pendant que l'erreur disait juste en dessous que le lien était mort.
  *
  * Oui dès qu'un état est connu, erreur ou pas : le message d'erreur réseau
  * promet « dernier état affiché », et cacher la carte en ferait un mensonge.
+ *
+ * Le nom porte la PROPRIÉTÉ et non le rendu, parce que deux rendus en
+ * dépendent : la grande carte, et la promesse de queue — « le lien reste
+ * valable aujourd'hui » — qui contredisait l'erreur affichée au-dessus.
  */
-export function doitMontrerLaCarte(etat, erreur) {
+export function lienVivant(etat, erreur) {
   return Boolean(etat) || !erreur;
 }
