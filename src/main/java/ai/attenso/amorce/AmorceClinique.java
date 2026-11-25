@@ -100,7 +100,7 @@ public class AmorceClinique implements ApplicationRunner {
 	private void poserLesMotifsDeDemonstration(UUID tenantId) {
 		// « Contagieux » tout en haut : l'isoler protège toute la salle d'attente,
 		// pas seulement l'animal concerné.
-		// « Chat en caisse » : un chat qui s'agite dans sa caisse de transport, que
+		// « Chat stressé en caisse » : un chat qui s'agite dans sa caisse de transport, que
 		// V8__motifs_priorite.sql cite comme exemple de motif propre à une clinique.
 		// « Contrôle post-opératoire » en dessous des défauts : c'est du confort,
 		// pas une dégradation, il passe devant la file normale sans doubler personne
