@@ -62,6 +62,11 @@ public class ReinitialisationDemonstration implements ApplicationRunner {
 	/** Le seul slug que cette commande accepte de vider. */
 	static final String SLUG_DE_LA_DEMONSTRATION = "demo";
 
+	/** La bande de {@code tenant_delai_grace_positif} (V1__socle.sql). */
+	static final int GRACE_MIN_SECONDES = 0;
+
+	static final int GRACE_MAX_SECONDES = 3600;
+
 	private static final Logger JOURNAL = LoggerFactory
 			.getLogger(ReinitialisationDemonstration.class);
 
@@ -144,10 +149,36 @@ public class ReinitialisationDemonstration implements ApplicationRunner {
 		// acquisition (SourceDonneesCloisonnee), c'est-à-dire à l'ouverture de la
 		// transaction, et non au premier ordre SQL.
 		ContexteTenant.executer(tenantId, () -> transaction.executeWithoutResult(statut -> {
+			// AVANT le semis : le ticket appelé en tire son échéance.
+			aligner(tenantId);
 			effacer(tenantId);
 			semeur.semerLaDemonstration(tenantId);
 		}));
 		JOURNAL.info("réinitialisation : démonstration « {} » rejouée", enBase);
+	}
+
+	/**
+	 * Aligne la grâce de la clinique sur {@code attenso.amorce.delai-grace-secondes},
+	 * qui ne servait qu'à la création : la réinitialisation conserve le locataire,
+	 * donc sa grâce d'origine. Sans valeur configurée, la clinique garde la sienne.
+	 * Une valeur hors de la contrainte du schéma est bornée plutôt que de faire
+	 * échouer la transaction, et le dit.
+	 */
+	private void aligner(UUID tenantId) {
+		Integer demandee = proprietes.delaiGraceSecondes();
+		if (demandee == null) {
+			return;
+		}
+		int appliquee = Math.max(GRACE_MIN_SECONDES, Math.min(GRACE_MAX_SECONDES, demandee));
+		jdbc.update("UPDATE tenant SET delai_grace_secondes = ? WHERE id = ?", appliquee, tenantId);
+		if (appliquee != demandee) {
+			JOURNAL.warn("réinitialisation : grâce demandée {} s, appliquée {} s — la contrainte "
+					+ "du schéma (tenant_delai_grace_positif) n'accepte que {} à {} s",
+					demandee, appliquee, GRACE_MIN_SECONDES, GRACE_MAX_SECONDES);
+		}
+		else {
+			JOURNAL.info("réinitialisation : grâce de la clinique portée à {} s", appliquee);
+		}
 	}
 
 	private void effacer(UUID tenantId) {

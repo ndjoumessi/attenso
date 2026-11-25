@@ -22,6 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 		"attenso.amorce.nom=Clinique de démonstration",
 		"attenso.amorce.email=accueil@demo.attenso.test",
 		"attenso.amorce.mot-de-passe=mdp-de-demonstration-de-test",
+		"attenso.amorce.delai-grace-secondes=900",
 		"spring.datasource.hikari.maximum-pool-size=2",
 		"spring.datasource.hikari.minimum-idle=1",
 })
@@ -53,5 +54,7 @@ class ReinitialiserSansDemonstrationIntegrationTest extends ReinitialisationBase
 		}
 
 		assertThat(instantane(demo)).isEqualTo(avant);
+		// Un refus ne touche à RIEN, la grâce non plus (900 est configuré, 180 reste).
+		assertThat(graceDe(demo)).as("la grâce de la clinique refusée").isEqualTo(180);
 	}
 }

@@ -26,6 +26,7 @@ import org.springframework.test.context.TestPropertySource;
 		"attenso.amorce.nom=Clinique des Cerisiers",
 		"attenso.amorce.email=accueil@cerisiers.test",
 		"attenso.amorce.mot-de-passe=mdp-de-cerisiers-de-test",
+		"attenso.amorce.delai-grace-secondes=900",
 		"spring.datasource.hikari.maximum-pool-size=2",
 		"spring.datasource.hikari.minimum-idle=1",
 })
@@ -65,5 +66,8 @@ class ReinitialiserVraieCliniqueIntegrationTest extends ReinitialisationBase {
 		assertThat(existe("utilisateur", marqueur.utilisateur())).isTrue();
 		// La clinique de démonstration n'était pas visée non plus : un refus ne vide rien.
 		assertThat(instantane(demo)).isEqualTo(avantDemo);
+		// Un refus ne touche à RIEN, la grâce non plus (900 est configuré, 180 reste).
+		assertThat(graceDe(cerisiers)).as("la grâce de la vraie clinique").isEqualTo(180);
+		assertThat(graceDe(demo)).as("la grâce de la démonstration, non visée").isEqualTo(180);
 	}
 }
