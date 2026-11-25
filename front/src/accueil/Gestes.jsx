@@ -152,7 +152,13 @@ function Geste({ geste, motifs, jeton, horsReseau, surRafraichir }) {
             </div>
           )}
           <Erreur>{erreur}</Erreur>
-          <button type="submit" disabled={envoi}
+          {/* `horsReseau` bascule AUSSI pendant que la boîte est ouverte :
+              `etatLiaison` est réévalué à chaque `rafraichir`, donc au moins
+              toutes les trente secondes par le filet de sécurité. Sans cette
+              garde, la validation resterait active alors que l'explication est
+              rendue hors de la boîte, donc derrière le voile : l'ASV
+              découvrirait le refus par l'échec du POST. */}
+          <button type="submit" disabled={envoi || horsReseau}
                   className={`w-full cible rounded-[var(--rayon)] border px-6
                               text-lg font-bold shadow-1
                               [touch-action:manipulation] disabled:opacity-60

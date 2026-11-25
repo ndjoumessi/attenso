@@ -231,7 +231,8 @@ describe('la barre reste une barre à libellés', () => {
   });
 
   /**
-   * Les cibles tactiles des contrôles que la barre introduit.
+   * Les cibles tactiles des contrôles que le tableau introduit — ceux de la
+   * barre, et les croix de fermeture des surfaces qu'elle a amenées avec elle.
    *
    * <p>`jetons.test.js` tient les JETONS `--cible` (56 px, la cible du produit)
    * et `--cible-min` (44 px, le plancher) ; personne ne vérifiait qu'un contrôle
@@ -243,7 +244,7 @@ describe('la barre reste une barre à libellés', () => {
    * contrôle carré doit AUSSI tenir sa largeur, sans quoi il reste large comme
    * son icône. Les deux sont donc vérifiés séparément.
    */
-  describe('les contrôles de la barre tiennent le plancher tactile', () => {
+  describe('les contrôles du tableau tiennent le plancher tactile', () => {
     /**
      * Les classes acceptées, en JETONS EXACTS et non en motifs.
      *
@@ -310,9 +311,15 @@ describe('la barre reste une barre à libellés', () => {
       const source = sansCommentaires(lire(fichier));
       const i = source.indexOf(ancre);
       assert.notEqual(i, -1, `${ancre} introuvable dans ${fichier}`);
-      const m = source.slice(i).match(/className=(?:"([^"]*)"|\{`([^`]*)`\})/);
+      // Les trois formes que le dépôt écrit : chaîne, littéral de gabarit, et
+      // `cn("…", className)` — celle des composants shadcn. Sans la troisième,
+      // la lecture sautait l'élément visé et atteignait le `className` d'un
+      // AUTRE élément plus bas, ou aucun : constaté sur l'en-tête de la boîte
+      // de dialogue.
+      const m = source.slice(i)
+        .match(/className=(?:"([^"]*)"|\{`([^`]*)`\}|\{cn\(\s*"([^"]*)")/);
       assert.ok(m, `aucun className après ${ancre} dans ${fichier}`);
-      return (m[1] ?? m[2]).split(/\s+/).filter(Boolean);
+      return (m[1] ?? m[2] ?? m[3]).split(/\s+/).filter(Boolean);
     }
 
     const tient = (classes, acceptees) => classes.some((c) => acceptees.includes(c));
@@ -330,6 +337,33 @@ describe('la barre reste une barre à libellés', () => {
     });
 
     /**
+     * Les composants à croix de fermeture, et l'en-tête qui doit lui dégager
+     * la place.
+     *
+     * <p>La table existe parce que cette garde était CÂBLÉE sur `sheet.jsx`.
+     * La boîte de dialogue, arrivée avec la vue file, a donc reçu une croix de
+     * 44 px et un dégagement de 44 px — la croix en occupant 56 — sans que rien
+     * ne rougisse, alors que l'arithmétique qui le démontre était déjà écrite
+     * ici. Un troisième composant à croix doit entrer dans cette table, et le
+     * test « aucune croix hors garde » plus bas est là pour qu'il ne puisse pas
+     * arriver sans.
+     */
+    const CROIX = [
+      {
+        quoi: 'le tiroir de la barre',
+        fichier: 'front/src/ui/sheet.jsx',
+        primitive: 'SheetPrimitive',
+        entete: { fichier: 'front/src/accueil/Barre.jsx', ancre: '<SidebarHeader' },
+      },
+      {
+        quoi: 'la boîte de dialogue',
+        fichier: 'front/src/ui/dialog.jsx',
+        primitive: 'DialogPrimitive',
+        entete: { fichier: 'front/src/ui/dialog.jsx', ancre: 'data-slot="dialog-header"' },
+      },
+    ];
+
+    /**
      * Les classes de la croix, lues DANS SON PROPRE ÉLÉMENT.
      *
      * <p>Deux ancres plus naïves ont été essayées et écartées, chacune par
@@ -344,56 +378,79 @@ describe('la barre reste une barre à libellés', () => {
      * <p>La lecture est donc BORNÉE au rendu conditionnel de la croix et à sa
      * balise de fermeture. Rien avant ni après ne peut s'y glisser.
      */
-    function classesDeLaCroix() {
-      const source = sansCommentaires(lire('front/src/ui/sheet.jsx'));
+    function classesDeLaCroix({ fichier, primitive }) {
+      const source = sansCommentaires(lire(fichier));
       const debut = source.indexOf('showCloseButton && (');
-      assert.notEqual(debut, -1, 'le rendu conditionnel de la croix est introuvable');
-      const fin = source.indexOf('</SheetPrimitive.Close>', debut);
-      assert.notEqual(fin, -1, 'la croix n\'est plus un élément fermé');
+      assert.notEqual(debut, -1,
+        `${fichier} : le rendu conditionnel de la croix est introuvable`);
+      const fin = source.indexOf(`</${primitive}.Close>`, debut);
+      assert.notEqual(fin, -1, `${fichier} : la croix n'est plus un élément fermé`);
       const bloc = source.slice(debut, fin);
-      assert.match(bloc, /<SheetPrimitive\.Close/, 'la croix a changé de nature');
+      assert.match(bloc, new RegExp(`<${primitive}\\.Close`),
+        `${fichier} : la croix a changé de nature`);
       const m = bloc.match(/className="([^"]*)"/);
-      assert.ok(m, 'la croix ne porte aucun className');
+      assert.ok(m, `${fichier} : la croix ne porte aucun className`);
       return m[1].split(/\s+/).filter(Boolean);
     }
 
-    it('la croix du tiroir tient sa HAUTEUR', () => {
-      const classes = classesDeLaCroix();
-      assert.ok(tient(classes, HAUTEUR),
-        `croix sans hauteur de cible : ${classes.join(' ')}`);
-    });
+    for (const croix of CROIX) {
+      it(`la croix de ${croix.quoi} tient sa HAUTEUR`, () => {
+        const classes = classesDeLaCroix(croix);
+        assert.ok(tient(classes, HAUTEUR),
+          `croix sans hauteur de cible : ${classes.join(' ')}`);
+      });
 
-    it('la croix du tiroir tient sa LARGEUR', () => {
-      // Séparée de la hauteur, et pas seulement par goût : tant que les deux
-      // vivaient dans un même `it`, la hauteur rougissait d'abord et la largeur
-      // n'était jamais éprouvée seule. `cible-min` ne pose qu'un `min-height`,
-      // donc c'est bien cette assertion-ci qui tient le défaut d'origine.
-      const classes = classesDeLaCroix();
-      assert.ok(tient(classes, LARGEUR),
-        'croix sans largeur de cible : elle reste large comme son icône, donc '
-        + `plus étroite que la pellicule qu'elle remplace : ${classes.join(' ')}`);
-    });
+      it(`la croix de ${croix.quoi} tient sa LARGEUR`, () => {
+        // Séparée de la hauteur, et pas seulement par goût : tant que les deux
+        // vivaient dans un même `it`, la hauteur rougissait d'abord et la
+        // largeur n'était jamais éprouvée seule. `cible-min` ne pose qu'un
+        // `min-height`, donc c'est bien cette assertion-ci qui tient le défaut
+        // d'origine.
+        const classes = classesDeLaCroix(croix);
+        assert.ok(tient(classes, LARGEUR),
+          'croix sans largeur de cible : elle reste large comme son icône, donc '
+          + `plus étroite que la pellicule qu'elle remplace : ${classes.join(' ')}`);
+      });
 
-    it('et l\'en-tête de la barre dégage la place de cette croix', () => {
-      // La GÉOMÉTRIE, pas une liste de classes permises : `pr-15` valait 60 px
-      // et ne laissait pas un pixel de marge, mais satisfaisait le motif
-      // `pr-1[5-9]` d'avant.
-      const croix = classesDeLaCroix();
-      const largeur = largeurDeclaree(croix);
-      const decalage = decalageDroite(croix);
-      assert.ok(largeur, `largeur de la croix indéterminable : ${croix.join(' ')}`);
-      assert.ok(decalage !== null, `décalage de la croix indéterminable : ${croix.join(' ')}`);
-      // La place occupée est DÉRIVÉE de la croix qu'on vient de lire : si elle
-      // passe à `w-(--cible)`, l'exigence suit d'elle-même.
-      const place = decalage + largeur;
+      it(`et l'en-tête de ${croix.quoi} dégage la place de cette croix`, () => {
+        // La GÉOMÉTRIE, pas une liste de classes permises : `pr-15` valait
+        // 60 px et ne laissait pas un pixel de marge, mais satisfaisait le
+        // motif `pr-1[5-9]` d'avant.
+        const classesCroix = classesDeLaCroix(croix);
+        const largeur = largeurDeclaree(classesCroix);
+        const decalage = decalageDroite(classesCroix);
+        assert.ok(largeur,
+          `largeur de la croix indéterminable : ${classesCroix.join(' ')}`);
+        assert.ok(decalage !== null,
+          `décalage de la croix indéterminable : ${classesCroix.join(' ')}`);
+        // La place occupée est DÉRIVÉE de la croix qu'on vient de lire : si elle
+        // passe à `w-(--cible)`, l'exigence suit d'elle-même.
+        const place = decalage + largeur;
 
-      const classes = classesApres('front/src/accueil/Barre.jsx', '<SidebarHeader');
-      const pas = classes.map((c) => c.match(/^'?pr-(\d+)'?$/)).find(Boolean);
-      assert.ok(pas, `aucun dégagement à droite sur l'en-tête : ${classes.join(' ')}`);
-      const px = Number(pas[1]) * PAS;
-      assert.ok(px > place,
-        `pr-${pas[1]} = ${px}px : la croix occupe ${place}px depuis le bord `
-        + `(right ${decalage} + largeur ${largeur}), il en faut davantage`);
+        const classes = classesApres(croix.entete.fichier, croix.entete.ancre);
+        const pas = classes.map((c) => c.match(/^'?pr-(\d+)'?$/)).find(Boolean);
+        assert.ok(pas, `aucun dégagement à droite sur l'en-tête : ${classes.join(' ')}`);
+        const px = Number(pas[1]) * PAS;
+        assert.ok(px > place,
+          `pr-${pas[1]} = ${px}px : la croix occupe ${place}px depuis le bord `
+          + `(right ${decalage} + largeur ${largeur}), il en faut davantage`);
+      });
+    }
+
+    it('aucune croix de fermeture n\'échappe à la table', () => {
+      // La garde doit COUVRIR : c'est son câblage en dur sur sheet.jsx qui a
+      // laissé passer la croix de la boîte de dialogue. Tout composant qui
+      // rend une croix doit avoir son entrée, sinon sa géométrie n'est tenue
+      // par personne.
+      const dossier = resolve(RACINE, 'front/src/ui');
+      const aCroix = readdirSync(dossier)
+        .filter((f) => f.endsWith('.jsx'))
+        .filter((f) => lire(`front/src/ui/${f}`).includes('showCloseButton && ('))
+        .map((f) => `front/src/ui/${f}`);
+      assert.ok(aCroix.length > 0, 'balayage de front/src/ui/ en défaut');
+      assert.deepEqual(aCroix.filter((f) => !CROIX.some((c) => c.fichier === f)), [],
+        'composant à croix sans entrée dans CROIX : sa cible et son dégagement '
+        + 'ne seraient tenus par aucune garde');
     });
   });
 

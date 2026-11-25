@@ -76,7 +76,14 @@ function DialogContent({
             // et c'est le défaut déjà corrigé sur le tiroir de la barre.
             // `cible-min` ne pose qu'un `min-height`, donc la largeur est
             // déclarée à part.
-            className="absolute top-3 right-3 inline-flex cible-min w-(--cible-min) items-center justify-center rounded-sm opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce data-[state=open]:text-sur-fond-doux [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5"
+            //
+            // MÊME géométrie que la croix du tiroir — `right-4` et 44 px, donc
+            // 60 px occupés depuis le bord — pour qu'il n'y ait qu'un seul
+            // dégagement à retenir, celui de `SidebarHeader`. Posée d'abord à
+            // `right-3`, elle occupait 56 px contre un `pr-11` de 44 : la garde
+            // géométrique de navigation.test.js était écrite, mais câblée sur
+            // le seul `sheet.jsx` et ne voyait pas cette croix-ci.
+            className="absolute top-4 right-4 inline-flex cible-min w-(--cible-min) items-center justify-center rounded-sm opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce data-[state=open]:text-sur-fond-doux [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5"
           >
             <XIcon />
             {/* En français, comme le reste du produit. */}
@@ -95,10 +102,12 @@ function DialogHeader({
   return (
     <div
       data-slot="dialog-header"
-      // `pr-11` dégage la place de la croix, qui est maintenant une cible de
-      // 44 px posée à 12 px du bord : sans ce retrait, un titre long passerait
-      // dessous.
-      className={cn("flex flex-col gap-2 pr-11 text-center sm:text-left", className)}
+      // `pr-16` = 64 px dégage la place de la croix, qui occupe 60 px depuis le
+      // bord (16 px de décalage + 44 px de cible) : sans ce retrait, un titre
+      // long passerait dessous. Le même chiffre que `SidebarHeader`, pour la
+      // même croix. La garde est dans navigation.test.js, et c'est elle qui
+      // porte l'arithmétique — ne pas reprendre ce nombre à l'œil.
+      className={cn("flex flex-col gap-2 pr-16 text-center sm:text-left", className)}
       {...props}
     />
   )

@@ -38,6 +38,25 @@ const sansCommentaires = (source) => source
   .filter((l) => !/^\s*(\/\/|\*)/.test(l))
   .join('\n');
 
+/**
+ * Les attributs déclarés AVANT le `className` de l'élément qui s'ouvre à
+ * l'ancre, commentaires retirés.
+ *
+ * <p>Bornée des deux côtés : rien d'un autre élément ne peut s'y glisser, et un
+ * attribut écrit dans un commentaire ne compte pas. C'est le patron de
+ * `classesApres` dans `navigation.test.js`, pour la raison inverse — là-bas on
+ * veut les classes, ici ce qui les précède. Le dépôt écrit tous ses contrôles
+ * avec le `className` en dernier.
+ */
+function attributsAvantLesClasses(fichier, ancre) {
+  const source = sansCommentaires(lire(fichier));
+  const i = source.indexOf(ancre);
+  assert.notEqual(i, -1, `${ancre} introuvable dans ${fichier}`);
+  const fin = source.indexOf('className=', i);
+  assert.notEqual(fin, -1, `aucun className après ${ancre} dans ${fichier}`);
+  return source.slice(i, fin);
+}
+
 /** Les états ouverts, lus dans la machine à états du serveur. */
 function ouvertsDuServeur() {
   const source = readFileSync(STATUT_JAVA, 'utf8');
@@ -291,15 +310,29 @@ describe('les gestes de la file', () => {
     }
   });
 
+  /**
+   * La branche `vue === 'file'` du commutateur, COMMENTAIRES RETIRÉS.
+   *
+   * <p>Le filtre n'est pas un détail de confort : cette tâche ajoute un bloc de
+   * commentaire de huit lignes dans cette branche même, et un `<File` ou un
+   * `<Gestes` écrit dedans inverserait l'ordre mesuré. Une garde sur ce que le
+   * code FAIT ne doit pas dépendre de ce qu'il raconte.
+   */
+  function brancheDeLaFile() {
+    const source = sansCommentaires(lire('front/src/accueil.jsx'));
+    const debut = source.indexOf("vue === 'file'");
+    const fin = source.indexOf("vue === 'rendez-vous'");
+    assert.ok(debut !== -1 && fin > debut,
+      'la branche de la vue file est introuvable dans le commutateur');
+    return source.slice(debut, fin);
+  }
+
   it('sont rendus EN TÊTE de la vue file, avant la liste', () => {
     // C'est tout l'objet de la tâche : deux boutons atteignables sans faire
     // défiler, là où c'étaient deux sections sous la file.
-    const source = lire('front/src/accueil.jsx');
-    const vueFile = source.slice(source.indexOf("vue === 'file'"),
-      source.indexOf("vue === 'rendez-vous'"));
-    assert.ok(vueFile.length > 0, 'la vue file est introuvable dans le commutateur');
-    const gestes = vueFile.indexOf('<Gestes');
-    const liste = vueFile.indexOf('<File');
+    const branche = brancheDeLaFile();
+    const gestes = branche.indexOf('<Gestes');
+    const liste = branche.indexOf('<File');
     assert.notEqual(gestes, -1, 'la vue file ne rend aucun geste');
     assert.notEqual(liste, -1, 'la vue file ne rend plus la liste');
     assert.ok(gestes < liste,
@@ -307,18 +340,18 @@ describe('les gestes de la file', () => {
   });
 
   it('laissent les compteurs en tête, eux aussi', () => {
-    const source = lire('front/src/accueil.jsx');
-    const vueFile = source.slice(source.indexOf("vue === 'file'"),
-      source.indexOf("vue === 'rendez-vous'"));
-    const compteurs = vueFile.indexOf('<Compteurs');
+    const branche = brancheDeLaFile();
+    const compteurs = branche.indexOf('<Compteurs');
+    const liste = branche.indexOf('<File');
     assert.notEqual(compteurs, -1, 'les compteurs ont disparu de la vue file');
-    assert.ok(compteurs < vueFile.indexOf('<File'), 'les compteurs sont passés sous la liste');
+    assert.notEqual(liste, -1, 'la vue file ne rend plus la liste');
+    assert.ok(compteurs < liste, 'les compteurs sont passés sous la liste');
   });
 
   it("ne laissent plus de section de saisie à faire défiler sous la file", () => {
-    assert.ok(!/Saisies/.test(lire('front/src/accueil.jsx')),
+    assert.ok(!/Saisies/.test(sansCommentaires(lire('front/src/accueil.jsx'))),
       'le tableau rend encore les saisies en section');
-    assert.ok(!/Saisies/.test(lire('front/src/accueil/Sections.jsx')),
+    assert.ok(!/Saisies/.test(sansCommentaires(lire('front/src/accueil/Sections.jsx'))),
       'les saisies en section survivent dans Sections.jsx');
   });
 
@@ -331,7 +364,7 @@ describe('les gestes de la file', () => {
     // composant parcourt AUSSI la table pour l'aide hors réseau. La garde était
     // satisfaite par le mauvais jeton. On exige donc qu'un parcours de la table
     // rende le CONTRÔLE lui-même, et non n'importe quoi.
-    const source = lire('front/src/accueil/Gestes.jsx');
+    const source = sansCommentaires(lire('front/src/accueil/Gestes.jsx'));
     const parcours = [...source.matchAll(/GESTES\.map\(/g)]
       .map((m) => source.slice(m.index, m.index + 300));
     assert.ok(parcours.length > 0, 'le composant ne parcourt pas la table');
@@ -349,7 +382,20 @@ describe('les gestes de la file', () => {
       assert.match(geste.aideHorsReseau, /hors réseau/i,
         `${geste.cle} ne dit pas pourquoi il est indisponible`);
     }
-    assert.match(lire('front/src/accueil/Gestes.jsx'), /disabled=\{horsReseau\}/,
-      'le geste reste cliquable hors réseau');
+    // Les DEUX contrôles, et bornés à leur propre balise : un `disabled`
+    // cherché n'importe où dans le fichier restait vert s'il migrait sur le
+    // mauvais élément, ou s'il ne subsistait que dans un commentaire. Et c'est
+    // la seule garde du mode dégradé pour ces gestes.
+    //
+    // La validation compte autant que le déclencheur : `horsReseau` bascule
+    // AUSSI pendant que la boîte est ouverte — `etatLiaison` est réévalué à
+    // chaque `rafraichir`, donc au moins toutes les trente secondes par le
+    // filet de sécurité — et l'aide hors réseau est rendue hors de la boîte,
+    // donc derrière le voile et illisible.
+    for (const [ancre, quoi] of [['<button type="button"', 'le bouton de tête'],
+      ['<button type="submit"', 'la validation']]) {
+      assert.match(attributsAvantLesClasses('front/src/accueil/Gestes.jsx', ancre),
+        /disabled=\{[^}]*horsReseau/, `${quoi} reste cliquable hors réseau`);
+    }
   });
 });
