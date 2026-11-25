@@ -156,7 +156,16 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 			assertThat(cree).isBeforeOrEqualTo(MI_JOURNEE);
 			if (t.get("appele_le") != null) {
 				assertThat(instant(t, "appele_le")).isAfterOrEqualTo(cree);
+			}
+			// La grâce ne court que pour un ticket appelé et pas encore présent :
+			// Ticket.present() la remet à null, et un état que le produit n'atteint
+			// jamais se voit comme un défaut.
+			if ("APPELE".equals(t.get("statut"))) {
 				assertThat(instant(t, "grace_expire_le")).isAfter(instant(t, "appele_le"));
+			}
+			else {
+				assertThat(t.get("grace_expire_le")).as("grace_expire_le d'un ticket %s",
+						t.get("statut")).isNull();
 			}
 			if (t.get("consultation_le") != null) {
 				// Dans le produit, on n'entre en consultation qu'après avoir été appelé :
@@ -164,6 +173,10 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 				assertThat(t.get("appele_le")).as("appele_le d'un ticket en consultation")
 						.isNotNull();
 				assertThat(instant(t, "appele_le")).isBeforeOrEqualTo(instant(t, "consultation_le"));
+				// Entré dans la grâce de 180 s : au-delà, le produit l'aurait passé ABSENT.
+				assertThat(java.time.Duration.between(instant(t, "appele_le"),
+						instant(t, "consultation_le"))).isLessThanOrEqualTo(
+								java.time.Duration.ofSeconds(180));
 			}
 			if ("TERMINE".equals(t.get("statut"))) {
 				assertThat(((Number) t.get("minutes")).doubleValue()).isBetween(10.0, 30.0);
@@ -178,7 +191,7 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 
 		Long ecarts = proprietaire.queryForObject("""
 				SELECT count(*) FROM ticket t JOIN tenant c ON c.id = t.tenant_id
-				WHERE t.appele_le IS NOT NULL
+				WHERE t.grace_expire_le IS NOT NULL
 				  AND t.grace_expire_le <> t.appele_le + make_interval(secs => c.delai_grace_secondes)
 				""", Long.class);
 
@@ -196,6 +209,41 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 		assertThat(proprietaire.queryForObject(
 				"SELECT note FROM vaccination WHERE vaccin = 'Rage'", String.class))
 				.contains("triennal");
+	}
+
+	@Test
+	@DisplayName("la file de 11 h est celle de 11 h, à la minute : l'horloge injectée, pas celle du système")
+	void lHorlogeInjecteeFixeLaFile() {
+		installer(MI_JOURNEE);
+
+		Instant dernier = proprietaire.queryForObject(
+				"SELECT max(cree_le) FROM ticket WHERE jour = ?", java.sql.Timestamp.class,
+				Date.valueOf(LocalDate.of(2027, 3, 10))).toInstant();
+
+		// Le dernier arrivé a six minutes d'attente à 11 h : 10 h 54. Une heure exacte,
+		// parce qu'une borne large ne rougirait que selon l'heure où tournent les tests.
+		assertThat(dernier.atZone(PARIS).toLocalTime()).isEqualTo(java.time.LocalTime.of(10, 54));
+	}
+
+	@Test
+	@DisplayName("la priorité est respectée : personne n'est appelé devant un ticket plus prioritaire qui attend")
+	void aucuneInversionDePriorite() {
+		installer(MI_JOURNEE);
+
+		Long inversions = proprietaire.queryForObject("""
+				SELECT count(*) FROM ticket t JOIN ticket u
+				  ON u.tenant_id = t.tenant_id AND u.jour = t.jour
+				WHERE t.appele_le IS NOT NULL
+				  AND u.priorite > t.priorite
+				  AND u.cree_le <= t.appele_le
+				  AND u.statut <> 'PARTI'
+				  AND (u.appele_le IS NULL OR u.appele_le > t.appele_le)
+				""", Long.class);
+
+		assertThat(inversions).isZero();
+		// La garde a de quoi mordre : la file compte bien des niveaux différents.
+		assertThat(proprietaire.queryForObject(
+				"SELECT count(DISTINCT priorite) FROM ticket", Long.class)).isGreaterThan(2);
 	}
 
 	@Test
@@ -316,8 +364,8 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 		installer(APRES_MINUIT_A_PARIS);
 
 		UUID tenantId = clinique();
-		// À 0 h 30 le 25 à Paris, « hier » est le 24 — et non le 23, où un calcul
-		// en UTC placerait la veille.
+		// À 0 h 30 à Paris, « hier » est la veille du jour de Paris — et non celle du
+		// jour UTC, qui est encore un jour plus tôt.
 		LocalDate hier = LocalDate.of(2027, 3, 9);
 		assertThat(ContexteTenant.avec(tenantId, () -> mesure.duJour(tenantId, hier)).departs())
 				.isEqualTo(2);

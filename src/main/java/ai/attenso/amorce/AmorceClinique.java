@@ -248,15 +248,18 @@ public class AmorceClinique implements ApplicationRunner {
 						ilYa.apply(29)),
 				passage(Origine.COMPTOIR, ilYa.apply(50), ilYa.apply(31), ilYa.apply(29),
 						ilYa.apply(12)),
+				// En consultation : appelé, donc plus de grâce à courir (Ticket.present()).
 				new TicketDemo(Statut.EN_CONSULTATION, Origine.ACCUEIL, Priorite.NORMALE, null,
-						ilYa.apply(30), ilYa.apply(14), ilYa.apply(14).plus(delaiGrace()),
-						ilYa.apply(12), null),
+						ilYa.apply(30), ilYa.apply(14), null, ilYa.apply(12), null),
+				enFile(Statut.EN_ATTENTE, ilYa.apply(15)),
+				// Les deux passages prioritaires arrivent APRÈS l'appel du ticket
+				// précédent : appelé avant eux alors qu'ils attendaient, il leur
+				// aurait doublé la file, ce que la priorité interdit.
 				new TicketDemo(Statut.APPELE, Origine.ACCUEIL, RANG_CHAT_EN_CAISSE,
-						MOTIF_CHAT_EN_CAISSE, ilYa.apply(27), ilYa.apply(1),
+						MOTIF_CHAT_EN_CAISSE, ilYa.apply(13), ilYa.apply(1),
 						ilYa.apply(1).plus(delaiGrace()), null, null),
 				new TicketDemo(Statut.PREVENU, Origine.ACCUEIL, Priorite.PRIORITAIRE,
-						MotifDao.DEFAUTS.get(0), ilYa.apply(24), null, null, null, null),
-				enFile(Statut.EN_ATTENTE, ilYa.apply(15)),
+						MotifDao.DEFAUTS.get(0), ilYa.apply(11), null, null, null, null),
 				enFile(Statut.EN_ATTENTE, ilYa.apply(6)));
 		poserLesTickets(tenantId, jour, file);
 	}
@@ -275,7 +278,7 @@ public class AmorceClinique implements ApplicationRunner {
 		List<TicketDemo> tickets = List.of(
 				passageLe(veille, Origine.COMPTOIR, "09:08", "09:22", "09:24", "09:41"),
 				passageLe(veille, Origine.ACCUEIL, "09:26", "09:40", "09:42", "10:00"),
-				passageLe(veille, Origine.COMPTOIR, "09:35", "09:55", "10:00", "10:16"),
+				passageLe(veille, Origine.COMPTOIR, "09:35", "09:58", "10:00", "10:16"),
 				passageLe(veille, Origine.COMPTOIR, "10:05", "10:14", "10:16", "10:44"),
 				partiLe(veille, Origine.COMPTOIR, "10:12", "10:38"),
 				passageLe(veille, Origine.ACCUEIL, "11:05", "11:18", "11:20", "11:37"),
@@ -293,8 +296,8 @@ public class AmorceClinique implements ApplicationRunner {
 	/** Un passage terminé : créé, appelé, en consultation, sorti. */
 	private TicketDemo passage(Origine origine, Instant cree, Instant appele,
 			Instant debutConsultation, Instant fin) {
-		return new TicketDemo(Statut.TERMINE, origine, Priorite.NORMALE, null, cree, appele,
-				appele.plus(delaiGrace()), debutConsultation, fin);
+		return new TicketDemo(Statut.TERMINE, origine, Priorite.NORMALE, null, cree, appele, null,
+				debutConsultation, fin);
 	}
 
 	private static TicketDemo enFile(Statut statut, Instant cree) {
