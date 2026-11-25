@@ -11,12 +11,16 @@ import org.springframework.context.annotation.Configuration;
  * pas en attendant.
  *
  * <p>La zone est Europe/Paris, pas UTC : le produit sert des cliniques
- * françaises, et « aujourd'hui » est le jour de la clinique. En UTC, entre
- * minuit et 1h (2h en été) à Paris, l'application croirait encore à la veille :
- * un ticket prendrait le numéro d'ordre de la veille, la fin d'abonnement
- * d'hier ne fermerait pas la clinique, la purge et la mesure journalières se
- * rangeraient sur le mauvais jour. Pas de propriété de configuration : une
- * zone paramétrable serait de la généralité sans client pour l'exiger.
+ * françaises. Elle n'est lue que par ce qui date « aujourd'hui » depuis
+ * l'horloge elle-même : la fin d'abonnement ({@code TacheFinAbonnement}), la
+ * résiliation ({@code ServicePaiement}), la date d'inscription
+ * ({@code ServiceInscription}), le mois facturé ({@code ServiceFacturation}) et
+ * le semis de démonstration. En UTC, entre minuit et 1h (2h en été) à Paris,
+ * ceux-là croiraient encore à la veille : un abonnement échu hier ne fermerait
+ * pas la clinique. Le numéro d'ordre du jour, la purge et la mesure journalière
+ * ne la lisent PAS : ils calculent le jour dans {@code tenant.zone()} et
+ * étaient déjà justes en UTC. Pas de propriété de configuration : une zone
+ * paramétrable serait de la généralité sans client pour l'exiger.
  */
 @Configuration
 public class ConfigurationHorloge {
