@@ -60,11 +60,10 @@ export function ApercuFile() {
             <div key={libelle}
                  className="rounded-[var(--rayon)] border border-bordure-douce
                             bg-surface-douce px-3 py-2">
-              <span className="block text-xs font-semibold uppercase tracking-wide
-                               text-sur-fond-doux">
+              <span className="block text-xs font-medium text-sur-fond-doux">
                 {libelle}
               </span>
-              <b className="text-xl font-bold tabular-nums tracking-tight sm:text-2xl">
+              <b className="text-xl font-medium tabular-nums tracking-tight sm:text-2xl">
                 {valeur}
               </b>
             </div>
@@ -80,7 +79,7 @@ export function ApercuFile() {
                               : ligne.ton === 'attention'
                                 ? 'border-attention'
                                 : 'border-bordure-douce'}`}>
-              <b className="w-6 text-lg font-bold tabular-nums tracking-tight">{ligne.numero}</b>
+              <b className="w-6 text-lg font-medium tabular-nums tracking-tight">{ligne.numero}</b>
               <Etiquette ton={ligne.ton}>{ligne.etat}</Etiquette>
               {ligne.motif && <Etiquette ton={ligne.ton}>{ligne.motif}</Etiquette>}
               <small className="ml-auto text-xs tabular-nums text-sur-fond-doux">
