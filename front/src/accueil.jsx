@@ -16,6 +16,7 @@ import { File } from './accueil/File.jsx';
 import { Titre } from './accueil/Sections.jsx';
 import { VueRendezVous } from './accueil/vues/VueRendezVous.jsx';
 import { VueCarnets } from './accueil/vues/VueCarnets.jsx';
+import { Affiche } from './accueil/vues/Affiche.jsx';
 import { Gestes } from './accueil/Gestes.jsx';
 import { Compteurs, Comptes, Exploitation } from './accueil/Exploitation.jsx';
 import { Mesure } from './accueil/Mesure.jsx';
@@ -264,31 +265,11 @@ function Tableau({ jeton, surDeconnexion }) {
           {vue === 'exploitation'
             && <Exploitation jeton={jeton} surErreur={setErreur} titre={false} />}
           {vue === 'comptes' && <Comptes jeton={jeton} titre={false} />}
-          {vue === 'affiche' && <Affiche />}
-          {vue === 'compte' && <MotDePasse jeton={jeton} />}
+          {vue === 'affiche' && <Affiche jeton={jeton} titre={false} />}
+          {vue === 'compte' && <MotDePasse jeton={jeton} titre={false} />}
         </div>
       </SidebarInset>
     </SidebarProvider>
-  );
-}
-
-/** EF-101 : par où le client entre. Ouvert aux deux rôles — réimprimer une
- *  affiche décollée est un geste de comptoir. */
-function Affiche() {
-  return (
-    <>
-      <Titre>L'affiche du comptoir</Titre>
-      <p className={AIDE}>
-        Le QR code par lequel les clients prennent leur tour, à imprimer et à
-        afficher au comptoir.
-      </p>
-      <p className="mt-2">
-        <a href="/affiche" className="cible-min inline-flex items-center
-                                      text-accent-texte underline">
-          Voir l'affiche à imprimer →
-        </a>
-      </p>
-    </>
   );
 }
 
@@ -369,7 +350,7 @@ function Entete({ titre, vue, commandes, surDeconnexion }) {
   );
 }
 
-function MotDePasse({ jeton }) {
+function MotDePasse({ jeton, titre = true }) {
   const [erreur, setErreur] = useState(null);
   const [envoi, setEnvoi] = useState(false);
 
@@ -398,7 +379,8 @@ function MotDePasse({ jeton }) {
 
   return (
     <>
-      <Titre>Mon mot de passe</Titre>
+      {titre && <Titre>Mon mot de passe</Titre>}
+      <p className={AIDE}>Le mot de passe de votre compte personnel.</p>
       <form onSubmit={changer} className="mt-4 space-y-4">
         <div>
           <label className={ETIQUETTE} htmlFor="mdp-actuel">Mot de passe actuel</label>
