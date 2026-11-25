@@ -33,8 +33,9 @@ function Compteur({ libelle, valeur }) {
 /**
  * Mesure de l'auto-enregistrement.
  *
- * <p>`titre` : `false` quand le tableau l'enveloppe, dont l'en-tête porte déjà
- * le même libellé. Seule, la section garde son titre.
+ * <p>`titre` : `false` quand le tableau l'enveloppe : son en-tête dit « Mesure »
+ * et suffit, le titre long ne ferait que le redoubler. Seule, la section le
+ * garde.
  */
 export function Mesure({ jeton, surErreur, titre = true }) {
   const [mesure, setMesure] = useState(null);

@@ -69,26 +69,29 @@ describe('les vues réservées au gérant', () => {
   });
 
   for (const nom of ['Exploitation', 'Comptes']) {
-    it(`${nom} dit « réservé au gérant » sur un refus, et ne redemande plus`, () => {
-      const corps = corpsDeVue(nom);
-      assert.match(corps, /<ReserveAuGerant\s+quoi=/,
-        'aucun état « réservé au gérant » rendu');
-      assert.match(corps, /doitContinuerARelire\(\w+\??\.statut\)/,
-        'le refus n\'est pas décidé par la règle pure');
+    it(`${nom} rend « réservé au gérant » quand le refus est retenu`, () => {
+      assert.match(corpsDeVue(nom), /\{refuse && \(?\s*<ReserveAuGerant\s+quoi=/,
+        'ReserveAuGerant n\'est pas rendu sur l\'état de refus');
     });
   }
 
-  it('Exploitation cesse de relire la facturation une fois refusée', () => {
+  // UNE assertion par catch, qui lie ensemble la polarité, l'effet et la
+  // branche d'échec : trois jetons indépendants se contournent un par un.
+  it('Exploitation : un refus de la facturation est retenu, affiché, et lu avant d\'appeler', () => {
     const corps = corpsDeVue('Exploitation');
-    // Le refus se retient dans un ref (l'intervalle ne voit pas l'état de son
-    // rendu d'origine), et la relecture le consulte AVANT d'appeler.
-    assert.match(corps, /useRef\(/);
-    assert.match(corps, /if \(\w+\.current\.\w+\) return;/,
-      'la relecture ne consulte pas le refus avant d\'appeler');
-    // Celui de la FACTURATION : retenir seulement le refus du tableau de bord
-    // laisserait la facturation se faire refuser toutes les cinq minutes.
-    assert.match(corps, /\.current\.facturation = true/,
-      'le refus de la facturation n\'est jamais retenu');
+    assert.match(corps,
+      /if \(facturationRefusee\.current\) return;\s*appel\('\/api\/facturation'/,
+      'la relecture ne consulte pas le refus AVANT d\'appeler la facturation');
+    assert.match(corps,
+      /\.catch\(\((\w+)\) => \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{\s*facturationRefusee\.current = true;[^}]*?setRefuse\(true\);\s*\} else \{\s*setEchecFacturation\(true\);/,
+      'le refus ne retient pas le drapeau, n\'affiche pas, ou la polarité est inversée');
+    assert.match(corps, /useRef\(false\)/);
+  });
+
+  it('Comptes : un refus est affiché, une panne est une erreur', () => {
+    assert.match(corpsDeVue('Comptes'),
+      /catch \((\w+)\) \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{[^}]*?setRefuse\(true\);\s*\} else \{[^}]*?setEchec\(true\);/,
+      'le refus n\'est pas affiché, ou la polarité est inversée');
   });
 
   it('Comptes ne se relit pas en boucle : un seul appel, jamais d\'intervalle', () => {
@@ -100,15 +103,15 @@ describe('les vues réservées au gérant', () => {
       const corps = corpsDeVue('Comptes');
       assert.match(corps, /\[equipe, setEquipe\] = useState\(null\)/,
         'la liste démarre autrement que `null` : faux « vide » au chargement');
-      assert.match(corps, /setEchec\(true\)/, 'l\'échec n\'est pas retenu');
-      assert.match(corps, /<Erreur>/, 'l\'échec ne se dit pas');
+      assert.match(corps, /\{!refuse && echec && \(\s*<div[^>]*>\s*<Erreur>\s*La liste des comptes/,
+        'l\'échec ne se dit pas — y compris quand une liste est déjà affichée');
     });
 
     it('Exploitation : la facturation démarre à `null`, et son échec se dit', () => {
       const corps = corpsDeVue('Exploitation');
       assert.match(corps, /\[facturation, setFacturation\] = useState\(null\)/);
-      assert.match(corps, /setEchecFacturation\(true\)/);
-      assert.match(corps, /<Erreur>/);
+      assert.match(corps, /<Erreur>\s*La facturation n'a pas pu être chargée/,
+        'l\'échec de la facturation ne se dit pas');
     });
   });
 });
