@@ -85,8 +85,10 @@ describe('les vues réservées au gérant', () => {
     assert.match(corps, /useRef\(/);
     assert.match(corps, /if \(\w+\.current\.\w+\) return;/,
       'la relecture ne consulte pas le refus avant d\'appeler');
-    assert.match(corps, /\.current\.\w+ = true/,
-      'un refus n\'est jamais retenu');
+    // Celui de la FACTURATION : retenir seulement le refus du tableau de bord
+    // laisserait la facturation se faire refuser toutes les cinq minutes.
+    assert.match(corps, /\.current\.facturation = true/,
+      'le refus de la facturation n\'est jamais retenu');
   });
 
   it('Comptes ne se relit pas en boucle : un seul appel, jamais d\'intervalle', () => {
