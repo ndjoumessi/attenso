@@ -9,8 +9,15 @@ import { minutes } from './formats.js';
 export const CONSIGNES = {
   PREVENU: "C'est presque à vous — revenez à la clinique maintenant.",
   APPELE: "On vous appelle. Présentez-vous à l'accueil.",
+  // Deux formulations, parce que les deux cas existent vraiment.
+  // `ServiceFile.reinsererApresLeSuivant` filtre sur la BANDE DE PRIORITÉ :
+  // seul dans la sienne, le ticket n'est pas déplacé et reste en tête. La
+  // file a raison — une urgence ne cède pas son tour — mais promettre alors
+  // « juste après le suivant » annonce un suivant qui n'existe pas.
   ABSENT: 'Vous avez été appelé. Signalez-vous à l\'accueil : vous repassez '
     + 'juste après le suivant.',
+  ABSENT_EN_TETE: 'Vous avez été appelé. Signalez-vous à l\'accueil : '
+    + 'personne ne passe avant vous.',
   EN_CONSULTATION: 'Vous êtes en consultation.',
   TERMINE: 'Consultation terminée. Bonne journée.',
   PARTI: 'Ce passage a été clos par la clinique.',
@@ -39,6 +46,17 @@ export function carte(etat) {
     case 'PARTI':
     case 'ANNULE':
       return { etiquette: 'Votre numéro', valeur: etat.numero, dessous: '', appel: false };
+    case 'ABSENT':
+      // La position garde son sens — elle dit où il reprend sa place — mais
+      // JAMAIS la mise en forme de l'appel : un absent doit d'abord se
+      // signaler à l'accueil, et lui montrer le vert de « c'est à vous »
+      // l'invite à rester assis, ce qui est exactement ce qu'il ne faut pas.
+      return {
+        etiquette: 'Personnes avant vous',
+        valeur: Math.max(0, etat.position - 1),
+        dessous: minutes(etat.attenteMinMinutes, etat.attenteMaxMinutes),
+        appel: false,
+      };
     default:
       // EN_ATTENTE, PREVENU, ABSENT : la position a un sens, et pour un absent
       // elle en a même beaucoup — elle dit où il reprend sa place.
@@ -57,8 +75,15 @@ export function rappelDuNumero(etat) {
     ? `Votre numéro : ${etat.numero}` : '';
 }
 
-export function consigne(statut) {
-  return CONSIGNES[statut] ?? '';
+/**
+ * La consigne prend l'ÉTAT et non le seul statut : pour un absent, ce qu'il
+ * faut dire dépend de sa place. Les autres statuts l'ignorent.
+ */
+export function consigne(etat) {
+  if (etat?.statut === 'ABSENT' && etat.position <= 1) {
+    return CONSIGNES.ABSENT_EN_TETE;
+  }
+  return CONSIGNES[etat?.statut] ?? '';
 }
 
 // Les deux gestes que la page client propose n'ont pas le même horizon, et

@@ -130,7 +130,7 @@ export function Suivi() {
   }
 
   const vue = etat ? carte(etat) : null;
-  const message = etat ? consigne(etat.statut) : '';
+  const message = etat ? consigne(etat) : '';
   // Un ticket clos n'a plus de geste à offrir ; garder le conteneur laisserait
   // une marge vide entre « Consultation terminée » et le rappel du numéro.
   const gestes = peutSignalerSonArrivee(etat?.statut)
