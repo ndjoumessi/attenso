@@ -64,9 +64,15 @@ export function Connexion({ surConnexion }) {
   return (
     // `min-h-dvh` et non `min-h-screen` : sur mobile, `100vh` compte la barre
     // d'adresse qui se rétracte, et la mise en page saute au défilement.
-    // `items-start` au-dessus de `sm:` : sur un téléphone en paysage, centrer
-    // verticalement couperait le haut de la carte au lieu de la faire défiler.
-    <main className="grid min-h-dvh items-start justify-center px-5 py-10 sm:items-center">
+    //
+    // Centré sans condition. J'avais d'abord réservé le centrage aux écrans
+    // larges, par crainte qu'un téléphone en paysage ne voie le haut de la
+    // carte rogné. Mesuré à 844 × 390 : la carte commence à +40 px, la page
+    // défile, le haut reste atteignable — quand le contenu dépasse, la rangée
+    // de grille grandit et le centrage n'a plus d'effet. La précaution était
+    // inutile, et la condition portait d'ailleurs sur la LARGEUR là où le
+    // risque venait de la hauteur.
+    <main className="grid min-h-dvh place-items-center px-5 py-10">
       <div className="w-full max-w-md rounded-[var(--rayon-lg)] border border-bordure-douce
                       bg-surface p-6 shadow-[0_24px_60px_-32px_rgb(0_0_0/0.25)] sm:p-8">
         <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
