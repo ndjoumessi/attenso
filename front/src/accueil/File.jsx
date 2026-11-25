@@ -109,7 +109,10 @@ function Ligne({ donnees, maintenant, horsReseau, surAction, surDeplacement }) {
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-1">
+        {/* gap-2 — 8 px, le minimum qu'Apple et Material demandent entre deux
+            cibles voisines. Les deux flèches font l'inverse l'une de l'autre :
+            trop près, on monte un ticket qu'on voulait descendre. */}
+        <div className="flex shrink-0 flex-col gap-2">
           {deplacementsPour(donnees.statut).map(([route, titre, fleche]) => (
             <button key={route} type="button" title={titre} disabled={horsReseau}
                     onClick={() => surDeplacement(donnees.id, route)}
