@@ -38,6 +38,15 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 	@Autowired
 	MotifDao motifs;
 
+	@Autowired
+	ai.attenso.agenda.AgendaDao agenda;
+
+	@Autowired
+	ai.attenso.carnet.CarnetDao carnets;
+
+	@Autowired
+	java.time.Clock horloge;
+
 	@BeforeEach
 	void construireLAmorce() {
 		// Construite à la main plutôt que par une propriété d'activation : un
@@ -47,7 +56,7 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 				"Clinique de démonstration", "accueil@demo.attenso.test",
 				"mdp-de-demonstration-de-test", null, null, null, false);
 		this.amorce = new AmorceClinique(proprietes, tenants, applicatif, motsDePasse, jetons,
-				motifs);
+				motifs, agenda, carnets, horloge);
 	}
 
 	private List<MotifPriorite> motifsDeLaDemo() {
