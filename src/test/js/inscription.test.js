@@ -49,7 +49,8 @@ describe("la page d'inscription", () => {
    */
   it("offre une sortie vers le site et vers la connexion", () => {
     const source = sansCommentaires(lire(INSCRIPTION));
-    assert.ok(source.includes('href="/"'), 'pas de retour au site');
+    // Le retour vient de la coquille partagée, qui porte la cible tactile.
+    assert.match(source, /<Retour\s*\/>/, 'pas de retour au site');
     assert.ok(source.includes('href="/connexion"'), 'pas de lien « déjà un compte »');
   });
 });

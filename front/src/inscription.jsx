@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import { euros, nomPalier } from '../../src/main/resources/static/app/formats.js';
 
@@ -90,10 +91,7 @@ export function Inscription() {
     <main className="mx-auto w-full max-w-lg px-5 py-10">
       {/* La sortie. On arrive ici depuis la vitrine et rien n'en ressortait —
           le même cul-de-sac que la page de connexion avait. */}
-      <a href="/" className="cible-min mb-4 inline-flex items-center gap-1.5 text-sm
-                             font-semibold text-accent-texte">
-        <span aria-hidden="true">←</span> Attenso
-      </a>
+      <Retour />
       <h1 className="text-3xl font-bold tracking-tight">Inscrire ma clinique</h1>
 
       {retour && (

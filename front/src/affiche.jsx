@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   promesse, urlLisible,
@@ -32,11 +33,10 @@ export function Affiche() {
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10 feuille-page">
       <div className="print:hidden">
-        <p className="text-sm">
-          <a href="/connexion" className="text-accent-texte underline">
-            ← Retour au tableau
-          </a>
-        </p>
+        {/* Trouvé par la garde transversale, pas par la mesure : cette page
+            demande une connexion, donc le balayage des pages publiques ne la
+            voyait pas. Elle rendait la même cible de 17 px. */}
+        <Retour href="/connexion">Retour au tableau</Retour>
         <h1 className="mt-4 text-3xl font-bold tracking-tight">
           L'affiche du comptoir
         </h1>

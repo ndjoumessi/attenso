@@ -20,10 +20,14 @@ const ORIGINE = 'https://attenso.test';
 
 /**
  * Le nombre de fichiers du précache, FIGÉ. 15 jusqu'à la refonte du tableau,
- * 16 depuis : le chunk partagé qr-*.js, extrait du tracé du QR et importé par
- * l'accueil. Légitime ; la prochaine croissance doit se voir.
+ * 16 avec le chunk partagé qr-*.js, extrait du tracé du QR et importé par
+ * l'accueil, et 17 depuis chrome-*.js — le retour et la bande légale, qui
+ * étaient recopiés sur cinq pages et dont une seule copie portait les classes
+ * donnant 44 px. Les deux conditions posées par le message d'échec sont
+ * vérifiées : aucune entrée Vite ajoutée, et la croissance est bien un module
+ * partagé devenu chunk. Légitime ; la prochaine croissance doit se voir.
  */
-const FICHIERS_DE_LA_COQUILLE = 16;
+const FICHIERS_DE_LA_COQUILLE = 17;
 
 /** Une réponse factice, assez pour distinguer d'où elle vient. */
 function reponse(provenance, chemin) {
