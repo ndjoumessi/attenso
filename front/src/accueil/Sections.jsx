@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
-import { CHAMP, ETIQUETTE } from '../composants/formulaire.jsx';
+import { CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
 import { entete } from './session.js';
 
 export function Titre({ children }) {
@@ -16,19 +16,23 @@ const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle 
  *
  * <p>`vide` : ce qu'on affiche quand il n'y en a aucun. La section seule
  * détient la liste chargée, donc seule elle sait qu'elle est vide ; c'est la
- * vue qui l'enveloppe qui sait quoi dire alors.
+ * vue qui l'enveloppe qui sait quoi dire alors. Tant que rien n'est chargé
+ * (`null`) elle ne dit rien ; si le premier chargement échoue elle le dit, car
+ * ni la liste ni « aucun » ne seraient vrais.
  *
  * <p>`titre` : `false` quand une vue l'enveloppe, dont l'en-tête porte déjà
  * le même libellé. Seule, la section garde son titre.
  */
 export function Agenda({ jeton, vide, titre = true }) {
   const [rdvs, setRdvs] = useState(null);
+  const [echec, setEchec] = useState(false);
 
   useEffect(() => {
     const relire = () => appel('/api/agenda', { headers: entete(jeton) })
-      .then(setRdvs)
-      // L'agenda est un à-côté : il ne doit pas masquer la file.
-      .catch(() => {});
+      .then((recus) => { setRdvs(recus); setEchec(false); })
+      // L'agenda est un à-côté : il ne doit pas masquer la file. Une liste déjà
+      // chargée est gardée si un rafraîchissement échoue.
+      .catch(() => setEchec(true));
     relire();
     const t = setInterval(relire, 120000);
     return () => clearInterval(t);
@@ -37,7 +41,10 @@ export function Agenda({ jeton, vide, titre = true }) {
   return (
     <>
       {titre && <Titre>Rendez-vous du jour</Titre>}
-      {rdvs?.length ? (
+      {rdvs === null ? (echec && (
+        <Erreur>Les rendez-vous n'ont pas pu être chargés. Réessayez dans un
+          instant.</Erreur>
+      )) : rdvs.length === 0 ? vide : (
         <ul className="mt-4 space-y-2">
           {rdvs.map((rdv) => (
             <li key={rdv.reference ?? `${rdv.heure}-${rdv.motif}`}
@@ -56,7 +63,7 @@ export function Agenda({ jeton, vide, titre = true }) {
             </li>
           ))}
         </ul>
-      ) : vide}
+      )}
     </>
   );
 }

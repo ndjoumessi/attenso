@@ -14,8 +14,9 @@ import { CLE_SLUG } from '../session.js';
  * de laisser croire à une panne, et donne le lien à ouvrir pour le constater.
  */
 export function VueRendezVous({ jeton }) {
-  const lien = typeof location === 'undefined' ? ''
-    : `${location.origin}/rdv/${localStorage.getItem(CLE_SLUG)}`;
+  // Sans slug, pas de lien : `/rdv/null` serait cliquable et mort.
+  const slug = typeof location === 'undefined' ? null : localStorage.getItem(CLE_SLUG);
+  const lien = slug ? `${location.origin}/rdv/${slug}` : null;
 
   return (
     <>
@@ -25,13 +26,18 @@ export function VueRendezVous({ jeton }) {
       <Agenda jeton={jeton} titre={false} vide={(
         <div className={AIDE}>
           <p>Aucun rendez-vous aujourd'hui.</p>
-          <p className="mt-2">
-            Les clients réservent sur{' '}
-            <a href={lien} className="cible-min inline-flex items-center break-all
-                                      font-mono text-accent-texte underline">
-              {lien}
-            </a>
-          </p>
+          {lien && (
+            <p className="mt-2">
+              Les clients réservent sur{' '}
+              {/* Nouvel onglet : le lien mène à une page publique, sans rien
+                  pour revenir au tableau en pleine démonstration. */}
+              <a href={lien} target="_blank" rel="noopener"
+                 className="cible-min inline-flex items-center break-all
+                            font-mono text-accent-texte underline">
+                {lien}
+              </a>
+            </p>
+          )}
           <p className="mt-2">
             Si cette page s'ouvre sans aucun créneau, c'est qu'aucun horaire
             n'est encore ouvert à la réservation pour votre clinique.

@@ -484,9 +484,9 @@ describe('la barre reste une barre à libellés', () => {
  */
 describe('les vues du groupe Journée', () => {
   const VUES_JOURNEE = [
-    { composant: 'VueRendezVous', section: 'Agenda', apres: 'export function Agenda',
+    { composant: 'VueRendezVous', section: 'Agenda', liste: 'rdvs', apres: 'export function Agenda',
       jusque: 'export function Carnets' },
-    { composant: 'VueCarnets', section: 'Carnets', apres: 'export function Carnets',
+    { composant: 'VueCarnets', section: 'Carnets', liste: 'animaux', apres: 'export function Carnets',
       jusque: null },
   ];
   const fichier = (composant) => `front/src/accueil/vues/${composant}.jsx`;
@@ -528,8 +528,19 @@ describe('les vues du groupe Journée', () => {
         const corps = corpsDeSection(v);
         assert.match(corps, /export function \w+\(\{[^}]*\bvide\b[^}]*\}\)/,
           'la section ne reçoit pas `vide`');
-        assert.match(corps, /(?:&&|:)\s*vide\b|\{vide\}/, 'la section n\'affiche jamais `vide`');
-        assert.match(corps, /length/, 'la section ne teste pas la liste vide');
+        // Le vide est lié à `length === 0` de SA liste, pas à un `length`
+        // quelconque : un `&& vide` inconditionnel ne passe plus.
+        assert.match(corps,
+          new RegExp(`\\b${v.liste}\\??\\.length === 0\\s*(?:&&|\\?)\\s*vide\\b`),
+          'la section n\'affiche `vide` que si sa liste est chargée ET vide');
+      });
+
+      it('et ne l\'affiche pas tant que la liste n\'est pas chargée', () => {
+        // `useState([])` rendrait « aucun » pendant le chargement, et les
+        // gardes ci-dessus resteraient vertes : l'état initial est tenu ici.
+        const corps = corpsDeSection(v);
+        assert.match(corps, new RegExp(`\\[${v.liste}, set\\w+\\] = useState\\(null\\)`),
+          'la liste démarre autrement que `null` : faux « aucun » au chargement');
       });
     });
   }
@@ -549,6 +560,26 @@ describe('les vues du groupe Journée', () => {
         'la section ne conditionne pas son titre à la prop');
     });
   }
+
+  it('un agenda qui n\'a pas pu charger ne dit pas « aucun rendez-vous »', () => {
+    const corps = corpsDeSection(VUES_JOURNEE[0]);
+    assert.match(corps, /\.catch\([^)]*\)\s*=>\s*setEchec\(true\)|setEchec\(true\)/,
+      'l\'échec du chargement n\'est pas retenu');
+    assert.match(corps, /rdvs === null[\s\S]*?echec && \(\s*<Erreur>/,
+      'tant que rien n\'est chargé, un échec doit se dire, et le reste se taire');
+  });
+
+  it('le lien de réservation sort du tableau sans le fermer, et n\'est jamais mort', () => {
+    const source = sansCommentaires(lire(fichier('VueRendezVous')));
+    const i = source.indexOf('<a href={lien}');
+    assert.notEqual(i, -1);
+    const balise = source.slice(i, source.indexOf('>', i));
+    assert.match(balise, /target="_blank"/);
+    assert.match(balise, /rel="noopener"/);
+    // Sans slug, pas de lien : `/rdv/null` serait cliquable et mort.
+    assert.match(source, /slug \? `[^`]*\$\{slug\}` : null/);
+    assert.match(source, /\{lien && \(/, 'le lien est rendu même sans slug');
+  });
 
   it('le lien de réservation du vide tient la cible tactile', () => {
     const classes = (() => {
