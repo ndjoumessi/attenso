@@ -1,12 +1,26 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { ACTIONS, CIBLES, CLASSES, DEPLACEMENTS, LIBELLES, OUVERTS, actionsPour,
   avecEnAttente, deplacementsPour, doitOublierLeJournal, signature }
   from '../../main/resources/static/app/vue-file.js';
+import { GESTES, VUES } from '../../../front/src/accueil/navigation.js';
 
 const STATUT_JAVA = 'src/main/java/ai/attenso/ticket/Statut.java';
+
+const RACINE = resolve(import.meta.dirname, '../../..');
+
+/**
+ * Le source d'un fichier du dépôt, résolu depuis l'emplacement de ce test.
+ *
+ * <p>Pas un chemin relatif nu : `node --test src/test/js/` et `mvnw verify` ne
+ * partent pas forcément du même répertoire, et un test qui serait vert ou
+ * rouge selon qui le lance ne tient rien. Même raison que dans
+ * `navigation.test.js`.
+ */
+const lire = (chemin) => readFileSync(resolve(RACINE, chemin), 'utf8');
 
 /** Les états ouverts, lus dans la machine à états du serveur. */
 function ouvertsDuServeur() {
@@ -222,5 +236,104 @@ describe("le journal local d'une tablette", () => {
 
   it("s'oublie au tout premier usage, quand la tablette ne retient rien", () => {
     assert.equal(doitOublierLeJournal(null, 'cerisiers'), true);
+  });
+});
+
+describe("l'écran de la file", () => {
+  /**
+   * GARDE DE NON-RÉGRESSION, et déclarée comme telle : la propriété est DÉJÀ
+   * vraie avant cette tâche — `File.jsx` porte sa branche `lignes.length === 0`
+   * depuis l'écriture de l'écran. Elle n'a donc pas de phase rouge, et mimer un
+   * cycle TDD sur une propriété acquise ne prouverait rien. Ce qu'elle tient,
+   * c'est le jour où la liste sera réécrite : une file vide qui ne dit rien
+   * ressemble à une page cassée, et c'est l'état dans lequel la démonstration
+   * commence.
+   */
+  it('une file vide dit quoi faire, elle ne reste pas muette', () => {
+    const source = lire('front/src/accueil/File.jsx');
+    assert.match(source, /lignes\.length === 0|aucun ticket/i);
+    // Et la PHRASE, pas seulement la garde : un `return null` sous la même
+    // condition passerait l'assertion ci-dessus en laissant l'écran muet.
+    const branche = source.slice(source.indexOf('lignes.length === 0'));
+    assert.match(branche.slice(0, 300), />\s*[A-ZÀ-Ý][^<]{10,}</,
+      'la branche de file vide ne rend aucune phrase');
+  });
+});
+
+describe('les gestes de la file', () => {
+  it('« Urgence » et « Client sans mobile » sont des gestes, pas des destinations', () => {
+    // La barre latérale ne les porte pas : on ne VA PAS à une urgence, on en
+    // insère une. La table dit lesquels, et dans quel ordre ils s'offrent.
+    assert.deepEqual(GESTES.map((g) => g.cle), ['urgence', 'client']);
+    for (const geste of GESTES) {
+      assert.ok(!VUES.some((v) => v.cle === geste.cle),
+        `« ${geste.cle} » est déclaré à la fois comme geste et comme vue`);
+      assert.ok(geste.libelle?.length > 1, `libellé de bouton manquant pour ${geste.cle}`);
+      assert.match(geste.route, /^\/api\/tickets\//);
+      assert.ok(geste.messageReseau?.length > 10,
+        `${geste.cle} ne dit pas ce qui se passe si le serveur ne répond pas`);
+    }
+  });
+
+  it('sont rendus EN TÊTE de la vue file, avant la liste', () => {
+    // C'est tout l'objet de la tâche : deux boutons atteignables sans faire
+    // défiler, là où c'étaient deux sections sous la file.
+    const source = lire('front/src/accueil.jsx');
+    const vueFile = source.slice(source.indexOf("vue === 'file'"),
+      source.indexOf("vue === 'rendez-vous'"));
+    assert.ok(vueFile.length > 0, 'la vue file est introuvable dans le commutateur');
+    const gestes = vueFile.indexOf('<Gestes');
+    const liste = vueFile.indexOf('<File');
+    assert.notEqual(gestes, -1, 'la vue file ne rend aucun geste');
+    assert.notEqual(liste, -1, 'la vue file ne rend plus la liste');
+    assert.ok(gestes < liste,
+      'les gestes sont rendus sous la liste : il faut faire défiler pour les atteindre');
+  });
+
+  it('laissent les compteurs en tête, eux aussi', () => {
+    const source = lire('front/src/accueil.jsx');
+    const vueFile = source.slice(source.indexOf("vue === 'file'"),
+      source.indexOf("vue === 'rendez-vous'"));
+    const compteurs = vueFile.indexOf('<Compteurs');
+    assert.notEqual(compteurs, -1, 'les compteurs ont disparu de la vue file');
+    assert.ok(compteurs < vueFile.indexOf('<File'), 'les compteurs sont passés sous la liste');
+  });
+
+  it("ne laissent plus de section de saisie à faire défiler sous la file", () => {
+    assert.ok(!/Saisies/.test(lire('front/src/accueil.jsx')),
+      'le tableau rend encore les saisies en section');
+    assert.ok(!/Saisies/.test(lire('front/src/accueil/Sections.jsx')),
+      'les saisies en section survivent dans Sections.jsx');
+  });
+
+  it('tirent leurs boutons de la table, et non d\'un double codé à la main', () => {
+    // Sans ceci, la table ci-dessus serait décorative : deux boutons écrits à
+    // la main passeraient les assertions de forme sans rien partager avec elle.
+    //
+    // Un simple `assert.match(source, /GESTES\.map/)` ne tenait PAS : vérifié
+    // par mutation, deux boutons codés en dur le laissaient vert, parce que le
+    // composant parcourt AUSSI la table pour l'aide hors réseau. La garde était
+    // satisfaite par le mauvais jeton. On exige donc qu'un parcours de la table
+    // rende le CONTRÔLE lui-même, et non n'importe quoi.
+    const source = lire('front/src/accueil/Gestes.jsx');
+    const parcours = [...source.matchAll(/GESTES\.map\(/g)]
+      .map((m) => source.slice(m.index, m.index + 300));
+    assert.ok(parcours.length > 0, 'le composant ne parcourt pas la table');
+    assert.ok(parcours.some((bloc) => /<Geste\s/.test(bloc)),
+      'les contrôles ne sont pas rendus depuis la table : un double codé à la '
+      + 'main dériverait de GESTES sans que rien ne rougisse');
+  });
+
+  it('refusent le mode hors réseau en disant pourquoi', () => {
+    // Ces deux gestes sont les seuls de la file qui ne peuvent pas attendre le
+    // retour du réseau : le numéro du ticket est attribué par le serveur. La
+    // raison doit rester écrite à côté du bouton, sinon un bouton grisé sans
+    // explication passe pour une panne.
+    for (const geste of GESTES) {
+      assert.match(geste.aideHorsReseau, /hors réseau/i,
+        `${geste.cle} ne dit pas pourquoi il est indisponible`);
+    }
+    assert.match(lire('front/src/accueil/Gestes.jsx'), /disabled=\{horsReseau\}/,
+      'le geste reste cliquable hors réseau');
   });
 });

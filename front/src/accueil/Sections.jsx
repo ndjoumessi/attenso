@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
-import {
-  euros, heureCourte, nomPalier,
-} from '../../../src/main/resources/static/app/formats.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Principal } from '../composants/formulaire.jsx';
+import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
+import { AIDE, CHAMP, ETIQUETTE } from '../composants/formulaire.jsx';
 import { CLE_SLUG, entete } from './session.js';
 
 export function Titre({ children }) {
@@ -12,103 +10,6 @@ export function Titre({ children }) {
 
 const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle '
   + 'bg-surface px-4 font-semibold hover:bg-surface-douce disabled:opacity-50';
-
-/** Client sans smartphone (EF-104) et urgence (EF-406). */
-export function Saisies({ jeton, horsReseau, surErreur, surRafraichir }) {
-  const [motifs, setMotifs] = useState([]);
-
-  useEffect(() => {
-    // EF-407 : la liste vient du serveur, elle est paramétrée par la clinique.
-    // Sans elle, le formulaire reste utilisable sans priorité : c'est le
-    // ticket qui compte, pas le motif.
-    appel('/api/motifs', { headers: entete(jeton) }).then(setMotifs).catch(() => {});
-  }, [jeton]);
-
-  async function ajouter(evenement, route, corps, messageReseau) {
-    evenement.preventDefault();
-    const f = evenement.currentTarget;
-    try {
-      await appel(route, {
-        method: 'POST', headers: entete(jeton), body: JSON.stringify(corps(f)),
-      });
-      f.reset();
-      surRafraichir();
-    } catch (echec) {
-      surErreur(echec.reseau ? messageReseau : echec.message);
-    }
-  }
-
-  return (
-    <>
-      <Titre>Client sans smartphone</Titre>
-      <p className={AIDE}>
-        Pour quelqu'un qui n'a pas pu scanner le QR code. Le mobile est
-        facultatif : sans numéro, la personne reste dans la file mais devra
-        être appelée à la voix.
-      </p>
-      <form className="mt-4 space-y-4"
-            onSubmit={(e) => ajouter(e, '/api/tickets/client', (f) => ({
-              telephone: f.telephone.value.trim() || null,
-              motifId: f.motif?.value || null,
-            }), 'Serveur injoignable : le ticket ne peut pas être créé hors réseau.')}>
-        <div>
-          <label className={ETIQUETTE} htmlFor="tel-client">
-            Mobile du propriétaire (facultatif)
-          </label>
-          <input id="tel-client" name="telephone" type="tel" inputMode="tel"
-                 autoComplete="off" placeholder="06 12 34 56 78" className={CHAMP} />
-        </div>
-        {/* Le bloc reste caché tant qu'aucun motif n'est actif — un menu à une
-            seule entrée « Aucun » n'apprend rien à personne. */}
-        {motifs.length > 0 && (
-          <div>
-            <label className={ETIQUETTE} htmlFor="motif-client">Passage prioritaire</label>
-            <select id="motif-client" name="motif" className={CHAMP}>
-              <option value="">Aucun — file normale</option>
-              {motifs.map((m) => <option key={m.id} value={m.id}>{m.libelle}</option>)}
-            </select>
-          </div>
-        )}
-        <Principal type="submit" disabled={horsReseau}>Ajouter à la file</Principal>
-        {horsReseau && (
-          <p className={AIDE}>
-            Indisponible hors réseau : le numéro du ticket est attribué par le serveur.
-          </p>
-        )}
-      </form>
-
-      <Titre>Urgence</Titre>
-      <p className={AIDE}>
-        Passe devant tout le monde. Les personnes déjà prévenues reçoivent
-        automatiquement un message leur annonçant le délai supplémentaire.
-      </p>
-      <form className="mt-4 space-y-4"
-            onSubmit={(e) => ajouter(e, '/api/tickets/urgence', (f) => ({
-              telephone: f.telephone.value.trim() || null,
-            }), "Serveur injoignable : l'urgence ne peut pas être enregistrée hors réseau.")}>
-        <div>
-          <label className={ETIQUETTE} htmlFor="tel-urgence">
-            Mobile du propriétaire (facultatif)
-          </label>
-          <input id="tel-urgence" name="telephone" type="tel" inputMode="tel"
-                 placeholder="06 12 34 56 78" className={CHAMP} />
-        </div>
-        <button type="submit" disabled={horsReseau}
-                className="w-full cible rounded-[var(--rayon)] border border-alerte
-                           bg-transparent px-6 font-bold text-alerte
-                           disabled:opacity-50 hover:bg-alerte-voile">
-          Insérer une urgence
-        </button>
-        {horsReseau && (
-          <p className={AIDE}>
-            Indisponible hors réseau : le numéro du ticket est attribué par le
-            serveur. Appelez le client à la voix, et saisissez-le au retour du réseau.
-          </p>
-        )}
-      </form>
-    </>
-  );
-}
 
 /** Rendez-vous du jour (EF-905). */
 export function Agenda({ jeton }) {

@@ -13,7 +13,8 @@ import { SidebarInset, SidebarProvider } from '@/ui/sidebar';
 import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from './composants/formulaire.jsx';
 import { Connexion } from './accueil/Connexion.jsx';
 import { File } from './accueil/File.jsx';
-import { Agenda, Carnets, Saisies, Titre } from './accueil/Sections.jsx';
+import { Agenda, Carnets, Titre } from './accueil/Sections.jsx';
+import { Gestes } from './accueil/Gestes.jsx';
 import { Compteurs, Exploitation } from './accueil/Exploitation.jsx';
 import { Mesure } from './accueil/Mesure.jsx';
 import { Barre, OuvreLaBarre } from './accueil/Barre.jsx';
@@ -23,6 +24,22 @@ import {
 } from './accueil/session.js';
 
 const FILET_DE_SECURITE = 30000;
+
+/**
+ * La largeur de la colonne, par vue, et pourquoi elles ne sont pas égales.
+ *
+ * <p>La file PREND L'ÉCRAN : c'est la vue par défaut, celle qu'on regarde toute
+ * la journée, et une ligne y porte un numéro, un état, une attente et jusqu'à
+ * quatre actions. L'enfermer dans la colonne de lecture lui faisait porter sa
+ * densité sur la hauteur, donc sur le défilement.
+ *
+ * <p>Les autres vues gardent cette colonne : ce sont des formulaires et de la
+ * prose, qui se lisent mal au-delà d'une soixantaine de caractères par ligne.
+ */
+const LARGEURS = { file: 'max-w-6xl' };
+
+/** La largeur des vues de prose et de formulaires. */
+const COLONNE_DE_LECTURE = 'max-w-3xl';
 
 /**
  * La barre ne se replie pas au-dessus de son seuil.
@@ -206,7 +223,8 @@ function Tableau({ jeton, surDeconnexion }) {
             où ils comptent — pendant une panne, quand l'ASV change de vue. */}
         <Bandeaux horsReseau={horsReseau} journalAbsent={journalAbsent}
                   derniereVue={derniereVue} restantes={commandes.length} />
-        <div className="mx-auto w-full max-w-3xl px-5 py-8">
+        <div className={`mx-auto w-full px-5 py-8
+                         ${LARGEURS[vue] ?? COLONNE_DE_LECTURE}`}>
           <OuvreLaBarre />
           <Entete titre={libellePour(vue)} vue={tableau} commandes={commandes}
                   surDeconnexion={surDeconnexion} />
@@ -222,15 +240,19 @@ function Tableau({ jeton, surDeconnexion }) {
 
           {vue === 'file' && (
             <>
+              {/* Les compteurs, puis les gestes, puis la file : tout ce qui
+                  n'est pas la liste tient EN TÊTE, atteignable sans faire
+                  défiler. « Urgence » et « client sans mobile » étaient deux
+                  sections sous la liste — les atteindre demandait de perdre la
+                  file de vue, et d'y revenir à la main.
+
+                  Le titre « File du jour » n'est plus répété ici : c'est le
+                  libellé de la vue, et l'en-tête le porte déjà. */}
               <Compteurs vue={tableau} />
-              <Titre>File du jour</Titre>
+              <Gestes jeton={jeton} horsReseau={horsReseau}
+                      surRafraichir={rafraichir} />
               <File vue={tableau} horsReseau={horsReseau} surAction={agir}
                     surDeplacement={deplacer} />
-              {/* « Urgence » et « client sans mobile » ne sont pas des
-                  destinations : ce sont des gestes, donc ils restent sur
-                  l'écran de la file. */}
-              <Saisies jeton={jeton} horsReseau={horsReseau} surErreur={setErreur}
-                       surRafraichir={rafraichir} />
             </>
           )}
           {vue === 'rendez-vous' && <Agenda jeton={jeton} />}

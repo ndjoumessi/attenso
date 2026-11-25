@@ -59,7 +59,11 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-fond p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          // `shadow-2` et non `shadow-lg` : l'échelle d'ombres du projet n'a
+          // que deux niveaux, et celui de Tailwind ne les connaît pas. Le
+          // rayon, lui, est déjà le bon — `--radius-lg` pointe sur `--rayon-lg`
+          // dans styles.css.
+          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-fond p-6 shadow-2 duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
           className
         )}
         {...props}
@@ -68,10 +72,15 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce data-[state=open]:text-sur-fond-doux [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            // Une CIBLE TACTILE, pas une croix de 16 px : c'est une tablette,
+            // et c'est le défaut déjà corrigé sur le tiroir de la barre.
+            // `cible-min` ne pose qu'un `min-height`, donc la largeur est
+            // déclarée à part.
+            className="absolute top-3 right-3 inline-flex cible-min w-(--cible-min) items-center justify-center rounded-sm opacity-70 ring-offset-fond transition-opacity hover:opacity-100 focus:ring-2 focus:ring-anneau focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-surface-douce data-[state=open]:text-sur-fond-doux [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            {/* En français, comme le reste du produit. */}
+            <span className="sr-only">Fermer</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -86,7 +95,10 @@ function DialogHeader({
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      // `pr-11` dégage la place de la croix, qui est maintenant une cible de
+      // 44 px posée à 12 px du bord : sans ce retrait, un titre long passerait
+      // dessous.
+      className={cn("flex flex-col gap-2 pr-11 text-center sm:text-left", className)}
       {...props}
     />
   )
