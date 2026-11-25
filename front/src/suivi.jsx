@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
-  carte, consigne, rappelDuNumero,
+  carte, consigne, doitMontrerLaCarte, peutDemanderUneNotification,
+  peutSignalerSonArrivee, rappelDuNumero,
 } from '../../src/main/resources/static/app/vue-suivi.js';
 
 const RAFRAICHISSEMENT = 60000;
@@ -130,29 +131,40 @@ export function Suivi() {
 
   const vue = etat ? carte(etat) : null;
   const message = etat ? consigne(etat.statut) : '';
+  // Un ticket clos n'a plus de geste à offrir ; garder le conteneur laisserait
+  // une marge vide entre « Consultation terminée » et le rappel du numéro.
+  const gestes = peutSignalerSonArrivee(etat?.statut)
+    || (pushPossible && peutDemanderUneNotification(etat?.statut));
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-10">
       <p className="min-h-5 text-sm font-semibold uppercase tracking-wide
                     text-sur-fond-doux">{etat ? etat.clinique : ''}</p>
 
-      <div aria-live="polite" aria-atomic="true"
-           className="mt-4 rounded-[var(--rayon-lg)] border border-bordure-douce
-                      bg-surface p-8 text-center shadow-1">
-        <p className="text-sm font-semibold uppercase tracking-wide
-                      text-sur-fond-doux">
-          {vue ? vue.etiquette : 'Personnes avant vous'}
-        </p>
-        <p className={`mt-2 font-bold leading-none tabular-nums
-                       ${vue?.appel
-                         ? 'text-5xl text-accent-texte'
-                         : 'text-7xl tracking-tighter'}`}>
-          {vue ? vue.valeur : '—'}
-        </p>
-        <p className="mt-3 text-lg text-sur-fond-doux">
-          {vue ? vue.dessous : 'chargement…'}
-        </p>
-      </div>
+      {/* Un lien de suivi invalide laissait cette carte sur « Personnes avant
+          vous — / chargement… » pour toujours, avec le 404 dit juste en
+          dessous. Elle reste en revanche affichée quand une erreur réseau
+          accompagne un état déjà connu : le message promet alors « dernier
+          état affiché », et la retirer en ferait un mensonge. */}
+      {doitMontrerLaCarte(etat, erreur) && (
+        <div aria-live="polite" aria-atomic="true"
+             className="mt-4 rounded-[var(--rayon-lg)] border border-bordure-douce
+                        bg-surface p-8 text-center shadow-1">
+          <p className="text-sm font-semibold uppercase tracking-wide
+                        text-sur-fond-doux">
+            {vue ? vue.etiquette : 'Personnes avant vous'}
+          </p>
+          <p className={`mt-2 font-bold leading-none tabular-nums
+                         ${vue?.appel
+                           ? 'text-5xl text-accent-texte'
+                           : 'text-7xl tracking-tighter'}`}>
+            {vue ? vue.valeur : '—'}
+          </p>
+          <p className="mt-3 text-lg text-sur-fond-doux">
+            {vue ? vue.dessous : 'chargement…'}
+          </p>
+        </div>
+      )}
 
       {message && (
         <div role="status"
@@ -168,26 +180,30 @@ export function Suivi() {
       {/* Le libellé dit ce que le geste fait VRAIMENT : il prévient l'accueil,
           il ne fait pas passer devant. Promettre autre chose produirait une
           déception à chaque appui. */}
-      <div className="mt-6 space-y-3">
-        {pushPossible && (
-          <Bouton onClick={activerPush} disabled={envoi}>
-            Me prévenir par notification (sans SMS)
-          </Bouton>
-        )}
-        {pushActif && (
-          <p role="status" className="text-sm text-sur-fond-doux">
-            Notifications activées. Vous ne recevrez pas de SMS pour ce ticket.
-          </p>
-        )}
-        <Bouton onClick={signalerArrivee} disabled={envoi}>
-          Je suis à quelques minutes
-        </Bouton>
-        {arriveeSignalee && (
-          <p role="status" className="text-sm text-sur-fond-doux">
-            C'est noté : l'accueil le voit sur son tableau. Votre tour ne change pas.
-          </p>
-        )}
-      </div>
+      {gestes && (
+        <div className="mt-6 space-y-3">
+          {pushPossible && peutDemanderUneNotification(etat?.statut) && (
+            <Bouton onClick={activerPush} disabled={envoi}>
+              Me prévenir par notification (sans SMS)
+            </Bouton>
+          )}
+          {pushActif && (
+            <p role="status" className="text-sm text-sur-fond-doux">
+              Notifications activées. Vous ne recevrez pas de SMS pour ce ticket.
+            </p>
+          )}
+          {peutSignalerSonArrivee(etat?.statut) && (
+            <Bouton onClick={signalerArrivee} disabled={envoi}>
+              Je suis à quelques minutes
+            </Bouton>
+          )}
+          {arriveeSignalee && (
+            <p role="status" className="text-sm text-sur-fond-doux">
+              C'est noté : l'accueil le voit sur son tableau. Votre tour ne change pas.
+            </p>
+          )}
+        </div>
+      )}
 
       <p className="mt-6 min-h-5 text-sm text-sur-fond-doux">
         {etat ? rappelDuNumero(etat) : ''}

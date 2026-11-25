@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { carte, consigne, rappelDuNumero } from
-  '../../main/resources/static/app/vue-suivi.js';
+import {
+  carte, consigne, doitMontrerLaCarte, peutDemanderUneNotification,
+  peutSignalerSonArrivee,
+  rappelDuNumero,
+} from '../../main/resources/static/app/vue-suivi.js';
 
 const enAttente = {
   numero: 4, position: 3, statut: 'PREVENU',
@@ -72,5 +77,113 @@ describe('la carte de la page client', () => {
       assert.notEqual(consigne(statut), '', `consigne manquante pour ${statut}`);
     }
     assert.equal(consigne('EN_ATTENTE'), '', 'rien à faire tant qu\'on attend');
+  });
+});
+
+/**
+ * Les deux boutons de la page client s'affichaient pour TOUS les statuts.
+ * « Consultation terminée. Bonne journée. » — et dessous, « Je suis à
+ * quelques minutes ».
+ *
+ * <p>Et ce n'est pas un bouton mort : {@code Ticket.signalerProche} n'exige
+ * aucun statut, donc l'appui écrit bel et bien un « j'arrive » sur un ticket
+ * clos, que l'accueil voit apparaître sur son tableau.
+ */
+describe('les gestes que la page client propose', () => {
+  /**
+   * Les statuts sont LUS dans l'énumération Java, pas recopiés ici. Une liste
+   * en dur serait verte le jour où un neuvième statut arrive là-bas sans
+   * décision ici — exactement le défaut que ce test existe pour attraper.
+   */
+  const STATUTS = (() => {
+    const source = readFileSync(
+      resolve(import.meta.dirname, '../../main/java/ai/attenso/ticket/Statut.java'),
+      'utf8',
+    );
+    const debut = source.indexOf('enum Statut {');
+    const corps = source.slice(debut, source.indexOf(';', debut));
+    return (corps.match(/^\s+[A-Z_]+,?$/gm) ?? [])
+      .map((ligne) => ligne.trim().replace(',', ''));
+  })();
+
+  it("lit bien les huit statuts du ticket", () => {
+    assert.deepEqual(STATUTS, [
+      'EN_ATTENTE', 'PREVENU', 'APPELE', 'ABSENT',
+      'EN_CONSULTATION', 'TERMINE', 'PARTI', 'ANNULE',
+    ], "l'extraction des statuts depuis Statut.java ne rend plus la bonne liste");
+  });
+
+  /**
+   * « Je suis à quelques minutes » prévient l'accueil qu'on arrive. C'est
+   * utile tant que la place peut encore bouger — APPELE compris, et c'est
+   * même là que ça compte le plus : c'est ce qui évite d'être marqué absent.
+   * En consultation, ou le passage clos, le geste n'a plus d'objet.
+   */
+  it("n'offre de signaler son arrivée que si l'accueil peut encore en tenir compte", () => {
+    const attendu = {
+      EN_ATTENTE: true, PREVENU: true, APPELE: true, ABSENT: true,
+      EN_CONSULTATION: false, TERMINE: false, PARTI: false, ANNULE: false,
+    };
+    for (const statut of STATUTS) {
+      assert.ok(statut in attendu, `statut non classé : ${statut}`);
+      assert.equal(peutSignalerSonArrivee(statut), attendu[statut],
+        `mauvaise décision pour ${statut}`);
+    }
+  });
+
+  /**
+   * Une notification annonce l'appel À VENIR. Une fois appelé, elle n'annonce
+   * plus rien : proposer « prévenez-moi quand ce sera à vous » sous un titre
+   * qui dit « C'est à vous » est une contradiction à l'écran.
+   */
+  it("n'offre la notification que s'il reste un appel à annoncer", () => {
+    const attendu = {
+      EN_ATTENTE: true, PREVENU: true, ABSENT: true,
+      APPELE: false, EN_CONSULTATION: false,
+      TERMINE: false, PARTI: false, ANNULE: false,
+    };
+    for (const statut of STATUTS) {
+      assert.ok(statut in attendu, `statut non classé : ${statut}`);
+      assert.equal(peutDemanderUneNotification(statut), attendu[statut],
+        `mauvaise décision pour ${statut}`);
+    }
+  });
+
+  /** Un statut inconnu ne doit rien ouvrir : on refuse par défaut. */
+  it('refuse les deux gestes pour un statut inconnu', () => {
+    for (const inconnu of ['', null, undefined, 'PETIT_DEJEUNER']) {
+      assert.equal(peutSignalerSonArrivee(inconnu), false);
+      assert.equal(peutDemanderUneNotification(inconnu), false);
+    }
+  });
+});
+
+/**
+ * Un lien de suivi invalide affichait « Personnes avant vous — / chargement… »
+ * indéfiniment, avec l'erreur en dessous. Le 404 était bien reçu et bien dit ;
+ * la carte, elle, restait sur son état de chargement, qui ne finissait jamais.
+ *
+ * <p>La nuance est dans le cas où l'on a DÉJÀ un état : l'erreur réseau promet
+ * alors « dernier état affiché », et retirer la carte ferait de ce message un
+ * mensonge. Le prédicat porte donc sur les deux variables, pas sur l'erreur
+ * seule — une condition `!erreur` aurait été verte sur le défaut d'origine
+ * tout en cassant le rafraîchissement hors ligne, qui est le cas courant.
+ */
+describe('la grande carte de la page client', () => {
+  it('reste affichée pendant le chargement', () => {
+    assert.equal(doitMontrerLaCarte(null, null), true);
+  });
+
+  it("disparaît quand le lien n'a jamais rien rendu", () => {
+    assert.equal(doitMontrerLaCarte(null, "Ce lien n'est plus valable."), false);
+  });
+
+  it('reste affichée quand un état connu accompagne une erreur réseau', () => {
+    assert.equal(doitMontrerLaCarte(enAttente, 'Serveur injoignable — dernier état affiché.'),
+      true, 'le message promet le dernier état : il faut donc le montrer');
+  });
+
+  it('reste affichée en marche normale', () => {
+    assert.equal(doitMontrerLaCarte(enAttente, null), true);
   });
 });
