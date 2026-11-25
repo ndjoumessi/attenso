@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
-  carte, consigne, doitMontrerLaCarte, peutDemanderUneNotification,
+  carte, consigne, lienVivant, peutDemanderUneNotification,
   peutSignalerSonArrivee,
   rappelDuNumero,
 } from '../../main/resources/static/app/vue-suivi.js';
@@ -171,19 +171,19 @@ describe('les gestes que la page client propose', () => {
  */
 describe('la grande carte de la page client', () => {
   it('reste affichée pendant le chargement', () => {
-    assert.equal(doitMontrerLaCarte(null, null), true);
+    assert.equal(lienVivant(null, null), true);
   });
 
   it("disparaît quand le lien n'a jamais rien rendu", () => {
-    assert.equal(doitMontrerLaCarte(null, "Ce lien n'est plus valable."), false);
+    assert.equal(lienVivant(null, "Ce lien n'est plus valable."), false);
   });
 
   it('reste affichée quand un état connu accompagne une erreur réseau', () => {
-    assert.equal(doitMontrerLaCarte(enAttente, 'Serveur injoignable — dernier état affiché.'),
+    assert.equal(lienVivant(enAttente, 'Serveur injoignable — dernier état affiché.'),
       true, 'le message promet le dernier état : il faut donc le montrer');
   });
 
   it('reste affichée en marche normale', () => {
-    assert.equal(doitMontrerLaCarte(enAttente, null), true);
+    assert.equal(lienVivant(enAttente, null), true);
   });
 });

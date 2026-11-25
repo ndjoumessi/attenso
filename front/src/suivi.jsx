@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
-  carte, consigne, doitMontrerLaCarte, peutDemanderUneNotification,
+  carte, consigne, lienVivant, peutDemanderUneNotification,
   peutSignalerSonArrivee, rappelDuNumero,
 } from '../../src/main/resources/static/app/vue-suivi.js';
 
@@ -146,7 +146,7 @@ export function Suivi() {
           dessous. Elle reste en revanche affichée quand une erreur réseau
           accompagne un état déjà connu : le message promet alors « dernier
           état affiché », et la retirer en ferait un mensonge. */}
-      {doitMontrerLaCarte(etat, erreur) && (
+      {lienVivant(etat, erreur) && (
         <div aria-live="polite" aria-atomic="true"
              className="mt-4 rounded-[var(--rayon-lg)] border border-bordure-douce
                         bg-surface p-8 text-center shadow-1">
@@ -208,10 +208,15 @@ export function Suivi() {
       <p className="mt-6 min-h-5 text-sm text-sur-fond-doux">
         {etat ? rappelDuNumero(etat) : ''}
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-sur-fond-doux">
-        Cette page se met à jour toute seule. Vous pouvez la garder ouverte,
-        la fermer et revenir : le lien reste valable aujourd'hui.
-      </p>
+      {/* Trouvé en vérifiant le correctif en production : cette promesse
+          s'affichait deux lignes sous « Ce lien n'est plus valable ». Même
+          condition que la carte — c'est la même propriété. */}
+      {lienVivant(etat, erreur) && (
+        <p className="mt-2 text-sm leading-relaxed text-sur-fond-doux">
+          Cette page se met à jour toute seule. Vous pouvez la garder ouverte,
+          la fermer et revenir : le lien reste valable aujourd'hui.
+        </p>
+      )}
     </main>
   );
 }
