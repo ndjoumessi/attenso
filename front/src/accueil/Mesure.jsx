@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
-import { AIDE, CHAMP, ETIQUETTE } from '../composants/formulaire.jsx';
+import { AIDE, CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
 import { entete } from './session.js';
 import { Titre } from './Sections.jsx';
 
@@ -40,17 +40,19 @@ function Compteur({ libelle, valeur }) {
 export function Mesure({ jeton, surErreur, titre = true }) {
   const [mesure, setMesure] = useState(null);
   const [arrivants, setArrivants] = useState('');
+  const [echec, setEchec] = useState(false);
 
   useEffect(() => {
     const relire = () => appel('/api/mesure', { headers: entete(jeton) })
       .then((recue) => {
         setMesure(recue);
+        setEchec(false);
         setArrivants((actuel) => (actuel === '' && recue.arrivantsTotal !== null
           ? String(recue.arrivantsTotal) : actuel));
       })
-      // Silencieux : la mesure est un à-côté, son indisponibilité ne doit pas
-      // couvrir le tableau d'un bandeau d'erreur.
-      .catch(() => {});
+      // Local : la mesure est un à-côté, son indisponibilité ne doit pas couvrir
+      // le tableau, et le bandeau partagé serait effacé à chaque événement SSE.
+      .catch(() => setEchec(true));
     relire();
     const t = setInterval(relire, 120000);
     return () => clearInterval(t);
@@ -94,6 +96,13 @@ export function Mesure({ jeton, surErreur, titre = true }) {
   return (
     <>
       {titre && <Titre>Mesure de l'auto-enregistrement</Titre>}
+      {echec && (
+        <div className="mt-4">
+          <Erreur>
+            La mesure n'a pas pu être chargée. Réessayez dans un instant.
+          </Erreur>
+        </div>
+      )}
       <p className={AIDE}>
         Combien de personnes sont entrées dans la clinique aujourd'hui, ticket
         ou pas. Le système compte celles qui prennent un ticket ; il ne voit pas

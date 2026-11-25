@@ -77,9 +77,14 @@ export function Agenda({ jeton, vide, titre = true }) {
  */
 export function Carnets({ jeton, surErreur, vide, titre = true }) {
   const [animaux, setAnimaux] = useState(null);
+  const [echec, setEchec] = useState(false);
 
+  // Un échec LOCAL, pas le bandeau partagé du haut de page : celui-ci est
+  // effacé à chaque rafraîchissement réussi de la file, donc à chaque
+  // événement SSE. Une liste déjà chargée est gardée si une relecture échoue.
   const relire = () => appel('/api/animaux', { headers: entete(jeton) })
-    .then(setAnimaux).catch(() => {});
+    .then((recus) => { setAnimaux(recus); setEchec(false); })
+    .catch(() => setEchec(true));
 
   useEffect(() => { relire(); }, [jeton]);
 
@@ -121,6 +126,13 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
   return (
     <>
       {titre && <Titre>Carnets de santé</Titre>}
+      {echec && (
+        <div className="mt-4">
+          <Erreur>
+            Les carnets n'ont pas pu être chargés. Réessayez dans un instant.
+          </Erreur>
+        </div>
+      )}
       <form onSubmit={ajouter} className="mt-4 space-y-4">
         <div>
           <label className={ETIQUETTE} htmlFor="animal-nom">Nom de l'animal</label>

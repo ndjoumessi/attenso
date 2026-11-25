@@ -98,3 +98,32 @@ describe('chaque vue range la réponse dans son état', () => {
     });
   }
 });
+
+/**
+ * Trois états, pas deux, pour Mesure et Carnets : l'échec est LOCAL. Le bandeau
+ * partagé du haut de page est effacé par `rafraichir` à chaque succès, donc à
+ * chaque événement SSE : une erreur poussée là disparaît avant d'être lue.
+ */
+describe('Mesure et Carnets disent leur échec eux-mêmes', () => {
+  const CAS = [
+    ['Mesure', 'front/src/accueil/Mesure.jsx', /\.then\(\(recue\) => \{\s*setMesure\(recue\);\s*setEchec\(false\);/,
+      "La mesure n'a pas pu être chargée"],
+    ['Carnets', 'front/src/accueil/Sections.jsx',
+      /\.then\(\(recus\) => \{ setAnimaux\(recus\); setEchec\(false\); \}\)\s*\.catch\(\(\) => setEchec\(true\)\)/,
+      "Les carnets n'ont pas pu être chargés"],
+  ];
+
+  for (const [composant, fichier, succes, message] of CAS) {
+    it(`${composant} : la remise à zéro est liée au succès, le catch pose l'échec`, () => {
+      const corps = corpsDe(fichier, composant);
+      assert.match(corps, succes, 'le succès ne remet pas l\'échec à zéro dans la même expression');
+      assert.match(corps, /\.catch\(\(\) => setEchec\(true\)\)/, 'le catch ne pose pas l\'échec');
+    });
+
+    it(`${composant} : l'échec se dit, avec le gabarit « n'a pas pu être … Réessayez »`, () => {
+      assert.match(corpsDe(fichier, composant),
+        new RegExp(`\\{echec && \\(\\s*<div className="mt-4">\\s*<Erreur>\\s*${message}\\. Réessayez dans un instant\\.\\s*</Erreur>`),
+        'l\'échec du chargement ne se dit pas');
+    });
+  }
+});
