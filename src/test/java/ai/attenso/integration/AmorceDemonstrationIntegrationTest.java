@@ -82,8 +82,12 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	@Autowired
 	MesureDao mesure;
 
-	private AmorceClinique amorce(Instant instant, boolean active) {
-		ProprietesAmorce proprietes = new ProprietesAmorce(active, "demo",
+	private AmorceClinique amorce(Instant instant, boolean demonstration) {
+		return amorce(instant, true, demonstration);
+	}
+
+	private AmorceClinique amorce(Instant instant, boolean active, boolean demonstration) {
+		ProprietesAmorce proprietes = new ProprietesAmorce(active, demonstration, "demo",
 				"Clinique de démonstration", "accueil@demo.attenso.test",
 				"mdp-de-demonstration-de-test", null, null, null, false);
 		return new AmorceClinique(proprietes, tenants, applicatif, motsDePasse, jetons, motifs,
@@ -298,13 +302,13 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
-	@DisplayName("aucun numéro de téléphone réel ou en cours : aucun SMS ne peut partir")
+	@DisplayName("aucun numéro de téléphone nulle part, quel que soit le statut : aucun SMS ne peut partir")
 	void aucunNumeroPourAucunSms() {
 		installer(MI_JOURNEE);
 
 		assertThat(proprietaire.queryForObject("""
 				SELECT count(*) FROM ticket
-				WHERE telephone_e164 IS NOT NULL AND statut NOT IN ('TERMINE','PARTI')
+				WHERE telephone_e164 IS NOT NULL
 				""", Long.class)).isZero();
 		assertThat(proprietaire.queryForObject(
 				"SELECT count(*) FROM rendez_vous WHERE telephone_e164 IS NOT NULL",
@@ -312,11 +316,6 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 		assertThat(proprietaire.queryForObject(
 				"SELECT count(*) FROM animal WHERE telephone_e164 IS NOT NULL",
 				Long.class)).isZero();
-		// S'il en reste un, il est dans la plage que l'ARCEP réserve à la fiction.
-		assertThat(proprietaire.queryForObject("""
-				SELECT count(*) FROM ticket
-				WHERE telephone_e164 IS NOT NULL AND telephone_e164 NOT LIKE '+3363998____'
-				""", Long.class)).isZero();
 	}
 
 	@Test
@@ -437,12 +436,29 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	@Test
 	@DisplayName("sans demande de démonstration, la clinique est créée mais reste vide")
 	void sansDemandeRienNEstSeme() {
-		amorce(MI_JOURNEE, false).run(new DefaultApplicationArguments(new String[0]));
+		amorce(MI_JOURNEE, false, false).run(new DefaultApplicationArguments(new String[0]));
 
 		assertThat(compter("tenant")).isEqualTo(1);
 		assertThat(compter("ticket")).isZero();
 		assertThat(compter("rendez_vous")).isZero();
 		assertThat(compter("animal")).isZero();
+		assertThat(compter("motif_priorite")).isEqualTo(MotifDao.DEFAUTS.size());
+	}
+
+	@Test
+	@DisplayName("une vraie clinique, installée avec « active » seul, ne reçoit que les deux motifs du produit")
+	void uneVraieCliniqueNeRecoitPasLaDemonstration() {
+		// La configuration qu'aura une clinique réelle : l'amorce est active, la
+		// démonstration n'est pas demandée.
+		amorce(MI_JOURNEE, true, false).run(new DefaultApplicationArguments(new String[0]));
+
+		assertThat(compter("tenant")).isEqualTo(1);
+		assertThat(compter("ticket")).isZero();
+		assertThat(compter("rendez_vous")).isZero();
+		assertThat(compter("animal")).isZero();
+		assertThat(compter("vaccination")).isZero();
+		assertThat(compter("mesure_jour")).isZero();
+		assertThat(compter("motif_priorite")).isEqualTo(MotifDao.DEFAUTS.size());
 	}
 
 	@Test

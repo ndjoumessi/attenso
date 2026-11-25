@@ -129,9 +129,13 @@ public class AmorceClinique implements ApplicationRunner {
 	 * Elle est publique pour qu'un test l'exerce <em>directement</em> : repasser
 	 * par {@code run} s'arrêterait au garde-fou du slug et ne la toucherait pas.
 	 *
-	 * <p>Toutes les dates se calculent depuis l'horloge injectée, en fuseau de la
-	 * clinique : « hier » doit rester hier entre minuit et une heure à Paris, là
-	 * où un calcul en UTC croirait encore à la veille.
+	 * <p>Toutes les dates se calculent depuis l'horloge injectée, dans <em>sa</em>
+	 * zone (celle du serveur, Europe/Paris), et non dans {@code tenant.zone()} :
+	 * les deux coïncident parce que {@code run} pose le fuseau de la clinique en
+	 * dur à Europe/Paris. « Hier » doit rester hier entre minuit et une heure à
+	 * Paris, là où un calcul en UTC croirait encore à la veille. Le jour où le
+	 * fuseau deviendra un réglage de l'installation, ce semis devra lire la zone
+	 * de la clinique.
 	 *
 	 * <p>Aucun numéro de téléphone nulle part : un numéro, même inventé, ferait
 	 * partir de vrais SMS quand la grâce expire, que la file avance ou qu'un
@@ -456,12 +460,13 @@ public class AmorceClinique implements ApplicationRunner {
 
 		// Les deux motifs de priorité du cahier des charges (EF-407). La
 		// clinique les renomme, les désactive ou en ajoute ensuite.
-		ContexteTenant.executer(tenantId, () -> {
-			motifs.poserLesDefauts(tenantId);
-			poserLesMotifsDeDemonstration(tenantId);
-		});
+		ContexteTenant.executer(tenantId, () -> motifs.poserLesDefauts(tenantId));
 
-		if (proprietes.active()) {
+		// La démonstration (file, rendez-vous, carnets, mesure et motifs inventés)
+		// n'est posée que sur demande expresse : « active » ne suffit pas, c'est
+		// la propriété de toute installation, y compris d'une vraie clinique.
+		if (proprietes.demonstration()) {
+			ContexteTenant.executer(tenantId, () -> poserLesMotifsDeDemonstration(tenantId));
 			semerLaDemonstration(tenantId);
 		}
 

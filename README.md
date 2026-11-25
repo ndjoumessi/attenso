@@ -38,6 +38,14 @@ MDP_ACCUEIL='choisir-un-mot-de-passe-solide' \
 --attenso.amorce.mot-de-passe=$MDP_ACCUEIL"
 ```
 
+**Ne jamais ajouter `--attenso.amorce.demonstration=true` à cette commande.**
+Cette propriété, fausse par défaut, sème une file de 19 tickets fictifs, trois
+rendez-vous, deux animaux avec leurs vaccinations, une mesure inventée et trois
+motifs de priorité de démonstration — sans commande pour les retirer ensuite.
+`active` installe la clinique et ses deux motifs de priorité ; seule
+`demonstration` y verse le jeu de démonstration. Elle ne sert qu'à une clinique
+de démonstration (voir plus bas).
+
 Puis :
 
 | Écran | URL | Qui |
@@ -123,7 +131,7 @@ Silicon ni sur un serveur ARM — qui sont justement les machines les moins
 chères à louer en Europe. Quelques dizaines de mégaoctets contre une image qui
 se construit partout.
 
-Vérifié de bout en bout, pile complète et volume vierge : les 16 migrations
+Vérifié de bout en bout, pile complète et volume vierge : les 22 migrations
 passent, l'application atteint `healthy`, sert la vitrine, tourne en
 utilisateur `attenso`, ne journalise **aucune ligne d'erreur**, et le rôle
 `attenso_app` est confirmé non privilégié — la seconde barrière survit donc à
@@ -196,17 +204,37 @@ qui doit maintenant nommer Railway.
 avec un écran de salle d'attente appairé ; son compte est un GÉRANT, sans
 expéditeur SMS validé — l'affiche du comptoir ne promet donc pas de message.
 Elle existe parce que l'inscription en ligne est fermée tant que Stripe n'est
-pas configuré : sans elle, rien du produit n'est atteignable. Le mot de passe a
+pas configuré : sans elle, rien du produit n'est atteignable. Elle n'est plus
+une coquille vide : avec `ATTENSO_AMORCE_DEMONSTRATION=true` elle reçoit une
+file en cours, une veille et sa mesure, un agenda et deux carnets de santé, et
+aucun numéro de téléphone — aucun SMS ne peut donc partir. Le mot de passe a
 été tiré au hasard et vit dans les variables Railway (`ATTENSO_AMORCE_*`) ;
 l'URL de l'écran n'apparaît qu'une fois, dans les journaux de ce déploiement.
-**À faire une fois le mot de passe changé depuis le tableau** : retirer
-`ATTENSO_AMORCE_ACTIVE` et `ATTENSO_AMORCE_MOT_DE_PASSE`, qui n'ont plus
-d'objet — l'amorce est idempotente — et qui laissent sinon un mot de passe en
-clair dans l'environnement.
 
-**Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18** là où la CI
-teste sur 16 : les vingt et une migrations passent et Hibernate valide le
-schéma, mais la suite ne s'exécute jamais sur la version de production. Et le
+**Avertissement : redéployer ne repose PAS la démonstration.** La clinique
+`demo` existe déjà sur Railway, donc `run()` sort au garde-fou du slug
+(« déjà installée ») avant de rien semer, même avec
+`ATTENSO_AMORCE_DEMONSTRATION=true`. Passer l'ancien tenant à `actif=false` ne
+suffit pas non plus : `slug` est `NOT NULL UNIQUE` (`V1__socle.sql`), et le
+garde-fou ne regarde que les cliniques actives, donc l'insertion échouerait.
+Pour la reposer, il faut **supprimer la ligne `tenant` de `demo`**. Les clés
+étrangères vers `tenant` n'ont pas de `ON DELETE CASCADE` : un `DELETE` simple
+échoue tant qu'il reste des lignes filles (utilisateur, tickets…), il faut les
+retirer d'abord, en rôle propriétaire (le RLS cache tout au rôle applicatif).
+Tant que `demo` est la seule clinique de la base, c'est ce que fait
+`TRUNCATE tenant CASCADE` — à ne JAMAIS lancer dès qu'une vraie clinique y
+vit. Puis redéployer avec `ATTENSO_AMORCE_ACTIVE`,
+`ATTENSO_AMORCE_DEMONSTRATION=true` et `ATTENSO_AMORCE_MOT_DE_PASSE` posés. La
+consigne d'avant — retirer `ATTENSO_AMORCE_ACTIVE` et
+`ATTENSO_AMORCE_MOT_DE_PASSE` — va donc à l'inverse de ce qu'il faut : ne la
+suivre qu'une fois la démonstration reposée, pour ne pas laisser un mot de
+passe en clair dans l'environnement.
+
+**Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18**, comme la CI
+(testcontainers `postgres:18-alpine`) et `compose.deploiement.yaml` : la suite
+s'exécute donc sur la version de production. Seul `compose.yaml`, le fichier
+de développement, reste en 16 — le basculer ferait refuser le démarrage du
+conteneur local de chaque développeur, dont le volume est au format 16. Et le
 domaine `*.up.railway.app` fait 56 caractères dans un SMS contre 33 pour
 `attenso.fr` : les cinq modèles tiennent encore en un segment, mais le message
 correctif atteint **exactement 160 caractères**, c'est-à-dire zéro marge. Un

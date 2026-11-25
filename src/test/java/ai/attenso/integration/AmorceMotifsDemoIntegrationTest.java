@@ -52,7 +52,7 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 		// Construite à la main plutôt que par une propriété d'activation : un
 		// contexte Spring de plus aurait son propre pool et épuiserait les
 		// connexions de PostgreSQL pour les classes qui suivent.
-		ProprietesAmorce proprietes = new ProprietesAmorce(true, "demo",
+		ProprietesAmorce proprietes = new ProprietesAmorce(true, true, "demo",
 				"Clinique de démonstration", "accueil@demo.attenso.test",
 				"mdp-de-demonstration-de-test", null, null, null, false);
 		this.amorce = new AmorceClinique(proprietes, tenants, applicatif, motsDePasse, jetons,

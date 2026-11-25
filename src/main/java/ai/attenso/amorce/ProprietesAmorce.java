@@ -9,6 +9,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * d'environnement, jamais par un fichier de configuration : c'est le seul
  * identifiant de l'installation, et il ne doit pas finir dans un dépôt.
  *
+ * @param demonstration {@code true} seulement pour une clinique de démonstration :
+ *        elle reçoit alors une file, des rendez-vous, des carnets, une mesure
+ *        de la veille et trois motifs de priorité inventés. Faux par défaut, et
+ *        distinct de {@code active} : installer une vraie clinique pose
+ *        {@code active} et ne doit JAMAIS poser celle-ci, car rien n'efface ce
+ *        qui a été semé.
  * @param expediteurSms nom affiché par les SMS de cette clinique, 3 à 11
  *        caractères alphanumériques. Laissé vide tant que les opérateurs ne
  *        l'ont pas validé : la clinique fonctionne alors sans SMS.
@@ -18,7 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *        répond pour cette clinique.
  */
 @ConfigurationProperties("attenso.amorce")
-public record ProprietesAmorce(boolean active, String slug, String nom, String email,
+public record ProprietesAmorce(boolean active, boolean demonstration, String slug, String nom, String email,
 		String motDePasse, Integer seuilPrevenir, Integer delaiGraceSecondes,
 		String expediteurSms, boolean avecEcran) {
 }
