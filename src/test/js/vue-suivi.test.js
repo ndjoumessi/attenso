@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
-  carte, consigne, lienVivant, peutDemanderUneNotification,
+  carte, CONSIGNES, consigne, lienVivant, peutDemanderUneNotification,
   peutSignalerSonArrivee,
   rappelDuNumero,
 } from '../../main/resources/static/app/vue-suivi.js';
@@ -42,7 +42,9 @@ describe('la carte de la page client', () => {
 
     assert.equal(vue.etiquette, 'Personnes avant vous');
     assert.equal(vue.valeur, 1);
-    assert.match(consigne('ABSENT'), /juste après le suivant/);
+    // `consigne` prend désormais l'ÉTAT : pour un absent, ce qu'il faut dire
+    // dépend de sa place. En position 2, quelqu'un passe bien avant lui.
+    assert.match(consigne({ statut: 'ABSENT', position: 2 }), /juste après le suivant/);
   });
 
   it('bascule en « c\'est votre tour » dès la première place', () => {
@@ -74,9 +76,11 @@ describe('la carte de la page client', () => {
 
   it('a une consigne pour chaque état où le client doit agir', () => {
     for (const statut of ['PREVENU', 'APPELE', 'ABSENT']) {
-      assert.notEqual(consigne(statut), '', `consigne manquante pour ${statut}`);
+      assert.notEqual(consigne({ statut, position: 2 }), '',
+        `consigne manquante pour ${statut}`);
     }
-    assert.equal(consigne('EN_ATTENTE'), '', 'rien à faire tant qu\'on attend');
+    assert.equal(consigne({ statut: 'EN_ATTENTE', position: 3 }), '',
+      'rien à faire tant qu\'on attend');
   });
 });
 
@@ -185,5 +189,58 @@ describe('la grande carte de la page client', () => {
 
   it('reste affichée en marche normale', () => {
     assert.equal(lienVivant(enAttente, null), true);
+  });
+});
+
+/**
+ * TROUVÉ EN REGARDANT la page d'un client absent, sur un ticket devenu absent
+ * par expiration de grâce — le chemin réel, pas un état semé.
+ *
+ * <p>L'écran disait, en vert et en grand : « PERSONNES AVANT VOUS — 0 », et
+ * juste dessous : « vous repassez juste après le suivant ». Zéro devant, et
+ * pourtant on passe après quelqu'un.
+ *
+ * <p>La cause est dans `ServiceFile.reinsererApresLeSuivant`, qui filtre sur
+ * la BANDE DE PRIORITÉ : seul dans la sienne, le ticket n'est pas déplacé et
+ * reste en tête. La file a raison — une urgence ne cède pas son tour — mais la
+ * page promettait un « suivant » qui n'existait pas.
+ */
+describe("la page d'un client absent dit ce qui va vraiment se passer", () => {
+  const absent = (position) => ({
+    numero: 7, position, statut: 'ABSENT',
+    attenteMinMinutes: 0, attenteMaxMinutes: 5,
+  });
+
+  /**
+   * Jamais la mise en forme « c'est à vous ». Un absent doit d'abord se
+   * signaler à l'accueil : lui montrer le vert de l'appel l'invite à rester
+   * assis, ce qui est exactement ce qu'il ne faut pas.
+   */
+  it("n'habille jamais un absent en « c'est à vous »", () => {
+    for (const p of [1, 2, 5]) {
+      assert.equal(carte(absent(p)).appel, false,
+        `un absent en position ${p} est présenté comme appelé`);
+    }
+  });
+
+  it('ne promet « juste après le suivant » que s\'il y a un suivant', () => {
+    assert.match(consigne(absent(2)), /juste après le suivant/,
+      'la règle EF-503 n\'est plus dite quand elle s\'applique');
+  });
+
+  it('ne le promet pas quand personne n\'est devant', () => {
+    assert.doesNotMatch(consigne(absent(1)), /juste après le suivant/,
+      'la page promet un suivant qui n\'existe pas');
+    assert.match(consigne(absent(1)), /accueil/i,
+      'elle doit quand même envoyer la personne à l\'accueil');
+  });
+
+  /** Les autres statuts ne bougent pas : la consigne reste celle du tableau. */
+  it('laisse les autres statuts intacts', () => {
+    for (const statut of ['PREVENU', 'APPELE', 'TERMINE', 'ANNULE']) {
+      assert.equal(consigne({ statut, position: 1 }), CONSIGNES[statut],
+        `la consigne de ${statut} a changé`);
+    }
+    assert.equal(consigne({ statut: 'EN_ATTENTE', position: 3 }), '');
   });
 });
