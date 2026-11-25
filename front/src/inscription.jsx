@@ -106,8 +106,11 @@ export function Inscription() {
 
         <div>
           <label className={etiquette} htmlFor="email">Adresse de connexion</label>
+          {/* `username` et non `email` : la connexion déclare `username`, et
+              un gestionnaire de mots de passe qui enregistre sous une clé ne
+              remplit pas sous l'autre. C'est le même compte, c'est le même nom. */}
           <input id="email" name="email" type="email" required maxLength={200}
-                 autoComplete="email" placeholder="accueil@clinique.fr"
+                 autoComplete="username" placeholder="accueil@clinique.fr"
                  className={champ} />
         </div>
 
