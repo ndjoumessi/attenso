@@ -78,6 +78,10 @@ public class AmorceClinique implements ApplicationRunner {
 		this.horloge = horloge;
 	}
 
+	private static final String MOTIF_CHAT_EN_CAISSE = "Chat en caisse depuis plus de 30 min";
+
+	private static final short RANG_CHAT_EN_CAISSE = 7;
+
 	/**
 	 * Motifs propres à la clinique de démonstration, en plus des deux défauts.
 	 *
@@ -85,38 +89,32 @@ public class AmorceClinique implements ApplicationRunner {
 	 * rang : une clinique qui les voit seuls ne perçoit ni que la priorité est
 	 * graduée, ni qu'elle peut écrire ses propres motifs. Ceux-ci parlent de
 	 * l'animal, avec des rangs étagés. Ils restent ici et non dans
-	 * {@code MotifDao.DEFAUTS} : « bétaillère » n'a pas de sens pour une
-	 * clinique urbaine, et changer les défauts changerait le produit pour tous.
+	 * {@code MotifDao.DEFAUTS} : ils ne conviennent pas à toutes les cliniques,
+	 * et changer les défauts changerait le produit pour tous.
 	 *
 	 * <p>Pas de garde propre : on n'arrive ici que par la création de la
 	 * clinique, que {@code run} ne refait jamais quand le slug existe déjà.
 	 * Les rangs restent dans la bande 1 à 9 de {@code motif_rang_dans_la_bande} :
 	 * aucun ne peut rejoindre l'urgence (10).
 	 */
-	private static final String MOTIF_CHAT_EN_CAISSE = "Chat en caisse depuis plus de 30 min";
-
-	private static final short RANG_CHAT_EN_CAISSE = 7;
-
 	private void poserLesMotifsDeDemonstration(UUID tenantId) {
 		// « Contagieux » tout en haut : l'isoler protège toute la salle d'attente,
 		// pas seulement l'animal concerné.
-		// « Chat en caisse » et « bétaillère » sont les exemples que cite
-		// V8__motifs_priorite.sql : une attente prolongée en caisse, un animal de
-		// ferme qui ne peut pas patienter dans sa remorque.
+		// « Chat en caisse » : une attente prolongée en caisse de transport, que
+		// V8__motifs_priorite.sql cite comme exemple de motif propre à une clinique.
 		// « Contrôle post-opératoire » en dessous des défauts : c'est du confort,
 		// pas une dégradation, il passe devant la file normale sans doubler personne
 		// de plus pressé.
 		short ordre = (short) (MotifDao.DEFAUTS.size() + 1);
 		motifs.ajouter(tenantId, "Animal potentiellement contagieux", (short) 8, ordre++);
 		motifs.ajouter(tenantId, MOTIF_CHAT_EN_CAISSE, RANG_CHAT_EN_CAISSE, ordre++);
-		motifs.ajouter(tenantId, "Animal de ferme en bétaillère", (short) 6, ordre++);
 		motifs.ajouter(tenantId, "Contrôle post-opératoire court", (short) 3, ordre);
 	}
 
 	/** Un ticket tel qu'il est posé en base : l'état et les instants qui vont avec. */
 	private record TicketDemo(Statut statut, Origine origine, short priorite, String motif,
-			String telephone, Instant cree, Instant appele, Instant graceExpire,
-			Instant consultation, Instant clos) {
+			Instant cree, Instant appele, Instant graceExpire, Instant consultation,
+			Instant clos) {
 	}
 
 	/**
@@ -135,11 +133,9 @@ public class AmorceClinique implements ApplicationRunner {
 	 * clinique : « hier » doit rester hier entre minuit et une heure à Paris, là
 	 * où un calcul en UTC croirait encore à la veille.
 	 *
-	 * <p>Les numéros de téléphone sont absents des tickets en cours : un numéro,
-	 * même inventé, ferait partir de vrais SMS quand la grâce expire ou que la
-	 * file avance. Les tickets terminés portent un numéro de la plage que l'ARCEP
-	 * réserve à la fiction (06 39 98 xx xx) ; ceux d'hier n'en ont plus, la purge
-	 * RGPD de J+1 est déjà passée.
+	 * <p>Aucun numéro de téléphone nulle part : un numéro, même inventé, ferait
+	 * partir de vrais SMS quand la grâce expire, que la file avance ou qu'un
+	 * rappel arrive. Un test le garde.
 	 *
 	 * @param tenantId la clinique à garnir, déjà créée.
 	 */
@@ -153,16 +149,83 @@ public class AmorceClinique implements ApplicationRunner {
 			}
 			LocalDate aujourdhui = LocalDate.now(horloge);
 			semerLaFileDuJour(tenantId, aujourdhui);
-			semerLaVeille(tenantId, aujourdhui.minusDays(1));
+			semerLaVeille(tenantId, dernierJourOuvre(aujourdhui));
 			semerLAgenda(tenantId, aujourdhui);
 			semerLesCarnets(tenantId, aujourdhui);
 		});
 	}
 
+	/** Les horaires que le semis pose dans l'agenda, et que la file du jour respecte. */
+	private record Plage(LocalTime debut, LocalTime fin) {
+	}
+
+	private static final Plage MATIN = new Plage(LocalTime.of(9, 0), LocalTime.of(12, 0));
+
+	private static final Plage APRES_MIDI = new Plage(LocalTime.of(14, 0), LocalTime.of(18, 0));
+
+	/** Ce que couvre la file du jour : de la première arrivée à l'instant de référence. */
+	private static final int DUREE_DE_LA_FILE_MINUTES = 95;
+
+	private static final int DELAI_GRACE_PAR_DEFAUT_SECONDES = 180;
+
+	/** Le samedi et le dimanche, le matin seulement. */
+	private static List<Plage> plagesDu(DayOfWeek jour) {
+		boolean semaine = jour != DayOfWeek.SATURDAY && jour != DayOfWeek.SUNDAY;
+		return semaine ? List.of(MATIN, APRES_MIDI) : List.of(MATIN);
+	}
+
+	private Duration delaiGrace() {
+		return Duration.ofSeconds(proprietes.delaiGraceSecondes() == null
+				? DELAI_GRACE_PAR_DEFAUT_SECONDES : proprietes.delaiGraceSecondes());
+	}
+
+	/** Le dernier jour de semaine avant celui-ci : un lundi, c'est le vendredi. */
+	private static LocalDate dernierJourOuvre(LocalDate jour) {
+		LocalDate veille = jour.minusDays(1);
+		while (veille.getDayOfWeek() == DayOfWeek.SATURDAY
+				|| veille.getDayOfWeek() == DayOfWeek.SUNDAY) {
+			veille = veille.minusDays(1);
+		}
+		return veille;
+	}
+
+	/**
+	 * L'instant que la file du jour prend pour « maintenant ».
+	 *
+	 * <p>La file ne doit pas montrer d'arrivée avant l'ouverture ni de
+	 * consultation pendant la pause : installée à 8 h 30, elle serait en retard
+	 * sur l'ouverture ; à 13 h, ses consultations tomberaient à midi. Pendant
+	 * les horaires, l'instant est l'heure réelle, repoussée si besoin à
+	 * l'ouverture + la durée de la file. Hors horaires, c'est la fin de la
+	 * dernière plage passée (la file est alors celle d'un moment révolu), ou, avant
+	 * l'ouverture, un moment de la première plage — daté un peu dans le futur.
+	 */
+	private Instant momentDeLaFile(LocalDate jour) {
+		java.time.LocalDateTime maintenant = java.time.LocalDateTime.ofInstant(horloge.instant(),
+				horloge.getZone());
+		LocalTime heure = maintenant.toLocalTime();
+		List<Plage> plages = plagesDu(jour.getDayOfWeek());
+		LocalTime reference = plages.get(0).debut().plusMinutes(DUREE_DE_LA_FILE_MINUTES);
+		for (Plage plage : plages) {
+			if (!heure.isBefore(plage.debut()) && heure.isBefore(plage.fin())) {
+				LocalTime plancher = plage.debut().plusMinutes(DUREE_DE_LA_FILE_MINUTES);
+				reference = heure.isBefore(plancher) ? plancher : heure;
+			}
+			else if (!heure.isBefore(plage.fin())) {
+				reference = plage.fin();
+			}
+		}
+		return jour.atTime(reference).atZone(horloge.getZone()).toInstant();
+	}
+
 	/**
 	 * Une matinée de consultation en cours, vue de l'accueil : quatre passages
-	 * terminés d'un quart d'heure chacun, une consultation commencée, puis la
+	 * terminés d'un quart d'heure environ, une consultation commencée, puis la
 	 * file, dans l'état que la machine à états produirait elle-même.
+	 *
+	 * <p>Chaque passage a été appelé avant d'entrer en consultation, comme le
+	 * produit le veut : sans {@code appele_le}, le tableau de bord ne verrait
+	 * qu'un seul retard. Une seule salle : les consultations se suivent.
 	 *
 	 * <p>Le seuil de prévenance de la clinique est de deux : les deux premiers de
 	 * la file sont donc l'appelé et le prévenu, les suivants attendent. Un
@@ -172,78 +235,81 @@ public class AmorceClinique implements ApplicationRunner {
 	 * avant la file normale. Le rang 7 est celui qu'on appelle.
 	 */
 	private void semerLaFileDuJour(UUID tenantId, LocalDate jour) {
-		Instant maintenant = horloge.instant();
-		Instant debutDeJournee = jour.atStartOfDay(horloge.getZone()).toInstant();
-		Duration grace = Duration.ofSeconds(proprietes.delaiGraceSecondes() == null ? 180
-				: proprietes.delaiGraceSecondes());
-		// Jamais avant minuit : un ticket du jour ne peut pas être né la veille,
-		// même quand l'amorce tourne à 00 h 30.
-		java.util.function.IntFunction<Instant> ilYa = minutes -> {
-			Instant instant = maintenant.minus(Duration.ofMinutes(minutes));
-			return instant.isBefore(debutDeJournee) ? debutDeJournee.plusSeconds(60) : instant;
-		};
+		Instant reference = momentDeLaFile(jour);
+		java.util.function.IntFunction<Instant> ilYa =
+				minutes -> reference.minus(Duration.ofMinutes(minutes));
 
 		List<TicketDemo> file = List.of(
-				termine(Origine.COMPTOIR, "+33639980101", ilYa.apply(92), ilYa.apply(75),
+				passage(Origine.COMPTOIR, ilYa.apply(95), ilYa.apply(77), ilYa.apply(75),
 						ilYa.apply(60)),
-				termine(Origine.ACCUEIL, null, ilYa.apply(80), ilYa.apply(60), ilYa.apply(44)),
-				termine(Origine.COMPTOIR, "+33639980102", ilYa.apply(66), ilYa.apply(44),
+				passage(Origine.ACCUEIL, ilYa.apply(80), ilYa.apply(62), ilYa.apply(60),
+						ilYa.apply(44)),
+				passage(Origine.COMPTOIR, ilYa.apply(66), ilYa.apply(46), ilYa.apply(44),
 						ilYa.apply(29)),
-				termine(Origine.COMPTOIR, "+33639980103", ilYa.apply(52), ilYa.apply(29),
+				passage(Origine.COMPTOIR, ilYa.apply(50), ilYa.apply(31), ilYa.apply(29),
 						ilYa.apply(12)),
 				new TicketDemo(Statut.EN_CONSULTATION, Origine.ACCUEIL, Priorite.NORMALE, null,
-						null, ilYa.apply(41), null, null, ilYa.apply(12), null),
+						ilYa.apply(30), ilYa.apply(14), ilYa.apply(14).plus(delaiGrace()),
+						ilYa.apply(12), null),
 				new TicketDemo(Statut.APPELE, Origine.ACCUEIL, RANG_CHAT_EN_CAISSE,
-						MOTIF_CHAT_EN_CAISSE, null, ilYa.apply(27), ilYa.apply(1),
-						ilYa.apply(1).plus(grace), null, null),
+						MOTIF_CHAT_EN_CAISSE, ilYa.apply(27), ilYa.apply(1),
+						ilYa.apply(1).plus(delaiGrace()), null, null),
 				new TicketDemo(Statut.PREVENU, Origine.ACCUEIL, Priorite.PRIORITAIRE,
-						MotifDao.DEFAUTS.get(0), null, ilYa.apply(24), null, null, null, null),
+						MotifDao.DEFAUTS.get(0), ilYa.apply(24), null, null, null, null),
 				enFile(Statut.EN_ATTENTE, ilYa.apply(15)),
 				enFile(Statut.EN_ATTENTE, ilYa.apply(6)));
 		poserLesTickets(tenantId, jour, file);
 	}
 
 	/**
-	 * La veille : six consultations, deux renoncements. C'est ce qui donne ses
+	 * La veille : huit consultations, deux renoncements. C'est ce qui donne ses
 	 * chiffres à la vue Mesure — départs, part des tickets pris au comptoir, et
 	 * un nombre d'arrivants saisi par l'accueil pour que le taux existe.
+	 *
+	 * <p>Chaque renoncement a lieu pendant une consultation longue (28 min) qui
+	 * occupe la salle : personne ne renonce devant une salle vide. Huit tickets
+	 * sur dix viennent du comptoir, pour treize arrivants : un taux de 62 %,
+	 * franchement au-dessus du seuil de 50 %, pas en zone grise.
 	 */
-	private void semerLaVeille(UUID tenantId, LocalDate hier) {
+	private void semerLaVeille(UUID tenantId, LocalDate veille) {
 		List<TicketDemo> tickets = List.of(
-				termineLe(hier, Origine.COMPTOIR, "09:08", "09:20", "09:36"),
-				termineLe(hier, Origine.ACCUEIL, "09:31", "09:40", "09:58"),
-				termineLe(hier, Origine.COMPTOIR, "10:05", "10:12", "10:27"),
-				partiLe(hier, Origine.COMPTOIR, "10:52", "11:20"),
-				termineLe(hier, Origine.ACCUEIL, "11:40", "11:48", "12:06"),
-				termineLe(hier, Origine.COMPTOIR, "14:12", "14:19", "14:35"),
-				partiLe(hier, Origine.COMPTOIR, "15:03", "15:41"),
-				termineLe(hier, Origine.COMPTOIR, "16:47", "16:52", "17:09"));
-		poserLesTickets(tenantId, hier, tickets);
-		// Treize personnes sont entrées, huit ont pris un ticket : un taux
-		// d'auto-enregistrement de l'ordre de ce qu'un pilote observe.
+				passageLe(veille, Origine.COMPTOIR, "09:08", "09:22", "09:24", "09:41"),
+				passageLe(veille, Origine.ACCUEIL, "09:26", "09:40", "09:42", "10:00"),
+				passageLe(veille, Origine.COMPTOIR, "09:35", "09:55", "10:00", "10:16"),
+				passageLe(veille, Origine.COMPTOIR, "10:05", "10:14", "10:16", "10:44"),
+				partiLe(veille, Origine.COMPTOIR, "10:12", "10:38"),
+				passageLe(veille, Origine.ACCUEIL, "11:05", "11:18", "11:20", "11:37"),
+				passageLe(veille, Origine.COMPTOIR, "14:10", "14:22", "14:24", "14:40"),
+				passageLe(veille, Origine.COMPTOIR, "14:25", "14:38", "14:40", "15:08"),
+				partiLe(veille, Origine.COMPTOIR, "14:32", "14:58"),
+				passageLe(veille, Origine.COMPTOIR, "16:15", "16:27", "16:29", "16:46"));
+		poserLesTickets(tenantId, veille, tickets);
 		jdbc.update("INSERT INTO mesure_jour (tenant_id, jour, arrivants_total) VALUES (?, ?, ?)",
-				tenantId, hier, 13);
+				tenantId, veille, ARRIVANTS_DE_LA_VEILLE);
 	}
 
-	private static TicketDemo termine(Origine origine, String telephone, Instant cree,
+	private static final int ARRIVANTS_DE_LA_VEILLE = 13;
+
+	/** Un passage terminé : créé, appelé, en consultation, sorti. */
+	private TicketDemo passage(Origine origine, Instant cree, Instant appele,
 			Instant debutConsultation, Instant fin) {
-		return new TicketDemo(Statut.TERMINE, origine, Priorite.NORMALE, null, telephone, cree,
-				null, null, debutConsultation, fin);
+		return new TicketDemo(Statut.TERMINE, origine, Priorite.NORMALE, null, cree, appele,
+				appele.plus(delaiGrace()), debutConsultation, fin);
 	}
 
 	private static TicketDemo enFile(Statut statut, Instant cree) {
-		return new TicketDemo(statut, Origine.ACCUEIL, Priorite.NORMALE, null, null, cree, null,
-				null, null, null);
+		return new TicketDemo(statut, Origine.ACCUEIL, Priorite.NORMALE, null, cree, null, null,
+				null, null);
 	}
 
-	private TicketDemo termineLe(LocalDate jour, Origine origine, String cree, String debut,
-			String fin) {
-		return termine(origine, null, ce(jour, cree), ce(jour, debut), ce(jour, fin));
+	private TicketDemo passageLe(LocalDate jour, Origine origine, String cree, String appele,
+			String debut, String fin) {
+		return passage(origine, ce(jour, cree), ce(jour, appele), ce(jour, debut), ce(jour, fin));
 	}
 
 	private TicketDemo partiLe(LocalDate jour, Origine origine, String cree, String parti) {
-		return new TicketDemo(Statut.PARTI, origine, Priorite.NORMALE, null, null, ce(jour, cree),
-				null, null, null, ce(jour, parti));
+		return new TicketDemo(Statut.PARTI, origine, Priorite.NORMALE, null, ce(jour, cree), null,
+				null, null, ce(jour, parti));
 	}
 
 	private Instant ce(LocalDate jour, String heure) {
@@ -262,8 +328,7 @@ public class AmorceClinique implements ApplicationRunner {
 					                    grace_expire_le, consultation_le, clos_le)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 					""", UUID.randomUUID(), tenantId, jour, numero, jetons.suivante(),
-					t.telephone(), t.telephone() == null ? null : Boolean.TRUE, t.priorite(),
-					t.motif(), t.cree().toEpochMilli() * Ticket.ECHELLE_ORDRE + numero,
+					null, null, t.priorite(), t.motif(), t.cree().toEpochMilli() * Ticket.ECHELLE_ORDRE + numero,
 					t.statut().name(), t.origine().name(), horodatage(t.cree()),
 					horodatage(t.appele()), horodatage(t.graceExpire()),
 					horodatage(t.consultation()), horodatage(t.clos()));
@@ -284,11 +349,9 @@ public class AmorceClinique implements ApplicationRunner {
 			if (jour == DayOfWeek.SUNDAY) {
 				continue;
 			}
-			agenda.ajouterPlage(tenantId, jour, LocalTime.of(9, 0), LocalTime.of(12, 0),
-					(short) 30, (short) 1);
-			if (jour != DayOfWeek.SATURDAY) {
-				agenda.ajouterPlage(tenantId, jour, LocalTime.of(14, 0), LocalTime.of(18, 0),
-						(short) 30, (short) 1);
+			for (Plage plage : plagesDu(jour)) {
+				agenda.ajouterPlage(tenantId, jour, plage.debut(), plage.fin(), (short) 30,
+						(short) 1);
 			}
 		}
 		LocalDate demain = prochainJourOuvre(aujourdhui);
@@ -332,12 +395,12 @@ public class AmorceClinique implements ApplicationRunner {
 		carnets.ajouterVaccination(tenantId, nougat, "Leucose féline", dernierRappelChat,
 				dernierRappelChat.plusYears(1), null);
 		carnets.ajouterVaccination(tenantId, nougat, "Rage", aujourdhui.minusYears(2),
-				aujourdhui.plusYears(1), "Passeport européen à jour");
+				aujourdhui.plusYears(1), "Vaccin antirabique triennal : rappel tous les trois ans");
 
 		UUID ulysse = carnets.creer(tenantId, "Ulysse", "Chien", null, jetons.suivante(),
 				maintenant);
 		LocalDate dernierRappelChien = aujourdhui.minusMonths(10);
-		carnets.ajouterVaccination(tenantId, ulysse, "CHPPi (carré, hépatite, parvovirose)",
+		carnets.ajouterVaccination(tenantId, ulysse, "CHPPi (carré, hépatite, parvovirose, parainfluenza)",
 				dernierRappelChien, dernierRappelChien.plusYears(1), null);
 		carnets.ajouterVaccination(tenantId, ulysse, "Leptospirose", dernierRappelChien,
 				dernierRappelChien.plusYears(1), null);
@@ -371,7 +434,7 @@ public class AmorceClinique implements ApplicationRunner {
 				                    seuil_prevenir, actif, expediteur_sms, jeton_ecran)
 				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?, ?)
 				""", tenantId, proprietes.slug(), proprietes.nom(),
-				proprietes.delaiGraceSecondes() == null ? 180 : proprietes.delaiGraceSecondes(),
+				(int) delaiGrace().toSeconds(),
 				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir(), expediteur,
 				jetonEcran);
 

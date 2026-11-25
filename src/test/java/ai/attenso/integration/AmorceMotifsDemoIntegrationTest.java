@@ -66,21 +66,24 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
-	@DisplayName("la clinique de démonstration porte six motifs, à des rangs gradués dans la bande")
-	void sixMotifsGradues() {
+	@DisplayName("la clinique de démonstration porte les deux défauts et trois motifs propres, à des rangs gradués dans la bande")
+	void cinqMotifsGradues() {
 		List<MotifPriorite> tous = motifsDeLaDemo();
 
 		assertThat(tous).extracting(MotifPriorite::libelle).containsExactly(
 				"Personne âgée", "Personne handicapée",
 				"Animal potentiellement contagieux", "Chat en caisse depuis plus de 30 min",
-				"Animal de ferme en bétaillère", "Contrôle post-opératoire court");
+				"Contrôle post-opératoire court");
 		assertThat(tous).extracting(MotifPriorite::rang).allMatch(r -> r >= 1 && r <= 9);
 		assertThat(tous).extracting(MotifPriorite::rang).containsExactly(
-				(short) 5, (short) 5, (short) 8, (short) 7, (short) 6, (short) 3);
+				(short) 5, (short) 5, (short) 8, (short) 7, (short) 3);
 		// Le gradient est le point : au moins quatre niveaux distincts.
 		assertThat(tous.stream().map(MotifPriorite::rang).distinct().count()).isGreaterThan(3);
 		assertThat(tous).extracting(MotifPriorite::ordre).containsExactly(
-				(short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6);
+				(short) 1, (short) 2, (short) 3, (short) 4, (short) 5);
+		// Trois motifs propres en plus des défauts : une clinique urbaine n'a pas de
+		// bétaillère à sa porte.
+		assertThat(tous).hasSize(MotifDao.DEFAUTS.size() + 3);
 	}
 
 	@Test
@@ -90,6 +93,6 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 		amorce.run(new DefaultApplicationArguments(new String[0]));
 
 		UUID id = cliniques.parSlug("demo").id();
-		assertThat(ContexteTenant.avec(id, () -> motifs.tous(id))).hasSize(6);
+		assertThat(ContexteTenant.avec(id, () -> motifs.tous(id))).hasSize(5);
 	}
 }
