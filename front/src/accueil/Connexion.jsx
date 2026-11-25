@@ -4,6 +4,7 @@ import { vider as viderJournal } from '../../../src/main/resources/static/app/jo
 import {
   doitOublierLeJournal,
 } from '../../../src/main/resources/static/app/vue-file.js';
+import { BandeLegale, Retour } from '../composants/chrome.jsx';
 import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from '../composants/formulaire.jsx';
 import { CLE_CLINIQUE, CLE_JETON, CLE_SLUG } from './session.js';
 
@@ -81,10 +82,7 @@ export function Connexion({ surConnexion }) {
         {/* La seule sortie. On arrive ici depuis la vitrine — son en-tête et
             son pied y mènent tous deux — et rien n'en ressortait : qui atterrit
             là sans compte n'avait que le bouton « précédent ». */}
-        <a href="/" className="cible-min mb-4 inline-flex items-center gap-1.5 text-sm
-                               font-semibold text-accent-texte">
-          <span aria-hidden="true">←</span> Attenso
-        </a>
+        <Retour />
 
         <div className="rounded-[var(--rayon-lg)] border border-bordure-douce
                         bg-surface p-6 shadow-2 sm:p-8">
@@ -147,20 +145,7 @@ export function Connexion({ surConnexion }) {
           </a>
         </p>
 
-        {/* Joignables depuis toute page, comme dans le pied de la vitrine. */}
-        <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs
-                       text-sur-fond-doux">
-          {[
-            ['/mentions-legales', 'Mentions légales'],
-            ['/cgv', 'Conditions générales'],
-            ['/confidentialite', 'Confidentialité'],
-          ].map(([href, texte]) => (
-            <li key={href}>
-              <a href={href} className="cible-min inline-flex items-center
-                                        underline underline-offset-2">{texte}</a>
-            </li>
-          ))}
-        </ul>
+        <BandeLegale />
       </div>
     </main>
   );

@@ -110,23 +110,17 @@ describe('la connexion ne doit pas être un cul-de-sac', () => {
    */
   it('offre un retour au site, un chemin vers l\'inscription, et la bande légale', () => {
     const source = sansCommentaires(lire(CONNEXION));
-    // La DESTINATION, pas la forme de l'attribut : la bande légale est écrite
-    // comme une table parcourue, à l'image du pied de la vitrine, donc son
-    // `href` est une variable. Exiger `href="/cgv"` littéral tiendrait une
-    // façon d'écrire plutôt que la propriété.
-    for (const [chemin, quoi] of [
-      ['/', 'le retour au site'],
-      ['/inscription', "le chemin vers l'inscription"],
-      ['/mentions-legales', 'les mentions légales'],
-      ['/cgv', 'les conditions générales'],
-      ['/confidentialite', 'la politique de confidentialité'],
-    ]) {
-      assert.ok(source.includes(`'${chemin}'`) || source.includes(`"${chemin}"`),
-        `${quoi} manque`);
-    }
-    // Et qu'elles soient réellement rendues : une table de chemins que
-    // personne ne parcourt ne mène nulle part.
-    assert.match(source, /<a href=\{href\}/, 'la bande légale n\'est pas rendue');
+    // Les trois destinations légales et le retour viennent désormais de la
+    // coquille partagée : elles étaient recopiées sur trois pages, et une
+    // seule copie portait les classes qui donnent 44 px. Cette garde demande
+    // donc que la page EMPLOIE la coquille ; que la coquille mène bien aux
+    // trois pages, et avec de vraies cibles, est tenu une fois pour toutes
+    // par `chrome.test.js`.
+    assert.match(source, /<Retour\s*\/>/, 'le retour au site manque');
+    assert.match(source, /<BandeLegale\s*\/>/, 'la bande légale manque');
+    // Le chemin vers l'inscription, lui, appartient à cette page seule.
+    assert.ok(source.includes('"/inscription"') || source.includes("'/inscription'"),
+      "le chemin vers l'inscription manque");
   });
 
   /**
@@ -155,8 +149,12 @@ describe('la connexion ne doit pas être un cul-de-sac', () => {
    */
   it('donne une vraie cible tactile à chaque lien de navigation', () => {
     const source = sansCommentaires(lire(CONNEXION));
+    // La page n'écrit plus qu'UN lien en propre, celui de l'inscription ;
+    // les autres viennent de la coquille, gardée chez elle. Exiger trois
+    // liens ici reviendrait à exiger qu'ils soient recopiés.
     const liens = source.match(/<a href=[^>]*>/g) ?? [];
-    assert.ok(liens.length >= 3, 'les liens de navigation ont disparu');
+    assert.equal(liens.length, 1,
+      'la page écrit un lien de plus ou de moins que celui de l\'inscription');
     for (const lien of liens) {
       assert.match(lien, /cible-min/, `lien sans cible minimale : ${lien.slice(0, 60)}`);
       assert.match(lien, /inline-flex|inline-block/,

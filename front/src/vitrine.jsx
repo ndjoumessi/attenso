@@ -1,4 +1,5 @@
 import { ApercuFile } from './composants/apercu-file.jsx';
+import { BandeLegale } from './composants/chrome.jsx';
 import { Appel, Bande, Colonne, Fleche, Mesure } from './composants/base.jsx';
 
 const ONDE = 'M3 12h4l3-8 4 16 3-8h4';
@@ -309,12 +310,6 @@ function Souscrire() {
 }
 
 function Pied() {
-  const liens = [
-    ['/connexion', 'Se connecter'],
-    ['/mentions-legales', 'Mentions légales'],
-    ['/cgv', 'Conditions générales'],
-    ['/confidentialite', 'Confidentialité'],
-  ];
   return (
     <footer className="border-t border-bordure-douce py-12">
       <Colonne className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -325,14 +320,14 @@ function Pied() {
             et sont effacés le lendemain.
           </p>
         </Mesure>
-        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          {liens.map(([href, texte]) => (
-            <li key={href}>
-              <a href={href} className="text-accent-texte underline
-                                        underline-offset-2">{texte}</a>
-            </li>
-          ))}
-        </ul>
+        {/* « Se connecter » n'est pas une mention légale : il garde sa
+            place, et la bande partagée porte les trois autres. */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <a href="/connexion" className="cible-min inline-flex items-center
+                                          text-accent-texte underline
+                                          underline-offset-2">Se connecter</a>
+          <BandeLegale variante="rangee" />
+        </div>
       </Colonne>
     </footer>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BandeLegale, Retour } from './chrome.jsx';
 
 /** Ce qui manque est dit, pas masqué : un blanc dans des mentions légales
  *  ressemble à une page en règle, et ne l'est pas. */
@@ -37,9 +38,7 @@ export function Valeur({ children }) {
 export function PageLegale({ titre, children }) {
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
-      <p className="text-sm">
-        <a href="/" className="text-accent-texte underline">← Attenso</a>
-      </p>
+      <Retour />
       <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{titre}</h1>
       {/* La mesure est bornée à 70 caractères : au-delà, l'œil perd la ligne
           suivante, et un texte juridique est déjà assez difficile à suivre. */}
@@ -51,14 +50,7 @@ export function PageLegale({ titre, children }) {
                       [&_li]:mt-1 [&_ul]:list-disc [&_ul]:pl-6">
         {children}
       </div>
-      <p className="mt-12 text-sm text-sur-fond-doux">
-        <a href="/mentions-legales" className="text-accent-texte underline">
-          Mentions légales</a>{' · '}
-        <a href="/cgv" className="text-accent-texte underline">
-          Conditions générales</a>{' · '}
-        <a href="/confidentialite" className="text-accent-texte underline">
-          Confidentialité</a>
-      </p>
+      <BandeLegale />
     </main>
   );
 }

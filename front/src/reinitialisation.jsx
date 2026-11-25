@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from './composants/formulaire.jsx';
 
@@ -65,10 +66,7 @@ export function Reinitialisation() {
           disait « redemandez-en un depuis la page de connexion » sans jamais y
           mener — la personne devait deviner l'adresse, sur un téléphone, après
           un échec. */}
-      <a href="/connexion" className="cible-min mb-4 inline-flex items-center gap-1.5
-                                      text-sm font-semibold text-accent-texte">
-        <span aria-hidden="true">←</span> Me connecter
-      </a>
+      <Retour href="/connexion">Me connecter</Retour>
       <h1 className="text-3xl font-bold tracking-tight">
         Choisir un nouveau mot de passe
       </h1>
