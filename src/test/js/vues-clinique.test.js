@@ -62,6 +62,9 @@ describe('la vue Affiche', () => {
     // hors de lui, `affiche.qr` serait lu quand `affiche` vaut `null`.
     const bloc = corps.match(/\{affiche && \(([\s\S]*?)\n {6}\)\}/);
     assert.ok(bloc, "le bloc `{affiche && (` est introuvable");
+    // Un autre bloc `{… && (` à ce retrait dans la fenêtre : l'extraction aurait
+    // avalé jusqu'à un second `)}`, et un <Qr> entre les deux passerait.
+    assert.ok(!bloc[1].includes('\n      {'), "le bloc extrait déborde sur un bloc frère");
     assert.match(bloc[1], /<Qr qr=\{affiche\.qr\}/, "le QR n'est pas dans l'aperçu");
     assert.match(bloc[1], /\{urlLisible\(affiche\.url\)\}/,
       "l'adresse n'est pas écrite sous sa forme lisible");
@@ -119,5 +122,34 @@ describe("le titre n'est pas écrit deux fois", () => {
   it("le tableau monte Affiche depuis la vue, et ne la définit plus", () => {
     assert.match(tableau, /import \{ Affiche \} from '\.\/accueil\/vues\/Affiche\.jsx'/);
     assert.ok(!/\nfunction Affiche\(/.test(tableau));
+  });
+});
+
+describe('Mon compte : le changement de mot de passe', () => {
+  /** Le corps de `MotDePasse`, de sa déclaration à la fonction suivante. */
+  const corpsMotDePasse = () => {
+    const source = sansCommentaires(lire(TABLEAU));
+    const debut = source.indexOf('function MotDePasse(');
+    assert.notEqual(debut, -1, 'MotDePasse introuvable');
+    const suite = source.indexOf('\nfunction ', debut + 1);
+    return suite === -1 ? source.slice(debut) : source.slice(debut, suite);
+  };
+
+  it('garde le jeton neuf que le serveur rend, dans le chemin de succès', () => {
+    // Sans lui la page recharge avec l'ancien jeton, déjà fermé côté serveur :
+    // le gérant retombe sur la connexion sans voir que son mot de passe a changé.
+    const corps = corpsMotDePasse();
+    const essai = corps.match(/try \{([\s\S]*?)\} catch \(/);
+    assert.ok(essai, 'le try est introuvable');
+    assert.match(essai[1], /localStorage\.setItem\(CLE_JETON, reponse\.jeton\);/,
+      'le jeton neuf n\'est pas gardé avant le rechargement');
+  });
+
+  it('rend le formulaire après un refus : le catch dit l\'erreur ET libère le bouton', () => {
+    // UNE expression : sans `setEnvoi(false)` dans le catch, le bouton reste
+    // figé sur « Un instant… » après une saisie erronée.
+    assert.match(corpsMotDePasse(),
+      /\} catch \((\w+)\) \{\s*setErreur\(\1\.reseau \? 'Serveur injoignable\.' : \1\.message\);\s*setEnvoi\(false\);\s*\}/,
+      "le catch n'affiche pas l'erreur, ou ne libère pas le bouton");
   });
 });
