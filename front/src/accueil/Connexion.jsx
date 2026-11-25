@@ -77,8 +77,17 @@ export function Connexion({ surConnexion }) {
           que deux niveaux d'élévation, et une valeur en dur ne suit pas la
           compensation du thème sombre — l'alpha y est multiplié par sept,
           faute de quoi l'ombre est invisible sur le fond. */}
-      <div className="w-full max-w-md rounded-[var(--rayon-lg)] border border-bordure-douce
-                      bg-surface p-6 shadow-2 sm:p-8">
+      <div className="w-full max-w-md">
+        {/* La seule sortie. On arrive ici depuis la vitrine — son en-tête et
+            son pied y mènent tous deux — et rien n'en ressortait : qui atterrit
+            là sans compte n'avait que le bouton « précédent ». */}
+        <a href="/" className="cible-min mb-4 inline-flex items-center gap-1.5 text-sm
+                               font-semibold text-accent-texte">
+          <span aria-hidden="true">←</span> Attenso
+        </a>
+
+        <div className="rounded-[var(--rayon-lg)] border border-bordure-douce
+                        bg-surface p-6 shadow-2 sm:p-8">
         <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
         <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
 
@@ -122,6 +131,36 @@ export function Connexion({ surConnexion }) {
           </Info>
         )}
         </form>
+        </div>
+
+        {/* Pour qui atterrit ici sans compte. La vitrine mène à la connexion
+            par son en-tête ET son pied ; l'inverse n'existait pas. */}
+        <p className="mt-5 text-center text-sm text-sur-fond-doux">
+          Pas encore de compte ?{' '}
+          {/* `inline-flex` et non un lien en ligne : `cible-min` règle une
+              hauteur MINIMALE, qui n'a aucun effet sur un élément en ligne.
+              Mesuré avant correction : 17 px de haut. */}
+          <a href="/inscription" className="cible-min inline-flex items-center
+                                            font-semibold text-accent-texte
+                                            underline underline-offset-2">
+            Inscrire ma clinique
+          </a>
+        </p>
+
+        {/* Joignables depuis toute page, comme dans le pied de la vitrine. */}
+        <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs
+                       text-sur-fond-doux">
+          {[
+            ['/mentions-legales', 'Mentions légales'],
+            ['/cgv', 'Conditions générales'],
+            ['/confidentialite', 'Confidentialité'],
+          ].map(([href, texte]) => (
+            <li key={href}>
+              <a href={href} className="cible-min inline-flex items-center
+                                        underline underline-offset-2">{texte}</a>
+            </li>
+          ))}
+        </ul>
       </div>
     </main>
   );
