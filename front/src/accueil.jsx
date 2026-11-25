@@ -17,7 +17,7 @@ import { Titre } from './accueil/Sections.jsx';
 import { VueRendezVous } from './accueil/vues/VueRendezVous.jsx';
 import { VueCarnets } from './accueil/vues/VueCarnets.jsx';
 import { Gestes } from './accueil/Gestes.jsx';
-import { Compteurs, Exploitation } from './accueil/Exploitation.jsx';
+import { Compteurs, Comptes, Exploitation } from './accueil/Exploitation.jsx';
 import { Mesure } from './accueil/Mesure.jsx';
 import { Barre, OuvreLaBarre } from './accueil/Barre.jsx';
 import { libellePour, vuePour } from './accueil/navigation.js';
@@ -259,15 +259,11 @@ function Tableau({ jeton, surDeconnexion }) {
           )}
           {vue === 'rendez-vous' && <VueRendezVous jeton={jeton} />}
           {vue === 'carnets' && <VueCarnets jeton={jeton} surErreur={setErreur} />}
-          {vue === 'mesure' && <Mesure jeton={jeton} surErreur={setErreur} />}
-          {/* UN SEUL écran pour deux entrées, et c'est provisoire :
-              « Exploitation » et « Comptes de la clinique » vivent dans le même
-              composant, derrière le même contrôle de rôle côté serveur. Les
-              séparer est le travail de la tâche qui possède ce fichier ; d'ici
-              là, mieux vaut deux fois le bon écran qu'une entrée de barre sur
-              un écran vide. */}
-          {(vue === 'exploitation' || vue === 'comptes')
-            && <Exploitation jeton={jeton} surErreur={setErreur} />}
+          {vue === 'mesure'
+            && <Mesure jeton={jeton} surErreur={setErreur} titre={false} />}
+          {vue === 'exploitation'
+            && <Exploitation jeton={jeton} surErreur={setErreur} titre={false} />}
+          {vue === 'comptes' && <Comptes jeton={jeton} titre={false} />}
           {vue === 'affiche' && <Affiche />}
           {vue === 'compte' && <MotDePasse jeton={jeton} />}
         </div>

@@ -30,7 +30,13 @@ function Compteur({ libelle, valeur }) {
   );
 }
 
-export function Mesure({ jeton, surErreur }) {
+/**
+ * Mesure de l'auto-enregistrement.
+ *
+ * <p>`titre` : `false` quand le tableau l'enveloppe, dont l'en-tête porte déjà
+ * le même libellé. Seule, la section garde son titre.
+ */
+export function Mesure({ jeton, surErreur, titre = true }) {
   const [mesure, setMesure] = useState(null);
   const [arrivants, setArrivants] = useState('');
 
@@ -86,7 +92,7 @@ export function Mesure({ jeton, surErreur }) {
 
   return (
     <>
-      <Titre>Mesure de l'auto-enregistrement</Titre>
+      {titre && <Titre>Mesure de l'auto-enregistrement</Titre>}
       <p className={AIDE}>
         Combien de personnes sont entrées dans la clinique aujourd'hui, ticket
         ou pas. Le système compte celles qui prennent un ticket ; il ne voit pas
