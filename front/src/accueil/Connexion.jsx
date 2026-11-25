@@ -93,7 +93,19 @@ export function Connexion({ surConnexion }) {
         <div>
           <label className={ETIQUETTE} htmlFor="slug">Clinique</label>
           <input id="slug" name="slug" autoComplete="organization" required
-                 className={CHAMP} />
+                 aria-describedby="aide-slug" className={CHAMP} />
+          {/* « Clinique » seul laissait le choix entre le nom de
+              l'établissement et son identifiant — et celui-ci n'est pas
+              devinable : il est dérivé du nom, mais tronqué, et parfois
+              suffixé d'un chiffre en cas de collision.
+              L'indice renvoie à l'adresse du QR code parce que c'est la seule
+              trace du slug que la clinique a sous les yeux : elle est imprimée
+              et posée sur son comptoir. Ce n'est pas un secret, ce QR est
+              public. */}
+          <p id="aide-slug" className={AIDE}>
+            L'identifiant reçu à l'inscription, celui qui figure dans l'adresse
+            de votre QR code&nbsp;: <code>/t/votre-identifiant</code>.
+          </p>
         </div>
         <div>
           <label className={ETIQUETTE} htmlFor="email">Adresse</label>
