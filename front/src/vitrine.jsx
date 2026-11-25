@@ -1,6 +1,6 @@
 import { ApercuFile } from './composants/apercu-file.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
-import { Appel, Bande, Colonne, Fleche, Mesure } from './composants/base.jsx';
+import { Appel, Bande, Colonne, Fleche, Mesure, RYTHME } from './composants/base.jsx';
 
 const ONDE = 'M3 12h4l3-8 4 16 3-8h4';
 const BULLE = 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z';
@@ -45,13 +45,17 @@ function Entete() {
 }
 
 function Heros() {
-  // Le héros n'est pas une `Bande` — il n'a pas de titre de section — mais il en
-  // parle le vocabulaire : même jeton de pas, et AUCUN `pb`. Le creux qui le
-  // sépare du premier bloc appartient à la bande suivante ; sinon les deux
-  // rembourrages s'ajoutent et ouvrent 208 px là où le reste de la page en
-  // tient 192.
+  // Le héros n'est pas une `Bande` — il n'a pas de titre de section — mais il
+  // respire au MÊME rythme, depuis la même source.
+  //
+  // Il n'avait d'abord que le haut, par crainte que les deux rembourrages
+  // n'ouvrent « 208 px là où le reste de la page en tient 192 ». Les 208
+  // venaient de l'ancien `py-28` de Tailwind, soit 112 px : une valeur que le
+  // passage aux jetons avait déjà remplacée. Avec `--pas-24`, la somme fait
+  // 96 + 96 = 192, c'est-à-dire exactement le rythme. Mesuré : le creux était
+  // de 96 px, moitié moins que toutes les autres jointures.
   return (
-    <section className="relative pt-[var(--pas-16)] sm:pt-[var(--pas-24)]">
+    <section className={`relative ${RYTHME}`}>
       <Colonne className="relative">
         <p className="mb-4 text-sm text-sur-fond-doux">
           File d'attente virtuelle pour cliniques vétérinaires
