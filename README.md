@@ -214,21 +214,50 @@ l'URL de l'écran n'apparaît qu'une fois, dans les journaux de ce déploiement.
 **Avertissement : redéployer ne repose PAS la démonstration.** La clinique
 `demo` existe déjà sur Railway, donc `run()` sort au garde-fou du slug
 (« déjà installée ») avant de rien semer, même avec
-`ATTENSO_AMORCE_DEMONSTRATION=true`. Passer l'ancien tenant à `actif=false` ne
-suffit pas non plus : `slug` est `NOT NULL UNIQUE` (`V1__socle.sql`), et le
-garde-fou ne regarde que les cliniques actives, donc l'insertion échouerait.
-Pour la reposer, il faut **supprimer la ligne `tenant` de `demo`**. Les clés
-étrangères vers `tenant` n'ont pas de `ON DELETE CASCADE` : un `DELETE` simple
-échoue tant qu'il reste des lignes filles (utilisateur, tickets…), il faut les
-retirer d'abord, en rôle propriétaire (le RLS cache tout au rôle applicatif).
-Tant que `demo` est la seule clinique de la base, c'est ce que fait
-`TRUNCATE tenant CASCADE` — à ne JAMAIS lancer dès qu'une vraie clinique y
-vit. Puis redéployer avec `ATTENSO_AMORCE_ACTIVE`,
-`ATTENSO_AMORCE_DEMONSTRATION=true` et `ATTENSO_AMORCE_MOT_DE_PASSE` posés. La
-consigne d'avant — retirer `ATTENSO_AMORCE_ACTIVE` et
-`ATTENSO_AMORCE_MOT_DE_PASSE` — va donc à l'inverse de ce qu'il faut : ne la
-suivre qu'une fois la démonstration reposée, pour ne pas laisser un mot de
-passe en clair dans l'environnement.
+`ATTENSO_AMORCE_DEMONSTRATION=true`. Pour la rejouer, il y a une commande.
+
+**Rejouer la démonstration : `attenso.amorce.reinitialiser`.** Elle efface ce
+que la clinique `demo` a accumulé (tickets, mesures, rendez-vous et créneaux,
+plages horaires, animaux et vaccinations, notifications et abonnements push
+qui en dépendent), puis ressème la file du jour, la veille, l'agenda et les
+carnets, **en une seule transaction** : un semis qui échoue rend la
+démonstration d'avant. Sont gardés, pour ne pas refaire la clinique ni
+redonner un mot de passe : la clinique, son compte, ses motifs de priorité,
+son écran appairé, son abonnement et ses factures, et les deux journaux en
+ajout seul (leur ligne reste, détachée du ticket). Les compteurs de dépense HLR
+restent aussi : les remettre à zéro rouvrirait un budget payant.
+
+Sur Railway : poser `ATTENSO_AMORCE_REINITIALISER=true` (à côté de
+`ATTENSO_AMORCE_ACTIVE`, `ATTENSO_AMORCE_DEMONSTRATION=true`,
+`ATTENSO_AMORCE_SLUG=demo` et du mot de passe, déjà là), redéployer, lire dans
+les journaux « démonstration `demo` rejouée », **puis retirer la variable** :
+laissée posée, chaque redémarrage du service rejouerait tout. En local, avec les
+mêmes propriétés : `--attenso.amorce.reinitialiser=true`. Si la clinique n'existe
+pas encore, la commande n'a rien à vider et l'amorce l'installe, démonstration
+comprise.
+
+Elle détruit des données, donc elle est verrouillée trois fois, et un refus est
+journalisé (`réinitialisation REFUSÉE`) sans rien toucher :
+
+1. `attenso.amorce.reinitialiser` est fausse par défaut ; tant qu'elle ne l'est
+   pas, la commande n'existe tout simplement pas dans l'application.
+2. `attenso.amorce.demonstration` doit être vraie aussi (et l'amorce active).
+3. **Elle ne vide qu'une clinique dont le slug, relu en base, est littéralement
+   `demo`.** Ce nom est écrit en dur dans le code, pas lu dans la
+   configuration : `ATTENSO_AMORCE_SLUG=cerisiers` avec les deux autres verrous
+   posés est refusé, et aucune variable d'environnement ne peut le contourner.
+   La propriété `slug` dit quelle clinique on vise ; la constante dit la seule
+   qu'on a le droit de viser ; les deux doivent coïncider. Une démonstration
+   sous un autre nom exige de changer le code.
+
+**Ce qui reste vrai même avec la commande.** La mise en scène périme : le
+ticket qui montre la priorité graduée porte une grâce de **deux minutes**, que
+`TacheGrace` fait passer en ABSENT, sauf à poser
+`ATTENSO_AMORCE_DELAI_GRACE_SECONDES` assez long pour la démonstration. Et la
+file n'est celle d'un moment vraisemblable que si on l'installe dans la fenêtre
+sûre : **10 h 35 à 12 h, ou 15 h 35 à 18 h, heure de Paris**. Hors de ces
+heures elle se date sur la fin de la plage la plus proche ; rejouer juste avant
+de montrer, pas la veille.
 
 **Deux écarts à garder en tête.** Railway fournit **PostgreSQL 18**, comme la CI
 (testcontainers `postgres:18-alpine`) et `compose.deploiement.yaml` : la suite
