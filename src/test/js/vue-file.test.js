@@ -22,6 +22,22 @@ const RACINE = resolve(import.meta.dirname, '../../..');
  */
 const lire = (chemin) => readFileSync(resolve(RACINE, chemin), 'utf8');
 
+/**
+ * Le même source, commentaires retirés.
+ *
+ * <p>Ces gardes-ci portent sur ce que le code FAIT, pas sur ce qu'il raconte :
+ * sans ce filtre, le commentaire qui explique une branche la satisfait à la
+ * place du code, et il suffit d'allonger ce commentaire pour qu'une lecture
+ * bornée n'atteigne plus la branche elle-même — constaté en écrivant cette
+ * tâche. Même filtre, et même convention de commentaires, que
+ * `navigation.test.js`.
+ */
+const sansCommentaires = (source) => source
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .split('\n')
+  .filter((l) => !/^\s*(\/\/|\*)/.test(l))
+  .join('\n');
+
 /** Les états ouverts, lus dans la machine à états du serveur. */
 function ouvertsDuServeur() {
   const source = readFileSync(STATUT_JAVA, 'utf8');
@@ -250,7 +266,7 @@ describe("l'écran de la file", () => {
    * commence.
    */
   it('une file vide dit quoi faire, elle ne reste pas muette', () => {
-    const source = lire('front/src/accueil/File.jsx');
+    const source = sansCommentaires(lire('front/src/accueil/File.jsx'));
     assert.match(source, /lignes\.length === 0|aucun ticket/i);
     // Et la PHRASE, pas seulement la garde : un `return null` sous la même
     // condition passerait l'assertion ci-dessus en laissant l'écran muet.

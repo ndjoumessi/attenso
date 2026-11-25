@@ -145,7 +145,16 @@ export function File({ vue, horsReseau, surAction, surDeplacement }) {
     return <p className="mt-4 text-sur-fond-doux">Chargement du tableau…</p>;
   }
   if (vue.lignes.length === 0) {
-    return <p className="mt-4 text-sur-fond-doux">Personne en salle pour le moment.</p>;
+    // La file vide dit AUSSI par où les tickets arrivent : c'est l'écran sur
+    // lequel la journée commence, et un écran qui n'annonce que du vide se lit
+    // comme une page cassée. Pas de « bouton ci-dessus » : la liste ne doit
+    // rien savoir de ce qui est rendu autour d'elle.
+    return (
+      <p className="mt-4 leading-relaxed text-sur-fond-doux">
+        Personne en salle pour le moment. Les clients prennent leur tour en
+        scannant le QR code de l&apos;affiche du comptoir.
+      </p>
+    );
   }
   return (
     // React redessine par différence : le garde de signature qui existait
