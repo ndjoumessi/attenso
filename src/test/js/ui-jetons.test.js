@@ -40,8 +40,12 @@ function couleursUtilisees(source) {
  * démonstration : une faute de frappe dans `accueil/Barre.jsx` rendait du texte
  * transparent avec toute la suite verte. `accueil/` est balayé RÉCURSIVEMENT,
  * parce que les tâches suivantes y ajoutent `accueil/vues/`.
+ *
+ * <p>`composants/` y est aussi : la branche l'a restylé (`base`, `formulaire`,
+ * `qr`) et les quatorze pages l'importent ; `text-sur-fond-dou` y rendait du
+ * texte transparent partout, tout vert.
  */
-const SOUS_GARDE = ['src/ui', 'src/accueil'];
+const SOUS_GARDE = ['src/ui', 'src/accueil', 'src/composants'];
 
 /** Tous les .jsx d'un dossier, récursivement, en chemins relatifs à front/. */
 function composants(dossier) {
@@ -61,6 +65,7 @@ describe('les composants du tableau n\'utilisent que des couleurs du thème', ()
     // nom, un balayage vide serait vert et ne dirait rien.
     assert.ok(fichiers.some((f) => f.startsWith('src/ui/')), 'src/ui/ hors garde');
     assert.ok(fichiers.some((f) => f.startsWith('src/accueil/')), 'src/accueil/ hors garde');
+    assert.ok(fichiers.some((f) => f.startsWith('src/composants/')), 'src/composants/ hors garde');
     const fautifs = [];
     for (const f of fichiers) {
       for (const nom of new Set(couleursUtilisees(readFileSync(join(FRONT, f), 'utf8')))) {

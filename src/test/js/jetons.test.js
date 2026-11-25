@@ -157,6 +157,20 @@ describe('les règles non négociables du socle', () => {
     assert.ok(Number(min[1]) >= 44, '44px est le plancher d\'Apple');
   });
 
+  it('déclare le rythme vertical que `Bande` consomme, en rem', () => {
+    // `composants/base.jsx` écrit `py-[var(--pas-16)] sm:py-[var(--pas-24)]` :
+    // un jeton renommé ou vidé retire la respiration de chaque section des
+    // quatorze pages, sans qu'aucun contraste ne bouge.
+    for (const nom of ['pas-16', 'pas-24']) {
+      const m = source.match(new RegExp(`--${nom}:\\s*([\\d.]+)rem\\s*;`));
+      assert.ok(m, `--${nom} absent ou plus en rem`);
+      assert.ok(Number(m[1]) > 0, `--${nom} vaut zéro`);
+    }
+    assert.ok(Number(source.match(/--pas-24:\s*([\d.]+)rem/)[1])
+      > Number(source.match(/--pas-16:\s*([\d.]+)rem/)[1]),
+      '--pas-24 doit dépasser --pas-16 : le rythme croît avec la largeur');
+  });
+
   it('respecte le mouvement réduit globalement, pas écran par écran', () => {
     assert.match(source, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(source, /animation-duration: 0\.01ms !important/);
