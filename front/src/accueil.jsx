@@ -111,6 +111,10 @@ function Tableau({ jeton, surDeconnexion }) {
       setErreur(null);
     } catch (echec) {
       if (echec.statut === 401) {
+        // Le jeton SEUL, volontairement : ni CLE_SLUG ni le journal des gestes.
+        // Connexion compare l'ancien slug au nouveau AVANT de le réécrire ; sans
+        // lui le comparant serait null et le journal serait purgé à chaque
+        // reconnexion, même sur la même clinique, gestes en attente compris.
         localStorage.removeItem(CLE_JETON);
         location.reload();
         return;
