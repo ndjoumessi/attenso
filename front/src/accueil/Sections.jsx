@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
-import { CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
+import { Adresse } from '../composants/adresse.jsx';
+import { AIDE, CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
+import { Qr } from '../composants/qr.jsx';
 import { entete } from './session.js';
 
 export function Titre({ children }) {
@@ -78,6 +80,9 @@ export function Agenda({ jeton, vide, titre = true }) {
 export function Carnets({ jeton, surErreur, vide, titre = true }) {
   const [animaux, setAnimaux] = useState(null);
   const [echec, setEchec] = useState(false);
+  const [qrOuvert, setQrOuvert] = useState(null);
+  const [qrCarnet, setQrCarnet] = useState(null);
+  const [echecQr, setEchecQr] = useState(false);
 
   // Un échec LOCAL, pas le bandeau partagé du haut de page : celui-ci est
   // effacé à chaque rafraîchissement réussi de la file, donc à chaque
@@ -110,12 +115,32 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
     }
   }
 
+  async function montrerLeQr(id) {
+    if (qrOuvert === id) {
+      setQrOuvert(null);
+      return;
+    }
+    setQrOuvert(id);
+    setQrCarnet(null);
+    setEchecQr(false);
+    try {
+      const vue = await appel(`/api/animaux/${id}/carnet/qr`, { headers: entete(jeton) });
+      setQrCarnet(vue.qr);
+    } catch {
+      setEchecQr(true);
+    }
+  }
+
   async function revoquer(id) {
     try {
       await appel(`/api/animaux/${id}/carnet/revoquer`, {
         method: 'POST', headers: entete(jeton),
         body: JSON.stringify({ reemettre: true }),
       });
+      // Le QR affiché vient d'être invalidé : le garder à l'écran ferait
+      // scanner une adresse morte.
+      setQrOuvert(null);
+      setQrCarnet(null);
       relire();
     } catch (echec) {
       surErreur(echec.reseau
@@ -168,14 +193,37 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
             <strong>{animal.nom} — {animal.espece}</strong>
             {animal.jetonCarnet && (
               <div className="mt-2">
-                <code className="block break-all font-mono text-sm text-sur-fond-doux">
-                  {location.origin}/carnet/{animal.jetonCarnet}
-                </code>
-                <button type="button" onClick={() => revoquer(animal.id)}
-                        title="Le QR actuel cessera de fonctionner et un nouveau sera émis."
-                        className={`mt-2 ${secondaire}`}>
-                  Révoquer le QR
-                </button>
+                <Adresse url={`${location.origin}/carnet/${animal.jetonCarnet}`} />
+                {/* EF-906 promet un accès « en scannant un QR code ». Le
+                    tableau disait « Émettre un QR », « Révoquer le QR », et
+                    n'en montrait aucun : il n'en existait nulle part, pas même
+                    côté serveur. Il se demande À LA DEMANDE — charger un QR
+                    par animal au montage ferait payer la liste entière pour un
+                    geste qui porte sur un seul. */}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => montrerLeQr(animal.id)}
+                          className={secondaire}>
+                    {qrOuvert === animal.id ? 'Masquer le QR' : 'Montrer le QR'}
+                  </button>
+                  <button type="button" onClick={() => revoquer(animal.id)}
+                          title="Le QR actuel cessera de fonctionner et un nouveau sera émis."
+                          className={secondaire}>
+                    Révoquer le QR
+                  </button>
+                </div>
+                {qrOuvert === animal.id && (
+                  <div className="mt-3 flex justify-center rounded-[var(--rayon)]
+                                  bg-white p-4">
+                    {qrCarnet
+                      ? <Qr qr={qrCarnet} className="aspect-square w-48" />
+                      : <p className="text-sm text-[#333]">Un instant…</p>}
+                  </div>
+                )}
+                {echecQr && (
+                  <p role="status" className={AIDE}>
+                    Le QR n'a pas pu être chargé. Réessayez dans un instant.
+                  </p>
+                )}
               </div>
             )}
           </li>

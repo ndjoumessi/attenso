@@ -4,6 +4,8 @@ import ai.attenso.carnet.Animal;
 import ai.attenso.carnet.CarnetDao;
 import ai.attenso.carnet.ServiceCarnet;
 import ai.attenso.carnet.Vaccination;
+import ai.attenso.affiche.GenerateurQr;
+import ai.attenso.config.ProprietesLien;
 import ai.attenso.securite.PrincipalPersonnel;
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.ServiceTenant;
@@ -41,12 +43,18 @@ public class ControleurCarnet {
 
 	private final JdbcTemplate jdbc;
 
+	private final GenerateurQr qr;
+
+	private final ProprietesLien lien;
+
 	public ControleurCarnet(ServiceTenant cliniques, ServiceCarnet carnets, CarnetDao dao,
-			JdbcTemplate jdbc) {
+			JdbcTemplate jdbc, GenerateurQr qr, ProprietesLien lien) {
 		this.cliniques = cliniques;
 		this.carnets = carnets;
 		this.dao = dao;
 		this.jdbc = jdbc;
+		this.qr = qr;
+		this.lien = lien;
 	}
 
 	// --- Public : le QR de la médaille ----------------------------------
@@ -111,6 +119,36 @@ public class ControleurCarnet {
 	public Animal revoquer(@AuthenticationPrincipal PrincipalPersonnel principal,
 			@PathVariable UUID id, @RequestBody DemandeRevocation demande) {
 		return carnets.revoquerLeCarnet(principal.tenantId(), id, demande.reemettre());
+	}
+
+	/**
+	 * Le QR du carnet d'un animal (EF-906).
+	 *
+	 * <p>À LA DEMANDE, et non dans `/api/animaux` : encoder un QR par animal à
+	 * chaque lecture de la liste ferait payer la grille entière pour un geste
+	 * qui porte sur un seul animal.
+	 *
+	 * <p>La même base de lien que les SMS et que l'affiche. Deux sources pour
+	 * une seule adresse publique, c'est la garantie qu'un jour l'une des deux
+	 * sera fausse.
+	 *
+	 * <p>{@code 404} quand le carnet est fermé ou révoqué : il n'y a alors
+	 * aucune adresse à encoder, et en rendre une serait promettre un accès qui
+	 * ne s'ouvrira pas.
+	 */
+	@GetMapping("/api/animaux/{id}/carnet/qr")
+	public VueQrCarnet qrDuCarnet(@AuthenticationPrincipal PrincipalPersonnel principal,
+			@PathVariable UUID id) {
+		Animal animal = ContexteTenant.avec(principal.tenantId(),
+				() -> dao.parId(principal.tenantId(), id).orElseThrow(CarnetInconnu::new));
+		if (!animal.carnetOuvert()) {
+			throw new CarnetInconnu();
+		}
+		String url = lien.base() + "/carnet/" + animal.jetonCarnet();
+		return new VueQrCarnet(url, qr.encoder(url));
+	}
+
+	public record VueQrCarnet(String url, ai.attenso.affiche.Qr qr) {
 	}
 
 	public record VueCarnet(String clinique, String animal, String espece,
