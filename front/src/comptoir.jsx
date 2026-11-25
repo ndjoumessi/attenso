@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
-import { minutes } from '../../src/main/resources/static/app/formats.js';
+import {
+  ADRESSE_INACTIVE, adresseInactive,
+} from '../../src/main/resources/static/app/vue-comptoir.js';
 
 const GENERIQUE = 'Cette clinique';
 
@@ -19,6 +21,10 @@ export function Comptoir() {
   const [clinique, setClinique] = useState('');
   const [erreur, setErreur] = useState(null);
   const [envoi, setEnvoi] = useState(false);
+  // Part de `false` : le premier rendu est pré-rendu et ne doit dépendre
+  // d'aucune donnée réseau. Le pré-rendu montre donc le formulaire, et le
+  // barrage se pose ensuite, comme le nom de la clinique.
+  const [inactive, setInactive] = useState(false);
   const champ = useRef(null);
 
   useEffect(() => {
@@ -31,7 +37,12 @@ export function Comptoir() {
         setClinique(nom);
         document.title = `${nom} — prendre son tour`;
       })
-      .catch(() => {});
+      // L'échec était avalé — `.catch(() => {})` — et la page retombait sur
+      // « Cette clinique ». Pour un slug inconnu ou une clinique désactivée,
+      // c'est un 404 : le formulaire restait actif, le client donnait son
+      // numéro de mobile, et c'est l'envoi qui échouait. Une panne passagère,
+      // elle, laisse le comptoir ouvert.
+      .catch((echec) => setInactive(adresseInactive(echec)));
   }, []);
 
   async function soumettre(evenement) {
@@ -61,17 +72,25 @@ export function Comptoir() {
         {clinique ?? ' '}
       </p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">Prendre son tour</h1>
-      <p className="mt-3 leading-relaxed text-sur-fond-doux">
-        Laissez votre mobile : vous recevrez un message quand ce sera presque à
-        vous, et vous pourrez suivre votre tour depuis votre téléphone.
-      </p>
+      {inactive ? (
+        <div role="alert"
+             className="mt-4 rounded-[var(--rayon)] border border-alerte
+                        bg-alerte-voile px-4 py-3 text-alerte">
+          {ADRESSE_INACTIVE}
+        </div>
+      ) : (
+        <p className="mt-3 leading-relaxed text-sur-fond-doux">
+          Laissez votre mobile : vous recevrez un message quand ce sera presque à
+          vous, et vous pourrez suivre votre tour depuis votre téléphone.
+        </p>
+      )}
 
       <form onSubmit={soumettre} className="mt-8">
         <label htmlFor="telephone" className="block font-semibold">Votre mobile</label>
         <input
           ref={champ} id="telephone" name="telephone" type="tel" inputMode="tel"
           autoComplete="tel" placeholder="06 12 34 56 78" required
-          aria-describedby="aide"
+          disabled={inactive} aria-describedby="aide"
           className="mt-2 w-full rounded-[var(--rayon)] border border-bordure-controle
                      bg-surface px-4 py-3 text-lg cible
                      focus-visible:outline-2 focus-visible:outline-offset-2
@@ -90,7 +109,7 @@ export function Comptoir() {
           </div>
         )}
 
-        <button type="submit" disabled={envoi}
+        <button type="submit" disabled={envoi || inactive}
                 className="mt-6 w-full cible rounded-[var(--rayon)] bg-accent px-6
                            text-lg font-bold text-sur-accent shadow-1
                            [touch-action:manipulation] disabled:opacity-60

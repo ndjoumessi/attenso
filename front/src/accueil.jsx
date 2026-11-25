@@ -78,6 +78,10 @@ function Tableau({ jeton, surDeconnexion }) {
   const [infoCompte, setInfoCompte] = useState(null);
   const [journalAbsent, setJournalAbsent] = useState(false);
   const [identite, setIdentite] = useState('');
+  // Le courriel BRUT, en plus de la chaîne affichée : le formulaire de
+  // changement de mot de passe en a besoin pour dire au navigateur QUEL
+  // compte il met à jour.
+  const [courriel, setCourriel] = useState('');
   const liaison = useRef(null);
   const actions = useRef(null);
 
@@ -142,7 +146,10 @@ function Tableau({ jeton, surDeconnexion }) {
       // Qui est connecté. Pas bloquant : le tableau doit s'afficher même si
       // cet appel échoue, c'est une information de confort et non la file.
       appel('/api/compte', { headers: entete(jeton) })
-        .then((c) => setIdentite(`${c.email} · ${c.role === 'GERANT' ? 'gérant' : 'accueil'}`))
+        .then((c) => {
+          setIdentite(`${c.email} · ${c.role === 'GERANT' ? 'gérant' : 'accueil'}`);
+          setCourriel(c.email ?? '');
+        })
         .catch(() => {});
 
       // Le journal n'est pas garanti : en navigation privée, IndexedDB
@@ -270,7 +277,9 @@ function Tableau({ jeton, surDeconnexion }) {
             && <Exploitation jeton={jeton} surErreur={setErreur} titre={false} />}
           {vue === 'comptes' && <Comptes jeton={jeton} titre={false} />}
           {vue === 'affiche' && <Affiche jeton={jeton} titre={false} />}
-          {vue === 'compte' && <MotDePasse jeton={jeton} titre={false} />}
+          {vue === 'compte' && (
+            <MotDePasse jeton={jeton} courriel={courriel} titre={false} />
+          )}
         </div>
       </SidebarInset>
     </SidebarProvider>
@@ -354,7 +363,7 @@ function Entete({ titre, vue, commandes, surDeconnexion }) {
   );
 }
 
-function MotDePasse({ jeton, titre = true }) {
+function MotDePasse({ jeton, courriel = '', titre = true }) {
   const [erreur, setErreur] = useState(null);
   const [envoi, setEnvoi] = useState(false);
 
@@ -386,6 +395,16 @@ function MotDePasse({ jeton, titre = true }) {
       {titre && <Titre>Mon mot de passe</Titre>}
       <p className={AIDE}>Le mot de passe de votre compte personnel.</p>
       <form onSubmit={changer} className="mt-4 space-y-4">
+        {/* L'identifiant du compte, caché mais PRÉSENT. Un navigateur
+            n'enregistre un mot de passe que s'il sait à quel compte le
+            rattacher : sans ce champ, l'invite d'enregistrement ne se
+            déclenche pas, ou enregistre sous une identité vide. C'est le motif
+            recommandé pour les formulaires de changement.
+            `readOnly` et non `disabled` : un champ désactivé n'est pas soumis
+            et reste invisible au gestionnaire. */}
+        <input type="text" name="username" autoComplete="username"
+               value={courriel} readOnly aria-hidden="true" tabIndex={-1}
+               className="sr-only" />
         <div>
           <label className={ETIQUETTE} htmlFor="mdp-actuel">Mot de passe actuel</label>
           <input id="mdp-actuel" name="actuel" type="password" required

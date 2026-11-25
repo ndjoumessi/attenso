@@ -52,7 +52,7 @@ export function Reinitialisation() {
            className="mt-6 flex w-full cible items-center justify-center
                       rounded-[var(--rayon)] bg-accent px-6 text-lg font-bold
                       text-sur-accent no-underline shadow-1 hover:brightness-110">
-          Aller au tableau d'accueil
+          Me connecter
         </a>
       </main>
     );
@@ -60,6 +60,15 @@ export function Reinitialisation() {
 
   return (
     <main className="mx-auto w-full max-w-md px-5 py-10">
+      {/* On arrive ici par un lien de courriel, et souvent sur un lien PÉRIMÉ :
+          ils ne valent qu'une heure et qu'une fois. Le message d'expiration
+          disait « redemandez-en un depuis la page de connexion » sans jamais y
+          mener — la personne devait deviner l'adresse, sur un téléphone, après
+          un échec. */}
+      <a href="/connexion" className="cible-min mb-4 inline-flex items-center gap-1.5
+                                      text-sm font-semibold text-accent-texte">
+        <span aria-hidden="true">←</span> Me connecter
+      </a>
       <h1 className="text-3xl font-bold tracking-tight">
         Choisir un nouveau mot de passe
       </h1>

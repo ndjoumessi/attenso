@@ -60,3 +60,39 @@ export function rappelDuNumero(etat) {
 export function consigne(statut) {
   return CONSIGNES[statut] ?? '';
 }
+
+// Les deux gestes que la page client propose n'ont pas le même horizon, et
+// aucun des deux ne vaut pour tous les statuts. Ils s'affichaient pourtant
+// sous « Consultation terminée. Bonne journée. » — et l'appui n'était pas
+// sans effet : `Ticket.signalerProche` n'exige aucun statut, donc un ticket
+// clos recevait un « j'arrive » que l'accueil voyait sur son tableau.
+//
+// Deux prédicats et non un seul, parce qu'ils divergent réellement sur
+// APPELE : y signaler son arrivée est précisément ce qui évite d'être marqué
+// absent, tandis qu'y proposer une notification contredirait le titre de la
+// page, qui dit déjà « C'est à vous ».
+const ENCORE_UN_APPEL_A_VENIR = ['EN_ATTENTE', 'PREVENU', 'ABSENT'];
+
+/** Tant que l'accueil peut encore tenir compte de « j'arrive ». */
+export function peutSignalerSonArrivee(statut) {
+  return ENCORE_UN_APPEL_A_VENIR.includes(statut) || statut === 'APPELE';
+}
+
+/** Une notification annonce l'appel à venir ; après l'appel, elle n'annonce rien. */
+export function peutDemanderUneNotification(statut) {
+  return ENCORE_UN_APPEL_A_VENIR.includes(statut);
+}
+
+/**
+ * La grande carte a-t-elle quelque chose à montrer ?
+ *
+ * Non quand le lien n'a jamais rien rendu : la carte restait alors sur
+ * « Personnes avant vous — / chargement… », un chargement qui ne finissait
+ * jamais, pendant que l'erreur disait juste en dessous que le lien était mort.
+ *
+ * Oui dès qu'un état est connu, erreur ou pas : le message d'erreur réseau
+ * promet « dernier état affiché », et cacher la carte en ferait un mensonge.
+ */
+export function doitMontrerLaCarte(etat, erreur) {
+  return Boolean(etat) || !erreur;
+}
