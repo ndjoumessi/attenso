@@ -1,3 +1,4 @@
+import { ApercuFile } from './composants/apercu-file.jsx';
 import { Appel, Bande, Colonne, Fleche, Mesure } from './composants/base.jsx';
 
 const ONDE = 'M3 12h4l3-8 4 16 3-8h4';
@@ -66,13 +67,20 @@ function Heros() {
             sur l'ordre de passage.
           </p>
         </Mesure>
-        <div className="mt-10 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap gap-3">
           <Appel href="/inscription">Inscrire ma clinique <Fleche /></Appel>
           <Appel href="#comment" variante="discret">Voir comment ça marche</Appel>
         </div>
         <p className="mt-4 text-sm text-sur-fond-doux">
           Sans installation, sans matériel. Résiliable à tout moment.
         </p>
+        {/* L'écran que l'accueil aura sous les doigts. Il vient APRÈS les
+            appels à l'action, et non entre le titre et eux : sur un téléphone,
+            s'intercaler les repousserait sous la ligne de flottaison et
+            aggraverait ce qu'on vient corriger. */}
+        <div className="mt-10 sm:mt-12">
+          <ApercuFile />
+        </div>
       </Colonne>
     </section>
   );
