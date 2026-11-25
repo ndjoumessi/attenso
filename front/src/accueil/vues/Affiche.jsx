@@ -19,10 +19,10 @@ import { entete } from '../session.js';
  * <p>Trois états : pas encore chargée (`null`, sans échec), chargée, en échec.
  * Sans cette distinction la vue afficherait un aperçu vide avant la réponse.
  *
- * <p>`/affiche` s'ouvre dans un NOUVEL onglet : cette page n'a aucune
- * navigation pour revenir au tableau, et un lien simple laisserait la clinique
- * bloquée en pleine démonstration. `rel="noopener"` retire à la page ouverte
- * sa référence `window.opener` vers le tableau du personnel.
+ * <p>`/affiche` s'ouvre dans un NOUVEL onglet : son lien « Retour au tableau »
+ * mène à `/connexion`, donc le suivre ferait repasser le personnel par la
+ * connexion et lui ferait perdre l'état du tableau. `rel="noopener"` retire à
+ * la page ouverte sa référence `window.opener` vers le tableau du personnel.
  */
 export function Affiche({ jeton, titre = true }) {
   const [affiche, setAffiche] = useState(null);

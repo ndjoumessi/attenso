@@ -29,8 +29,8 @@ const corpsAffiche = () => {
 
 describe('la vue Affiche', () => {
   it("l'affiche s'imprime dans un nouvel onglet, sans quitter le tableau", () => {
-    // /affiche n'a aucune navigation pour revenir (conception §7.4) : un lien
-    // simple laisserait la clinique bloquée en pleine démonstration.
+    // Le lien « Retour au tableau » de /affiche mène à /connexion : le suivre
+    // ferait perdre au personnel l'état du tableau.
     //
     // UNE expression, UNE balise : trois lookaheads bornés à l'intérieur d'un
     // même `<a …>` (`[^>]*` ne franchit pas le `>` qui le ferme). Trois jetons
@@ -38,7 +38,7 @@ describe('la vue Affiche', () => {
     // `rel="noopener"` : la convention d'inscription.jsx, et sans elle la page
     // ouverte obtient `window.opener` vers le tableau du personnel.
     assert.match(corpsAffiche(),
-      /<a\b(?=[^>]*\bhref="\/affiche")(?=[^>]*\btarget="_blank")(?=[^>]*\brel="noopener")[^>]*>/,
+      /<a\b(?=[^>]*\bhref=(?:"\/affiche"|\{"\/affiche"\}))(?=[^>]*\btarget="_blank")(?=[^>]*\brel="[^"]*\bnoopener\b[^"]*")[^>]*>/,
       "le lien vers /affiche n'a pas, sur le MÊME élément, href, target=\"_blank\" et rel=\"noopener\"");
   });
 
@@ -54,6 +54,18 @@ describe('la vue Affiche', () => {
       "le catch ne pose pas l'échec");
     assert.match(corps, /\{affiche && \(\s*<div[^>]*>\s*<p[^>]*>\{affiche\.nom\}/,
       "l'aperçu n'est pas conditionné à la réponse");
+  });
+
+  it("la vue montre le QR et la promesse, et l'appel porte le jeton", () => {
+    const corps = corpsAffiche();
+    assert.match(corps, /\{affiche && \([\s\S]*?<Qr qr=\{affiche\.qr\}/,
+      "le QR n'est pas rendu dans l'aperçu");
+    assert.match(corps, /\{affiche && \([\s\S]*?\{promesse\(affiche\)\}/,
+      "la promesse faite au client n'est pas rendue dans l'aperçu");
+    assert.match(corps, /appel\('\/api\/affiche', \{ headers: entete\(jeton\) \}\)/,
+      "l'appel part sans le jeton");
+    assert.match(corps, /\}, \[jeton\]\);/,
+      "le chargement ne se refait plus quand le jeton change");
   });
 
   it("l'appel est annulé au démontage, et ne relit pas en boucle", () => {
