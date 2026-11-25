@@ -534,6 +534,22 @@ describe('les vues du groupe Journée', () => {
     });
   }
 
+  for (const v of VUES_JOURNEE) {
+    it(`${v.composant} ne redouble pas le titre de l'en-tête`, () => {
+      // Le h1 de l'écran est celui de la COQUILLE (libellePour), présent pour
+      // toute vue : c'est lui qui survit. La section enveloppée se tait, mais
+      // garde son titre hors d'une vue, d'où une prop et non une suppression.
+      const vue = sansCommentaires(lire(fichier(v.composant)));
+      assert.match(vue, new RegExp(`<${v.section}\\b[^>]*\\btitre=\\{false\\}`),
+        'la vue laisse sa section redoubler le h1 de l\'en-tête');
+      const corps = corpsDeSection(v);
+      assert.match(corps, /export function \w+\(\{[^}]*\btitre = true\b[^}]*\}\)/,
+        'la section ne sait pas taire son titre');
+      assert.match(corps, /\{titre && <Titre>/,
+        'la section ne conditionne pas son titre à la prop');
+    });
+  }
+
   it('le lien de réservation du vide tient la cible tactile', () => {
     const classes = (() => {
       const source = sansCommentaires(lire(fichier('VueRendezVous')));

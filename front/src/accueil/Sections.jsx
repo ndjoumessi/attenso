@@ -17,8 +17,11 @@ const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle 
  * <p>`vide` : ce qu'on affiche quand il n'y en a aucun. La section seule
  * détient la liste chargée, donc seule elle sait qu'elle est vide ; c'est la
  * vue qui l'enveloppe qui sait quoi dire alors.
+ *
+ * <p>`titre` : `false` quand une vue l'enveloppe, dont l'en-tête porte déjà
+ * le même libellé. Seule, la section garde son titre.
  */
-export function Agenda({ jeton, vide }) {
+export function Agenda({ jeton, vide, titre = true }) {
   const [rdvs, setRdvs] = useState(null);
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export function Agenda({ jeton, vide }) {
 
   return (
     <>
-      <Titre>Rendez-vous du jour</Titre>
+      {titre && <Titre>Rendez-vous du jour</Titre>}
       {rdvs?.length ? (
         <ul className="mt-4 space-y-2">
           {rdvs.map((rdv) => (
@@ -63,9 +66,9 @@ export function Agenda({ jeton, vide }) {
  *
  * <p>`vide` : ce qu'on affiche une fois la liste chargée et vide. Tant qu'elle
  * n'est pas chargée (`null`), ou si le chargement échoue, rien : un « aucun
- * carnet » affiché pendant le chargement dirait faux.
+ * carnet » affiché pendant le chargement dirait faux. `titre` : voir `Agenda`.
  */
-export function Carnets({ jeton, surErreur, vide }) {
+export function Carnets({ jeton, surErreur, vide, titre = true }) {
   const [animaux, setAnimaux] = useState(null);
 
   const relire = () => appel('/api/animaux', { headers: entete(jeton) })
@@ -110,7 +113,7 @@ export function Carnets({ jeton, surErreur, vide }) {
 
   return (
     <>
-      <Titre>Carnets de santé</Titre>
+      {titre && <Titre>Carnets de santé</Titre>}
       <form onSubmit={ajouter} className="mt-4 space-y-4">
         <div>
           <label className={ETIQUETTE} htmlFor="animal-nom">Nom de l'animal</label>

@@ -16,7 +16,7 @@ export function VueCarnets({ jeton, surErreur }) {
         Le carnet de chaque animal, auquel son propriétaire accède en scannant
         un QR code.
       </p>
-      <Carnets jeton={jeton} surErreur={surErreur} vide={(
+      <Carnets jeton={jeton} surErreur={surErreur} titre={false} vide={(
         <p className={`${AIDE} rounded-[var(--rayon)] border border-dashed
                        border-bordure-douce p-4`}>
           Aucun carnet de santé pour l'instant. Ajoutez un premier animal avec

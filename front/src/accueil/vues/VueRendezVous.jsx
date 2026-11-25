@@ -22,7 +22,7 @@ export function VueRendezVous({ jeton }) {
       <p className={AIDE}>
         Les rendez-vous pris par vos clients pour aujourd'hui, par heure.
       </p>
-      <Agenda jeton={jeton} vide={(
+      <Agenda jeton={jeton} titre={false} vide={(
         <div className={AIDE}>
           <p>Aucun rendez-vous aujourd'hui.</p>
           <p className="mt-2">
