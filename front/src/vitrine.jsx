@@ -45,7 +45,7 @@ function Entete() {
 
 function Heros() {
   return (
-    <section className="relative overflow-hidden py-20 sm:py-28">
+    <section className="relative overflow-hidden py-16 sm:py-28">
       {/* Halo décoratif, sans contenu : il ne porte aucune information et
           disparaît proprement si le dégradé n'est pas rendu. */}
       <div aria-hidden="true"
@@ -56,7 +56,12 @@ function Heros() {
                       px-3 py-1 text-sm font-semibold text-accent-texte">
           File d'attente virtuelle pour cliniques vétérinaires
         </p>
-        <h1 className="text-4xl font-bold leading-[1.1] tracking-[-0.02em] sm:text-6xl">
+        {/* Resserré SUR MOBILE SEULEMENT, et typographiquement : la conception
+            demandait un titre « plus court à l'œil », pas un texte réécrit.
+            Les deux ne sont pas la même chose, et c'est en les confondant que
+            la première version n'avait resserré que de 8 px de marge. */}
+        <h1 className="text-[2rem] font-bold leading-[1.05] tracking-[-0.02em]
+                       sm:text-6xl sm:leading-[1.1]">
           Vos clients attendent où ils veulent.
           <span className="block text-sur-fond-doux">Pas entassés dans votre salle.</span>
         </h1>

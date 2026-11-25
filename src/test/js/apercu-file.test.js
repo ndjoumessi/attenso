@@ -32,8 +32,26 @@ describe("l'aperçu de la file", () => {
    */
   it('montre les chiffres de la clinique de démonstration, pas des chiffres inventés', () => {
     const source = sansCommentaires(lire(APERCU));
-    for (const vrai of ['17 min', 'Chat stressé en caisse', 'Personne âgée']) {
-      assert.ok(source.includes(vrai), `« ${vrai} » absent de l'aperçu`);
+    // Les couples, et non les valeurs seules : « 4 » ou « 0 » isolés se
+    // trouvent partout dans un fichier. Et la liste couvre LES ONZE valeurs
+    // dessinées, parce que la première version n'en tenait que trois — elle a
+    // laissé passer une tuile inventée.
+    const attendus = [
+      ["['En salle', '4']", 'tuile « en salle »'],
+      ["['Partis sans être vus', '0']", 'tuile des départs'],
+      ["['Consultation médiane', '17 min']", 'tuile de la médiane'],
+      ["numero: '7'", 'ticket appelé'],
+      ["numero: '8'", 'ticket prévenu'],
+      ["numero: '9'", 'ticket en attente'],
+      ["'13 min'", "attente du ticket 7"],
+      ["'11 min'", "attente du ticket 8"],
+      ["'6 min'", "attente du ticket 9"],
+      ['Chat stressé en caisse', 'motif du ticket 7'],
+      ['Personne âgée', 'motif du ticket 8'],
+    ];
+    for (const [valeur, quoi] of attendus) {
+      assert.ok(source.includes(valeur),
+        `${quoi} : « ${valeur} » absent — la figure ne montre plus ce que la clinique de démonstration affiche`);
     }
   });
 
@@ -43,8 +61,23 @@ describe("l'aperçu de la file", () => {
    * de l'arbre d'accessibilité, et c'est le texte autour d'elle qui porte le
    * sens.
    */
-  it("est décoratif : il ne s'annonce pas comme une vraie file", () => {
+  it("masque le dessin aux lecteurs d'écran, mais pas sa légende", () => {
     const source = sansCommentaires(lire(APERCU));
-    assert.match(source, /aria-hidden="true"/);
+
+    // Ancré sur le DESSIN, pas sur le fichier : posé ailleurs — sur la liste
+    // par exemple — les trois tuiles redeviendraient lues comme des chiffres
+    // de clinique réels, et un balayage du fichier entier n'y verrait rien.
+    const figure = source.slice(source.indexOf('<figure'));
+    const dessin = figure.slice(figure.indexOf('<div'), figure.indexOf('<figcaption'));
+    assert.match(dessin.slice(0, 200), /aria-hidden=(?:"true"|\{true\})/,
+      "le dessin n'est pas masqué aux lecteurs d'écran");
+
+    // Et la légende DOIT rester lue : sans elle la figure n'existe pas pour un
+    // lecteur d'écran, et le héros retombe sur le défaut qu'il corrige —
+    // décrire le produit sans jamais le montrer.
+    assert.match(source, /<figcaption/, 'la figure n\'a pas de légende');
+    const legende = source.slice(source.indexOf('<figcaption'));
+    assert.doesNotMatch(legende.slice(0, 160), /aria-hidden/,
+      'la légende est masquée : la figure devient muette');
   });
 });

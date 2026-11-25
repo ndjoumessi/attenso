@@ -73,8 +73,12 @@ export function Connexion({ surConnexion }) {
     // inutile, et la condition portait d'ailleurs sur la LARGEUR là où le
     // risque venait de la hauteur.
     <main className="grid min-h-dvh place-items-center px-5 py-10">
+      {/* `shadow-2` et non une ombre écrite à la main : `jetons.css` n'expose
+          que deux niveaux d'élévation, et une valeur en dur ne suit pas la
+          compensation du thème sombre — l'alpha y est multiplié par sept,
+          faute de quoi l'ombre est invisible sur le fond. */}
       <div className="w-full max-w-md rounded-[var(--rayon-lg)] border border-bordure-douce
-                      bg-surface p-6 shadow-[0_24px_60px_-32px_rgb(0_0_0/0.25)] sm:p-8">
+                      bg-surface p-6 shadow-2 sm:p-8">
         <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
         <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
 
