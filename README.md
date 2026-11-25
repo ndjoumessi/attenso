@@ -250,11 +250,21 @@ journalisé (`réinitialisation REFUSÉE`) sans rien toucher :
    qu'on a le droit de viser ; les deux doivent coïncider. Une démonstration
    sous un autre nom exige de changer le code.
 
-**Ce qui reste vrai même avec la commande.** La mise en scène périme : le
-ticket qui montre la priorité graduée porte une grâce de **deux minutes**, que
-`TacheGrace` fait passer en ABSENT, sauf à poser
-`ATTENSO_AMORCE_DELAI_GRACE_SECONDES` assez long pour la démonstration. Et la
-file n'est celle d'un moment vraisemblable que si on l'installe dans la fenêtre
+**La grâce du ticket appelé.** La mise en scène repose sur un ticket appelé
+(« Chat stressé en caisse », rang 7) qui montre la priorité graduée ; sa grâce
+expirée, `TacheGrace` le passe en ABSENT, et il ne doit pas le faire pendant la
+présentation. `ATTENSO_AMORCE_DELAI_GRACE_SECONDES` ne jouait qu'à la
+**création** de la clinique : sur une clinique existante, que la réinitialisation
+conserve, elle ne faisait rien, et la grâce restait de 180 s (soit environ deux
+minutes après le semis). Elle est désormais **appliquée aussi par la
+réinitialisation**, dans la même transaction et avant le semis, car le ticket
+appelé tire son échéance de la grâce de la clinique. Le **maximum est de 3600
+secondes**, par contrainte de schéma (`tenant_delai_grace_positif`) : une valeur
+hors de 0 à 3600 est ramenée à la borne et le journal dit la valeur demandée,
+la valeur appliquée et la raison. Non renseignée, la clinique garde sa grâce.
+
+**Ce qui reste vrai même avec la commande.** La file
+n'est celle d'un moment vraisemblable que si on l'installe dans la fenêtre
 sûre : **10 h 35 à 12 h, ou 15 h 35 à 18 h, heure de Paris**. Hors de ces
 heures elle se date sur la fin de la plage la plus proche ; rejouer juste avant
 de montrer, pas la veille.
