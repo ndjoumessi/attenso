@@ -574,27 +574,35 @@ describe('les vues du groupe Journée', () => {
       'tant que rien n\'est chargé, un échec doit se dire, et le reste se taire');
   });
 
+  /**
+   * Les deux propriétés n'ont pas changé — nouvel onglet, cible tactile —
+   * mais elles ont changé de FICHIER : le lien passe désormais par le
+   * composant d'adresse partagé, qui lui ajoute la copie. La garde suit la
+   * propriété là où elle vit, elle ne la relâche pas.
+   */
   it('le lien de réservation sort du tableau sans le fermer, et n\'est jamais mort', () => {
-    const source = sansCommentaires(lire(fichier('VueRendezVous')));
-    const i = source.indexOf('<a href={lien}');
-    assert.notEqual(i, -1);
-    const balise = source.slice(i, source.indexOf('>', i));
+    const vue = sansCommentaires(lire(fichier('VueRendezVous')));
+    assert.match(vue, /<Adresse[^>]*href=\{lien\}/,
+      "le lien de réservation ne passe plus par le composant d'adresse");
+    // Sans slug, pas de lien : `/rdv/null` serait cliquable et mort.
+    assert.match(vue, /slug \? `[^`]*\$\{slug\}` : null/);
+    assert.match(vue, /\{lien && \(/, 'le lien est rendu même sans slug');
+
+    const adresse = sansCommentaires(
+      readFileSync(resolve(RACINE, 'front/src/composants/adresse.jsx'), 'utf8'));
+    const i = adresse.indexOf('<a href={href}');
+    assert.notEqual(i, -1, "le composant d'adresse n'ouvre plus l'adresse");
+    const balise = adresse.slice(i, adresse.indexOf('>', i));
     assert.match(balise, /target="_blank"/);
     assert.match(balise, /rel="noopener"/);
-    // Sans slug, pas de lien : `/rdv/null` serait cliquable et mort.
-    assert.match(source, /slug \? `[^`]*\$\{slug\}` : null/);
-    assert.match(source, /\{lien && \(/, 'le lien est rendu même sans slug');
   });
 
   it('le lien de réservation du vide tient la cible tactile', () => {
-    const classes = (() => {
-      const source = sansCommentaires(lire(fichier('VueRendezVous')));
-      const i = source.indexOf('<a href={lien}');
-      assert.notEqual(i, -1, 'le lien de réservation est introuvable');
-      const m = source.slice(i).match(/className="([^"]*)"/);
-      assert.ok(m, 'le lien de réservation ne porte aucune classe');
-      return m[1].split(/\s+/).filter(Boolean);
-    })();
+    const adresse = sansCommentaires(
+      readFileSync(resolve(RACINE, 'front/src/composants/adresse.jsx'), 'utf8'));
+    const i = adresse.indexOf('<a href={href}');
+    assert.notEqual(i, -1, 'le lien de réservation est introuvable');
+    const classes = adresse.slice(i).match(/className="([^"]*)"/)[1].split(/\s+/);
     assert.ok(classes.includes('cible-min') || classes.includes('cible'),
       `lien sans cible tactile : ${classes.join(' ')}`);
   });

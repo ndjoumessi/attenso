@@ -1,4 +1,5 @@
 import { AIDE } from '../../composants/formulaire.jsx';
+import { Adresse } from '../../composants/adresse.jsx';
 import { Agenda } from '../Sections.jsx';
 import { CLE_SLUG } from '../session.js';
 
@@ -27,16 +28,12 @@ export function VueRendezVous({ jeton }) {
         <div className={AIDE}>
           <p>Aucun rendez-vous aujourd'hui.</p>
           {lien && (
-            <p className="mt-2">
-              Les clients réservent sur{' '}
-              {/* Nouvel onglet : le lien mène à une page publique, sans rien
-                  pour revenir au tableau en pleine démonstration. */}
-              <a href={lien} target="_blank" rel="noopener"
-                 className="cible-min inline-flex items-center break-all
-                            font-mono text-accent-texte underline">
-                {lien}
-              </a>
-            </p>
+            <div className="mt-2">
+              <p>Les clients réservent sur&nbsp;:</p>
+              {/* Le lien existait et s'ouvrait bien ; ce qui manquait, c'est
+                  de pouvoir l'EMPORTER — vers un SMS, un site, une affiche. */}
+              <Adresse url={lien} href={lien} />
+            </div>
           )}
           <p className="mt-2">
             Si cette page s'ouvre sans aucun créneau, c'est qu'aucun horaire
