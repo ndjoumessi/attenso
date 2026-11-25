@@ -62,11 +62,17 @@ export function Connexion({ surConnexion }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-10">
-      <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
-      <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
+    // `min-h-dvh` et non `min-h-screen` : sur mobile, `100vh` compte la barre
+    // d'adresse qui se rétracte, et la mise en page saute au défilement.
+    // `items-start` au-dessus de `sm:` : sur un téléphone en paysage, centrer
+    // verticalement couperait le haut de la carte au lieu de la faire défiler.
+    <main className="grid min-h-dvh items-start justify-center px-5 py-10 sm:items-center">
+      <div className="w-full max-w-md rounded-[var(--rayon-lg)] border border-bordure-douce
+                      bg-surface p-6 shadow-[0_24px_60px_-32px_rgb(0_0_0/0.25)] sm:p-8">
+        <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
+        <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
 
-      <form onSubmit={entrer} className="mt-8 space-y-5">
+        <form onSubmit={entrer} className="mt-8 space-y-5">
         <div>
           <label className={ETIQUETTE} htmlFor="slug">Clinique</label>
           <input id="slug" name="slug" autoComplete="organization" required
@@ -105,7 +111,8 @@ export function Connexion({ surConnexion }) {
             de réinitialisation vient d'être envoyé. Il est valable une heure.
           </Info>
         )}
-      </form>
+        </form>
+      </div>
     </main>
   );
 }
