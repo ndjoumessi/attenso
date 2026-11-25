@@ -110,7 +110,7 @@ describe('le routage par fragment dans le tableau', () => {
   it('les bandeaux sont rendus hors du commutateur de vue', () => {
     // Le mode dégradé doit se voir sur TOUTES les vues : un bandeau enfermé dans
     // la vue « file » disparaîtrait au moment où il compte.
-    const source = lire('front/src/accueil.jsx');
+    const source = sansCommentaires(lire('front/src/accueil.jsx'));
     // La PRÉSENCE d'abord : sans elle, ce test restait vert si les bandeaux
     // disparaissaient purement et simplement — et c'est ce qui rend le mode
     // dégradé visible. Ce projet a déjà perdu deux comportements dans une
@@ -563,9 +563,14 @@ describe('les vues du groupe Journée', () => {
 
   it('un agenda qui n\'a pas pu charger ne dit pas « aucun rendez-vous »', () => {
     const corps = corpsDeSection(VUES_JOURNEE[0]);
-    assert.match(corps, /\.catch\([^)]*\)\s*=>\s*setEchec\(true\)|setEchec\(true\)/,
+    assert.match(corps, /\.catch\(\(\) => setEchec\(true\)\)/,
       'l\'échec du chargement n\'est pas retenu');
-    assert.match(corps, /rdvs === null[\s\S]*?echec && \(\s*<Erreur>/,
+    // Le ternaire entier, borné : `rdvs === null ? (echec && (<Erreur>…))`
+    // vient AVANT `rdvs.length === 0 ? vide`. Déplacer le bloc d'échec après,
+    // ou remplacer sa branche par `vide`, afficherait « aucun rendez-vous »
+    // pendant le chargement et en cas d'échec.
+    assert.match(corps,
+      /\{rdvs === null \? \(echec && \(\s*<Erreur>[^<]*<\/Erreur>\s*\)\) : rdvs\.length === 0 \? vide : \(/,
       'tant que rien n\'est chargé, un échec doit se dire, et le reste se taire');
   });
 
