@@ -83,14 +83,14 @@ describe('les vues réservées au gérant', () => {
       /if \(facturationRefusee\.current\) return;\s*appel\('\/api\/facturation'/,
       'la relecture ne consulte pas le refus AVANT d\'appeler la facturation');
     assert.match(corps,
-      /\.catch\(\((\w+)\) => \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{\s*facturationRefusee\.current = true;[^}]*?setRefuse\(true\);\s*\} else \{\s*setEchecFacturation\(true\);/,
+      /\.catch\(\((\w+)\) => \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{\s*facturationRefusee\.current = true;\s*setFacturation\(null\);\s*setRefuse\(true\);(?:\s*setEchecFacturation\(true\);)?\s*\} else \{\s*setEchecFacturation\(true\);/,
       'le refus ne retient pas le drapeau, n\'affiche pas, ou la polarité est inversée');
     assert.match(corps, /useRef\(false\)/);
   });
 
   it('Comptes : un refus est affiché, une panne est une erreur', () => {
     assert.match(corpsDeVue('Comptes'),
-      /catch \((\w+)\) \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{[^}]*?setRefuse\(true\);\s*\} else \{\s*setEchec\(true\);\s*\}/,
+      /catch \((\w+)\) \{\s*if \(!doitContinuerARelire\(\1\.statut\)\) \{\s*setEquipe\(null\);\s*setRefuse\(true\);(?:\s*setEchec\(true\);)?\s*\} else \{\s*setEchec\(true\);\s*\}/,
       'le refus n\'est pas affiché, la polarité est inversée, ou le else porte autre chose qu\'un échec');
     // La remise à zéro est liée au chemin de succès : sans elle, un échec
     // passager resterait affiché à côté d'une liste relue avec succès.
