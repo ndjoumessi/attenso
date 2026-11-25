@@ -247,6 +247,38 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
+	@DisplayName("la mesure du jour va dans le sens de celle de la veille : 6 comptoir pour 3 accueil")
+	void origineDuJourCoherenteAvecLaVeille() {
+		installer(MI_JOURNEE);
+
+		UUID tenantId = clinique();
+		var duJour = ContexteTenant.avec(tenantId,
+				() -> mesure.duJour(tenantId, LocalDate.of(2027, 3, 10)));
+		assertThat(duJour.ticketsComptoir()).isEqualTo(6);
+		assertThat(duJour.ticketsAccueil()).isEqualTo(3);
+		// Si l'accueil saisit ses neuf arrivants, le taux (67 %) est valide : un taux
+		// en zone grise aujourd'hui démentirait les 62 % valides d'hier.
+		var avecArrivants = new ai.attenso.mesure.MesureJour(duJour.jour(), 9,
+				duJour.ticketsComptoir(), duJour.ticketsAccueil(), duJour.departs());
+		assertThat(avecArrivants.zone()).isEqualTo("VALIDE");
+	}
+
+	@Test
+	@DisplayName("un rappel de vaccin tombe dans la fenêtre : le carnet montre ce à quoi il sert")
+	void unRappelDeVaccinEstProche() {
+		installer(MI_JOURNEE);
+
+		Long proches = proprietaire.queryForObject("""
+				SELECT count(*) FROM vaccination
+				WHERE rappel_le >= ? AND rappel_le <= ? AND rappel_envoye_le IS NULL
+				""", Long.class, Date.valueOf(LocalDate.of(2027, 3, 10)),
+				Date.valueOf(LocalDate.of(2027, 3, 10)
+						.plusDays(ai.attenso.carnet.ServiceCarnet.JOURS_AVANT_RAPPEL)));
+
+		assertThat(proches).isPositive();
+	}
+
+	@Test
 	@DisplayName("personne ne renonce devant une salle vide : une consultation couvre chaque départ")
 	void chaqueDepartAUneConsultationEnCours() {
 		installer(MI_JOURNEE);

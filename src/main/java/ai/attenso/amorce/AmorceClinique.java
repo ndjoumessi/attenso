@@ -249,9 +249,9 @@ public class AmorceClinique implements ApplicationRunner {
 				passage(Origine.COMPTOIR, ilYa.apply(50), ilYa.apply(31), ilYa.apply(29),
 						ilYa.apply(12)),
 				// En consultation : appelé, donc plus de grâce à courir (Ticket.present()).
-				new TicketDemo(Statut.EN_CONSULTATION, Origine.ACCUEIL, Priorite.NORMALE, null,
+				new TicketDemo(Statut.EN_CONSULTATION, Origine.COMPTOIR, Priorite.NORMALE, null,
 						ilYa.apply(30), ilYa.apply(14), null, ilYa.apply(12), null),
-				enFile(Statut.EN_ATTENTE, ilYa.apply(15)),
+				enFile(Statut.EN_ATTENTE, Origine.COMPTOIR, ilYa.apply(15)),
 				// Les deux passages prioritaires arrivent APRÈS l'appel du ticket
 				// précédent : appelé avant eux alors qu'ils attendaient, il leur
 				// aurait doublé la file, ce que la priorité interdit.
@@ -260,7 +260,7 @@ public class AmorceClinique implements ApplicationRunner {
 						ilYa.apply(1).plus(delaiGrace()), null, null),
 				new TicketDemo(Statut.PREVENU, Origine.ACCUEIL, Priorite.PRIORITAIRE,
 						MotifDao.DEFAUTS.get(0), ilYa.apply(11), null, null, null, null),
-				enFile(Statut.EN_ATTENTE, ilYa.apply(6)));
+				enFile(Statut.EN_ATTENTE, Origine.COMPTOIR, ilYa.apply(6)));
 		poserLesTickets(tenantId, jour, file);
 	}
 
@@ -300,8 +300,8 @@ public class AmorceClinique implements ApplicationRunner {
 				debutConsultation, fin);
 	}
 
-	private static TicketDemo enFile(Statut statut, Instant cree) {
-		return new TicketDemo(statut, Origine.ACCUEIL, Priorite.NORMALE, null, cree, null, null,
+	private static TicketDemo enFile(Statut statut, Origine origine, Instant cree) {
+		return new TicketDemo(statut, origine, Priorite.NORMALE, null, cree, null, null,
 				null, null);
 	}
 
@@ -392,7 +392,10 @@ public class AmorceClinique implements ApplicationRunner {
 		Instant maintenant = horloge.instant();
 		UUID nougat = carnets.creer(tenantId, "Nougat", "Chat", null, jetons.suivante(),
 				maintenant);
-		LocalDate dernierRappelChat = aujourdhui.minusMonths(11);
+		// Faits il y a onze mois et demi : l'échéance annuelle tombe dans quinze jours,
+		// donc dans la fenêtre des rappels (ServiceCarnet.JOURS_AVANT_RAPPEL). Un carnet
+		// sans rappel proche ne montrerait pas ce à quoi il sert.
+		LocalDate dernierRappelChat = aujourdhui.minusMonths(12).plusDays(15);
 		carnets.ajouterVaccination(tenantId, nougat, "Typhus - coryza (TC)", dernierRappelChat,
 				dernierRappelChat.plusYears(1), null);
 		carnets.ajouterVaccination(tenantId, nougat, "Leucose féline", dernierRappelChat,
