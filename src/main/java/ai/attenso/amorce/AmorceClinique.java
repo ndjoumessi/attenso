@@ -178,9 +178,22 @@ public class AmorceClinique implements ApplicationRunner {
 		return semaine ? List.of(MATIN, APRES_MIDI) : List.of(MATIN);
 	}
 
-	private Duration delaiGrace() {
+	/** La grâce que la configuration donne à une clinique qu'on CRÉE. */
+	private Duration delaiGraceConfigure() {
 		return Duration.ofSeconds(proprietes.delaiGraceSecondes() == null
 				? DELAI_GRACE_PAR_DEFAUT_SECONDES : proprietes.delaiGraceSecondes());
+	}
+
+	/**
+	 * La grâce que la clinique porte EN BASE, et non celle de la configuration :
+	 * c'est la valeur que {@code ServiceFile} appliquera à chaque appel, donc la
+	 * seule dont l'échéance du ticket appelé puisse être cohérente. La
+	 * réinitialisation l'aligne avant de semer.
+	 */
+	private Duration delaiGrace(UUID tenantId) {
+		Integer secondes = jdbc.queryForObject(
+				"SELECT delai_grace_secondes FROM tenant WHERE id = ?", Integer.class, tenantId);
+		return Duration.ofSeconds(secondes == null ? DELAI_GRACE_PAR_DEFAUT_SECONDES : secondes);
 	}
 
 	/** Le dernier jour de semaine avant celui-ci : un lundi, c'est le vendredi. */
@@ -261,7 +274,7 @@ public class AmorceClinique implements ApplicationRunner {
 				// aurait doublé la file, ce que la priorité interdit.
 				new TicketDemo(Statut.APPELE, Origine.ACCUEIL, RANG_CHAT_EN_CAISSE,
 						MOTIF_CHAT_EN_CAISSE, ilYa.apply(13), ilYa.apply(1),
-						ilYa.apply(1).plus(delaiGrace()), null, null),
+						ilYa.apply(1).plus(delaiGrace(tenantId)), null, null),
 				new TicketDemo(Statut.PREVENU, Origine.ACCUEIL, Priorite.PRIORITAIRE,
 						MotifDao.DEFAUTS.get(0), ilYa.apply(11), null, null, null, null),
 				enFile(Statut.EN_ATTENTE, Origine.COMPTOIR, ilYa.apply(6)));
@@ -444,7 +457,7 @@ public class AmorceClinique implements ApplicationRunner {
 				                    seuil_prevenir, actif, expediteur_sms, jeton_ecran)
 				VALUES (?, ?, ?, 'Europe/Paris', ?, ?, true, ?, ?)
 				""", tenantId, proprietes.slug(), proprietes.nom(),
-				(int) delaiGrace().toSeconds(),
+				(int) delaiGraceConfigure().toSeconds(),
 				proprietes.seuilPrevenir() == null ? 2 : proprietes.seuilPrevenir(), expediteur,
 				jetonEcran);
 

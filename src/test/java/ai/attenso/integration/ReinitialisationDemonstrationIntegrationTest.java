@@ -175,4 +175,17 @@ class ReinitialisationDemonstrationIntegrationTest extends ReinitialisationBase 
 		assertThat(proprietaire.queryForObject("SELECT count(*) FROM tenant", Long.class))
 				.isZero();
 	}
+
+	@Test
+	@DisplayName("propriété absente : la grâce de la clinique est laissée telle quelle")
+	void sansProprieteLaGraceNeBougePas() {
+		UUID demo = creerClinique("demo", "Clinique de démonstration", 2, 420);
+		chargerUneClinique(demo);
+
+		lancer();
+
+		assertThat(graceDe(demo)).isEqualTo(420);
+		assertThat(graceDuTicketAppele(demo)).as("le ticket appelé hérite de la grâce de la clinique")
+				.isEqualTo(420);
+	}
 }

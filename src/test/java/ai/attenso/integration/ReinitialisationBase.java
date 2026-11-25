@@ -109,6 +109,19 @@ abstract class ReinitialisationBase extends SocleIntegration {
 		return total == null ? 0 : total;
 	}
 
+	int graceDe(UUID tenantId) {
+		return proprietaire.queryForObject(
+				"SELECT delai_grace_secondes FROM tenant WHERE id = ?", Integer.class, tenantId);
+	}
+
+	/** Secondes entre l'appel du ticket APPELE de la file du jour et l'échéance de sa grâce. */
+	long graceDuTicketAppele(UUID tenantId) {
+		return proprietaire.queryForObject("""
+				SELECT extract(epoch FROM grace_expire_le - appele_le)::bigint
+				FROM ticket WHERE tenant_id = ? AND statut = 'APPELE'
+				""", Long.class, tenantId);
+	}
+
 	UUID idDe(String slug) {
 		return proprietaire.queryForObject("SELECT id FROM tenant WHERE slug = ?", UUID.class, slug);
 	}
