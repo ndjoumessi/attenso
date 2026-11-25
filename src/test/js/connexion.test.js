@@ -161,4 +161,23 @@ describe('la connexion ne doit pas être un cul-de-sac', () => {
         `« cible-min » est sans effet sur un élément en ligne : ${lien.slice(0, 60)}`);
     }
   });
+
+  /**
+   * Le champ s'appelait « Clinique », sans un mot de plus. Le nom de
+   * l'établissement ? Son slug ? Une clinique qui vient de s'inscrire n'a
+   * jamais lu la réponse, et le slug n'est pas devinable — il est dérivé du
+   * nom, mais tronqué et parfois suffixé d'un chiffre en cas de collision.
+   *
+   * L'indice renvoie à l'adresse du QR code, parce que c'est la seule trace
+   * du slug que la clinique a sous les yeux : elle est imprimée et posée sur
+   * son comptoir. Et ce n'est pas un secret — ce QR est public.
+   */
+  it('dit ce que le champ « Clinique » attend', () => {
+    const source = sansCommentaires(lire(CONNEXION));
+    assert.match(source, /aria-describedby="aide-slug"/,
+      "le champ n'est pas relié à son aide");
+    assert.match(source, /id="aide-slug"/, "l'aide du champ n'existe pas");
+    // L'indice doit renvoyer à ce que la clinique a SOUS LES YEUX.
+    assert.match(source, /\/t\//, "l'aide ne renvoie pas à l'adresse du comptoir");
+  });
 });

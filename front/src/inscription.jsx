@@ -277,7 +277,21 @@ function Resultat({ reponse }) {
         sans préavis : vous gardez le service jusqu'à la fin de la période payée.
       </p>
 
-      <h2 className="mt-10 text-xl font-bold">À imprimer et poser au comptoir</h2>
+      {/* EN PREMIER parmi les choses à garder, et avant les adresses. Le
+          serveur rendait déjà ce slug ; la page le jetait, et comme aucun
+          courriel de bienvenue n'existe, c'était la SEULE occasion pour la
+          clinique de l'apprendre. Elle se retrouvait ensuite devant un champ
+          « Clinique » qu'elle n'avait jamais vu nommé. */}
+      <h2 className="mt-10 text-xl font-bold">Votre identifiant de connexion</h2>
+      <p className="mt-2">
+        Pour entrer sur votre tableau, le champ «&nbsp;Clinique&nbsp;»
+        attend&nbsp;: <Adresse>{reponse.slug}</Adresse>
+        <span className="mt-1 block text-sm text-sur-fond-doux">
+          Il se retrouve aussi dans l'adresse de votre QR code, ci-dessous.
+        </span>
+      </p>
+
+      <h2 className="mt-8 text-xl font-bold">À imprimer et poser au comptoir</h2>
       <p className="mt-2">
         Le QR code de vos clients pointe vers&nbsp;:{' '}
         <Adresse>{base + reponse.urlComptoir}</Adresse>
@@ -314,8 +328,10 @@ function Resultat({ reponse }) {
 
       <p className={aide}>
         Une fois le paiement confirmé, votre tableau d'accueil s'ouvre sur{' '}
-        <a href="/accueil" className="text-accent-texte underline">/accueil</a>,
-        avec l'adresse et le mot de passe que vous venez de choisir.
+        <a href="/connexion" className="text-accent-texte underline">/connexion</a>,
+        avec <strong className="text-sur-fond">trois</strong> choses&nbsp;:
+        l'identifiant ci-dessus, votre adresse et le mot de passe que vous venez
+        de choisir. La page en promettait deux, et le formulaire en demande trois.
       </p>
     </main>
   );

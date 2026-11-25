@@ -53,4 +53,28 @@ describe("la page d'inscription", () => {
     assert.match(source, /<Retour\s*\/>/, 'pas de retour au site');
     assert.ok(source.includes('href="/connexion"'), 'pas de lien « déjà un compte »');
   });
+
+  /**
+   * L'information existait depuis le début — `ReponseInscription` porte le
+   * slug — et la page le jetait. Or aucun courriel de bienvenue n'existe :
+   * cette page est la SEULE occasion pour une clinique d'apprendre son
+   * identifiant de connexion.
+   *
+   * Pire que l'oubli : la page promettait « l'adresse et le mot de passe que
+   * vous venez de choisir », deux choses, alors que le formulaire de connexion
+   * en demande trois. La personne se retrouve devant un champ « Clinique »
+   * sans avoir jamais lu ce qu'il attend.
+   */
+  it("nomme le slug comme l'identifiant de connexion, et le garde avec les adresses", () => {
+    const source = sansCommentaires(lire(INSCRIPTION));
+    assert.match(source, /reponse\.slug/,
+      "le slug rendu par le serveur n'est toujours pas affiché");
+    // Et nommé pour ce qu'il SERT : un slug montré sans dire à quoi il sert
+    // est une chaîne de plus parmi trois adresses.
+    assert.match(source, /identifiant de connexion/i,
+      "le slug est montré sans être nommé comme identifiant de connexion");
+    // La promesse corrigée : trois choses, pas deux.
+    assert.doesNotMatch(source, /l'adresse et le mot de passe que vous venez/,
+      'la page promet encore deux identifiants sur les trois que la connexion demande');
+  });
 });
