@@ -48,20 +48,30 @@ const TONS = {
 };
 
 export function Gestes({ jeton, horsReseau, surRafraichir }) {
-  const [motifs, setMotifs] = useState([]);
+  // `null` et non `[]` : trois états étaient confondus — pas encore chargé,
+  // échec, et aucun motif configuré — et le menu de priorité disparaissait
+  // sans un mot dans les deux premiers cas.
+  const [motifs, setMotifs] = useState(null);
+  const [echecMotifs, setEchecMotifs] = useState(false);
 
   useEffect(() => {
     // EF-407 : la liste vient du serveur, elle est paramétrée par la clinique.
     // Sans elle, le formulaire reste utilisable sans priorité : c'est le
     // ticket qui compte, pas le motif.
-    appel('/api/motifs', { headers: entete(jeton) }).then(setMotifs).catch(() => {});
+    appel('/api/motifs', { headers: entete(jeton) })
+      .then((recus) => { setMotifs(recus); setEchecMotifs(false); })
+      // EF-407 est une priorité PARAMÉTRÉE : une clinique peut n'en avoir
+      // aucune, et c'est légitime. Un appel qui bronche, non — et les deux
+      // produisaient le même écran.
+      .catch(() => { setMotifs([]); setEchecMotifs(true); });
   }, [jeton]);
 
   return (
     <div className="mt-4">
       <div className="flex flex-wrap gap-3">
         {GESTES.map((geste) => (
-          <Geste key={geste.cle} geste={geste} motifs={motifs} jeton={jeton}
+          <Geste key={geste.cle} geste={geste} motifs={motifs ?? []}
+                 echecMotifs={echecMotifs} jeton={jeton}
                  horsReseau={horsReseau} surRafraichir={surRafraichir} />
         ))}
       </div>
@@ -79,7 +89,8 @@ export function Gestes({ jeton, horsReseau, surRafraichir }) {
   );
 }
 
-function Geste({ geste, motifs, jeton, horsReseau, surRafraichir }) {
+function Geste({ geste, motifs, echecMotifs = false, jeton, horsReseau,
+    surRafraichir }) {
   const [ouverte, setOuverte] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [envoi, setEnvoi] = useState(false);
@@ -140,6 +151,12 @@ function Geste({ geste, motifs, jeton, horsReseau, surRafraichir }) {
           </div>
           {/* Le bloc reste caché tant qu'aucun motif n'est actif — un menu à une
               seule entrée « Aucun » n'apprend rien à personne. */}
+          {geste.avecMotif && echecMotifs && (
+            <p role="status" className={AIDE}>
+              Les motifs de priorité n'ont pas pu être chargés. Le ticket peut
+              être créé sans priorité.
+            </p>
+          )}
           {geste.avecMotif && motifs.length > 0 && (
             <div>
               <label className={ETIQUETTE} htmlFor={`motif-${geste.cle}`}>

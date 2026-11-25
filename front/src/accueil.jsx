@@ -82,6 +82,11 @@ function Tableau({ jeton, surDeconnexion }) {
   // changement de mot de passe en a besoin pour dire au navigateur QUEL
   // compte il met à jour.
   const [courriel, setCourriel] = useState('');
+  // `/api/compte` n'est plus « du confort » : c'est de lui que vient le
+  // courriel du champ d'identifiant caché, sans lequel le navigateur ne peut
+  // pas enregistrer le nouveau mot de passe. Son échec dégradait donc en
+  // silence le correctif qui rend cet enregistrement possible.
+  const [echecCompte, setEchecCompte] = useState(false);
   const liaison = useRef(null);
   const actions = useRef(null);
 
@@ -143,14 +148,15 @@ function Tableau({ jeton, surDeconnexion }) {
           + 'fermées : les autres tablettes devront se reconnecter.');
       }
 
-      // Qui est connecté. Pas bloquant : le tableau doit s'afficher même si
-      // cet appel échoue, c'est une information de confort et non la file.
+      // Qui est connecté. Pas bloquant pour la FILE — le tableau s'affiche
+      // sans — mais l'échec est retenu et dit là où il a une conséquence.
       appel('/api/compte', { headers: entete(jeton) })
         .then((c) => {
           setIdentite(`${c.email} · ${c.role === 'GERANT' ? 'gérant' : 'accueil'}`);
           setCourriel(c.email ?? '');
+          setEchecCompte(false);
         })
-        .catch(() => {});
+        .catch(() => setEchecCompte(true));
 
       // Le journal n'est pas garanti : en navigation privée, IndexedDB
       // échoue. On le dit plutôt que de laisser croire que les gestes sont
@@ -278,7 +284,8 @@ function Tableau({ jeton, surDeconnexion }) {
           {vue === 'comptes' && <Comptes jeton={jeton} titre={false} />}
           {vue === 'affiche' && <Affiche jeton={jeton} titre={false} />}
           {vue === 'compte' && (
-            <MotDePasse jeton={jeton} courriel={courriel} titre={false} />
+            <MotDePasse jeton={jeton} courriel={courriel} echecCompte={echecCompte}
+                        titre={false} />
           )}
         </div>
       </SidebarInset>
@@ -363,7 +370,7 @@ function Entete({ titre, vue, commandes, surDeconnexion }) {
   );
 }
 
-function MotDePasse({ jeton, courriel = '', titre = true }) {
+function MotDePasse({ jeton, courriel = '', echecCompte = false, titre = true }) {
   const [erreur, setErreur] = useState(null);
   const [envoi, setEnvoi] = useState(false);
 
@@ -394,6 +401,20 @@ function MotDePasse({ jeton, courriel = '', titre = true }) {
     <>
       {titre && <Titre>Mon mot de passe</Titre>}
       <p className={AIDE}>Le mot de passe de votre compte personnel.</p>
+      {/* Le changement fonctionne quand même : seul l'enregistrement par le
+          navigateur est perdu, parce que le champ d'identifiant est vide.
+          C'est précisément ce qu'il faut dire — sans quoi la personne croit
+          que son gestionnaire a enregistré, et se retrouve dehors au
+          prochain essai. */}
+      {echecCompte && (
+        <p role="status" className="mt-2 rounded-[var(--rayon)] border
+                                    border-attention bg-attention-voile px-4 py-3
+                                    text-sm text-attention">
+          Votre adresse n'a pas pu être relue : votre navigateur ne pourra pas
+          enregistrer le nouveau mot de passe. Rechargez la page avant de le
+          changer, ou notez-le vous-même.
+        </p>
+      )}
       <form onSubmit={changer} className="mt-4 space-y-4">
         {/* L'identifiant du compte, caché mais PRÉSENT. Un navigateur
             n'enregistre un mot de passe que s'il sait à quel compte le
