@@ -29,7 +29,7 @@ function Entete() {
     <header className="sticky top-0 z-20 border-b border-bordure-douce/70
                        bg-fond/85 backdrop-blur-md">
       <Colonne className="flex h-16 items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 text-xl font-bold tracking-tight">
+        <span className="inline-flex items-center gap-2 text-xl font-medium tracking-tight">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
                aria-hidden="true" className="shrink-0 text-accent-texte">
@@ -45,23 +45,22 @@ function Entete() {
 }
 
 function Heros() {
+  // Le héros n'est pas une `Bande` — il n'a pas de titre de section — mais il en
+  // parle le vocabulaire : même jeton de pas, et AUCUN `pb`. Le creux qui le
+  // sépare du premier bloc appartient à la bande suivante ; sinon les deux
+  // rembourrages s'ajoutent et ouvrent 208 px là où le reste de la page en
+  // tient 192.
   return (
-    <section className="relative overflow-hidden py-16 sm:py-28">
-      {/* Halo décoratif, sans contenu : il ne porte aucune information et
-          disparaît proprement si le dégradé n'est pas rendu. */}
-      <div aria-hidden="true"
-           className="pointer-events-none absolute inset-x-0 -top-40 h-[32rem]
-                      bg-[radial-gradient(60%_50%_at_50%_0%,var(--accent-voile),transparent)]" />
+    <section className="relative pt-[var(--pas-16)] sm:pt-[var(--pas-24)]">
       <Colonne className="relative">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent-voile
-                      px-3 py-1 text-sm font-semibold text-accent-texte">
+        <p className="mb-4 text-sm text-sur-fond-doux">
           File d'attente virtuelle pour cliniques vétérinaires
         </p>
         {/* Resserré SUR MOBILE SEULEMENT, et typographiquement : la conception
             demandait un titre « plus court à l'œil », pas un texte réécrit.
             Les deux ne sont pas la même chose, et c'est en les confondant que
             la première version n'avait resserré que de 8 px de marge. */}
-        <h1 className="text-[2rem] font-bold leading-[1.05] tracking-[-0.02em]
+        <h1 className="text-[2rem] font-medium leading-[1.05] tracking-[-0.02em]
                        sm:text-6xl sm:leading-[1.1]">
           Vos clients attendent où ils veulent.
           <span className="block text-sur-fond-doux">Pas entassés dans votre salle.</span>
@@ -95,13 +94,13 @@ function Heros() {
 function Cout() {
   return (
     <Bande aria="titre-probleme">
-      <h2 id="titre-probleme" className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <h2 id="titre-probleme" className="text-3xl font-medium tracking-tight sm:text-4xl">
         Ce que l'attente vous coûte
       </h2>
       <div className="mt-8 overflow-hidden rounded-[var(--rayon-lg)] border
                       border-bordure-douce bg-surface shadow-1">
         <div className="flex flex-col gap-6 p-8 sm:flex-row sm:items-center sm:p-10">
-          <p className="text-6xl font-bold tracking-tight text-alerte sm:text-7xl">400 €</p>
+          <p className="text-6xl font-medium tracking-tight text-alerte sm:text-7xl">400 €</p>
           <p className="max-w-sm text-lg leading-relaxed text-sur-fond-doux">
             perdus chaque mois pour deux clients par semaine qui repartent
             sans être vus.
@@ -138,7 +137,7 @@ const BENEFICES = [
 function Benefices() {
   return (
     <Bande aria="titre-benefices" className="bg-surface-douce">
-      <h2 id="titre-benefices" className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <h2 id="titre-benefices" className="text-3xl font-medium tracking-tight sm:text-4xl">
         Ce que ça change
       </h2>
       <ul className="mt-10 grid gap-6 sm:grid-cols-3">
@@ -147,7 +146,7 @@ function Benefices() {
               className="rounded-[var(--rayon-lg)] border border-bordure-douce
                          bg-surface p-6 shadow-1">
             <Icone chemin={b.chemin} />
-            <h3 className="mt-4 text-lg font-semibold">{b.titre}</h3>
+            <h3 className="mt-4 text-lg font-medium">{b.titre}</h3>
             <p className="mt-2 leading-relaxed text-sur-fond-doux">{b.texte}</p>
           </li>
         ))}
@@ -174,7 +173,7 @@ const ETAPES = [
 function Comment() {
   return (
     <Bande id="comment" aria="titre-comment">
-      <h2 id="titre-comment" className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <h2 id="titre-comment" className="text-3xl font-medium tracking-tight sm:text-4xl">
         Une journée avec Attenso
       </h2>
       <ol className="mt-10 space-y-0">
@@ -190,11 +189,11 @@ function Comment() {
             <span aria-hidden="true"
                   className="relative z-10 flex size-10 shrink-0 items-center
                              justify-center rounded-full bg-accent text-sur-accent
-                             font-bold">
+                             font-medium">
               {i + 1}
             </span>
             <div className="pt-1">
-              <h3 className="text-lg font-semibold">{titre}</h3>
+              <h3 className="text-lg font-medium">{titre}</h3>
               <Mesure><p className="mt-1 leading-relaxed text-sur-fond-doux">{texte}</p></Mesure>
             </div>
           </li>
@@ -207,7 +206,7 @@ function Comment() {
 function Etat() {
   return (
     <Bande aria="titre-etat" className="bg-bande-contraste text-sur-bande-contraste">
-      <h2 id="titre-etat" className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <h2 id="titre-etat" className="text-3xl font-medium tracking-tight sm:text-4xl">
         Où en est Attenso
       </h2>
       <Mesure className="mt-6 space-y-4 text-sur-bande-contraste-doux">
@@ -246,7 +245,7 @@ const TARIFS = [
 function Tarifs() {
   return (
     <Bande aria="titre-tarifs">
-      <h2 id="titre-tarifs" className="text-3xl font-bold tracking-tight sm:text-4xl">
+      <h2 id="titre-tarifs" className="text-3xl font-medium tracking-tight sm:text-4xl">
         Ensuite, selon votre volume
       </h2>
       <ul className="mt-10 grid gap-6 sm:grid-cols-3">
@@ -258,13 +257,12 @@ function Tarifs() {
                   : 'border-bordure-douce shadow-1'}`}>
             {t.avant && (
               <span className="absolute -top-3 left-6 rounded-full bg-accent px-3 py-1
-                               text-xs font-bold uppercase tracking-wide text-sur-accent">
+                               text-xs font-medium text-sur-accent">
                 Le plus avantageux
               </span>
             )}
-            <p className="text-sm font-semibold uppercase tracking-wide
-                          text-sur-fond-doux">{t.nom}</p>
-            <p className="mt-2 text-4xl font-bold tracking-tight">
+            <p className="text-sm font-medium text-sur-fond-doux">{t.nom}</p>
+            <p className="mt-2 text-4xl font-medium tracking-tight">
               {t.prix}<small className="text-base font-normal text-sur-fond-doux"> / mois</small>
             </p>
             <p className="mt-2 text-sur-fond-doux">{t.volume}</p>
@@ -289,7 +287,7 @@ function Souscrire() {
   return (
     <Bande id="souscrire" aria="titre-souscrire" className="bg-accent-voile">
       <div className="text-center">
-        <h2 id="titre-souscrire" className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <h2 id="titre-souscrire" className="text-3xl font-medium tracking-tight sm:text-4xl">
           Ouvrir ma file d'attente
         </h2>
         <p className="mx-auto mt-4 max-w-[38rem] leading-relaxed text-sur-fond-doux">
