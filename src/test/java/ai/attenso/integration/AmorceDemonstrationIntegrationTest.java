@@ -176,6 +176,20 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	}
 
 	@Test
+	@DisplayName("la priorité est graduée dans la file : 7 devant 5 devant la file normale")
+	void prioriteGraduee() {
+		installer(MI_JOURNEE);
+
+		List<Short> rangs = proprietaire.queryForList("""
+				SELECT priorite FROM ticket
+				WHERE jour = ? AND statut IN ('EN_ATTENTE','PREVENU','APPELE','ABSENT')
+				ORDER BY priorite DESC, ordre ASC
+				""", Short.class, Date.valueOf(LocalDate.of(2026, 11, 25)));
+
+		assertThat(rangs).startsWith((short) 7, (short) 5).contains((short) 0);
+	}
+
+	@Test
 	@DisplayName("les départs d'hier se comptent depuis l'horloge de Paris, pas depuis UTC")
 	void departsDHierSuiventLHorlogeDeLaClinique() {
 		installer(APRES_MINUIT_A_PARIS);

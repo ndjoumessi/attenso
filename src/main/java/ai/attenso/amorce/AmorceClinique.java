@@ -93,6 +93,10 @@ public class AmorceClinique implements ApplicationRunner {
 	 * Les rangs restent dans la bande 1 à 9 de {@code motif_rang_dans_la_bande} :
 	 * aucun ne peut rejoindre l'urgence (10).
 	 */
+	private static final String MOTIF_CHAT_EN_CAISSE = "Chat en caisse depuis plus de 30 min";
+
+	private static final short RANG_CHAT_EN_CAISSE = 7;
+
 	private void poserLesMotifsDeDemonstration(UUID tenantId) {
 		// « Contagieux » tout en haut : l'isoler protège toute la salle d'attente,
 		// pas seulement l'animal concerné.
@@ -104,7 +108,7 @@ public class AmorceClinique implements ApplicationRunner {
 		// de plus pressé.
 		short ordre = (short) (MotifDao.DEFAUTS.size() + 1);
 		motifs.ajouter(tenantId, "Animal potentiellement contagieux", (short) 8, ordre++);
-		motifs.ajouter(tenantId, "Chat en caisse depuis plus de 30 min", (short) 7, ordre++);
+		motifs.ajouter(tenantId, MOTIF_CHAT_EN_CAISSE, RANG_CHAT_EN_CAISSE, ordre++);
 		motifs.ajouter(tenantId, "Animal de ferme en bétaillère", (short) 6, ordre++);
 		motifs.ajouter(tenantId, "Contrôle post-opératoire court", (short) 3, ordre);
 	}
@@ -163,8 +167,9 @@ public class AmorceClinique implements ApplicationRunner {
 	 * <p>Le seuil de prévenance de la clinique est de deux : les deux premiers de
 	 * la file sont donc l'appelé et le prévenu, les suivants attendent. Un
 	 * {@code EN_ATTENTE} placé sous le seuil serait un état que le produit ne
-	 * peut pas atteindre, et un vétérinaire le verrait. Le passage prioritaire
-	 * (rang 5, « Personne âgée ») est celui qu'on appelle : il a doublé la file.
+	 * peut pas atteindre, et un vétérinaire le verrait. La priorité est graduée :
+	 * le chat en caisse (rang 7) passe avant la personne âgée (rang 5), qui passe
+	 * avant la file normale. Le rang 7 est celui qu'on appelle.
 	 */
 	private void semerLaFileDuJour(UUID tenantId, LocalDate jour) {
 		Instant maintenant = horloge.instant();
@@ -188,10 +193,11 @@ public class AmorceClinique implements ApplicationRunner {
 						ilYa.apply(12)),
 				new TicketDemo(Statut.EN_CONSULTATION, Origine.ACCUEIL, Priorite.NORMALE, null,
 						null, ilYa.apply(41), null, null, ilYa.apply(12), null),
-				new TicketDemo(Statut.APPELE, Origine.ACCUEIL, Priorite.PRIORITAIRE,
-						MotifDao.DEFAUTS.get(0), null, ilYa.apply(27), ilYa.apply(1),
+				new TicketDemo(Statut.APPELE, Origine.ACCUEIL, RANG_CHAT_EN_CAISSE,
+						MOTIF_CHAT_EN_CAISSE, null, ilYa.apply(27), ilYa.apply(1),
 						ilYa.apply(1).plus(grace), null, null),
-				enFile(Statut.PREVENU, ilYa.apply(24)),
+				new TicketDemo(Statut.PREVENU, Origine.ACCUEIL, Priorite.PRIORITAIRE,
+						MotifDao.DEFAUTS.get(0), null, ilYa.apply(24), null, null, null, null),
 				enFile(Statut.EN_ATTENTE, ilYa.apply(15)),
 				enFile(Statut.EN_ATTENTE, ilYa.apply(6)));
 		poserLesTickets(tenantId, jour, file);
