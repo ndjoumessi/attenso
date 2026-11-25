@@ -62,11 +62,27 @@ export function Connexion({ surConnexion }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-10">
-      <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
-      <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
+    // `min-h-dvh` et non `min-h-screen` : sur mobile, `100vh` compte la barre
+    // d'adresse qui se rétracte, et la mise en page saute au défilement.
+    //
+    // Centré sans condition. J'avais d'abord réservé le centrage aux écrans
+    // larges, par crainte qu'un téléphone en paysage ne voie le haut de la
+    // carte rogné. Mesuré à 844 × 390 : la carte commence à +40 px, la page
+    // défile, le haut reste atteignable — quand le contenu dépasse, la rangée
+    // de grille grandit et le centrage n'a plus d'effet. La précaution était
+    // inutile, et la condition portait d'ailleurs sur la LARGEUR là où le
+    // risque venait de la hauteur.
+    <main className="grid min-h-dvh place-items-center px-5 py-10">
+      {/* `shadow-2` et non une ombre écrite à la main : `jetons.css` n'expose
+          que deux niveaux d'élévation, et une valeur en dur ne suit pas la
+          compensation du thème sombre — l'alpha y est multiplié par sept,
+          faute de quoi l'ombre est invisible sur le fond. */}
+      <div className="w-full max-w-md rounded-[var(--rayon-lg)] border border-bordure-douce
+                      bg-surface p-6 shadow-2 sm:p-8">
+        <h1 className="text-3xl font-bold tracking-tight">Attenso</h1>
+        <p className="mt-1 text-sur-fond-doux">Tableau de l'accueil.</p>
 
-      <form onSubmit={entrer} className="mt-8 space-y-5">
+        <form onSubmit={entrer} className="mt-8 space-y-5">
         <div>
           <label className={ETIQUETTE} htmlFor="slug">Clinique</label>
           <input id="slug" name="slug" autoComplete="organization" required
@@ -105,7 +121,8 @@ export function Connexion({ surConnexion }) {
             de réinitialisation vient d'être envoyé. Il est valable une heure.
           </Info>
         )}
-      </form>
+        </form>
+      </div>
     </main>
   );
 }
