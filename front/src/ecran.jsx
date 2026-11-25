@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
-  appel as grandNombre, attente, legende, prochains,
+  appel as grandNombre, attente, legende, prochains, RIEN,
 } from '../../src/main/resources/static/app/vue-ecran.js';
 
 // Les fonctions de vue sont IMPORTÉES, pas réécrites. Elles ne touchent pas au
@@ -39,6 +39,11 @@ export function Ecran({ jeton }) {
 
   const suivants = vue ? prochains(vue) : '';
   const delai = vue ? attente(vue) : '';
+  // Y a-t-il un numéro à montrer ? Deux cas disaient non et produisaient
+  // pourtant la même barre blanche : la page en chargement, et la salle où
+  // personne n'est appelé.
+  const nombre = vue ? grandNombre(vue) : RIEN;
+  const aUnNumero = nombre !== RIEN;
 
   return (
     <main aria-live="polite" aria-atomic="true"
@@ -51,12 +56,24 @@ export function Ecran({ jeton }) {
 
       {/* Le grand nombre. Dimensionné en vw pour rester lisible à quatre
           mètres quel que soit le téléviseur, et borné pour ne pas déborder
-          quand deux salles appellent en même temps. */}
-      <p className="text-[clamp(5rem,22vw,18rem)] font-bold leading-none
-                    tracking-tighter tabular-nums">
-        {vue ? grandNombre(vue) : '—'}
-      </p>
-      <p className="text-3xl text-[var(--mur-encre-douce)] sm:text-4xl">
+          quand deux salles appellent en même temps.
+          RENDU SEULEMENT S'IL Y A UN NUMÉRO. Le cadratin de `RIEN` y était
+          mesuré à 281,6 px en gras blanc : à cette taille un tiret n'est plus
+          de la ponctuation, c'est une barre pleine au milieu d'un écran noir,
+          et du fond de la salle ça se lit « écran cassé ». Aucune garde de
+          texte ne pouvait le voir — le texte, lui, était juste. */}
+      {aUnNumero && (
+        <p className="text-[clamp(5rem,22vw,18rem)] font-bold leading-none
+                      tracking-tighter tabular-nums">
+          {nombre}
+        </p>
+      )}
+      {/* Sans grand nombre, c'est la légende qui mène. `vue-ecran.js` garde sa
+          décision — ne pas annoncer le vide quand des gens attendent —, mais
+          il faut un point d'accroche à quatre mètres. */}
+      <p className={aUnNumero
+        ? 'text-3xl text-[var(--mur-encre-douce)] sm:text-4xl'
+        : 'text-5xl font-semibold text-[var(--mur-encre-douce)] sm:text-6xl'}>
         {vue ? legende(vue) : 'en attente'}
       </p>
 
