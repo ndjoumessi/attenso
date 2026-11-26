@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LIGNE, Squelette } from '../composants/squelette.jsx';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
 import { Adresse } from '../composants/adresse.jsx';
@@ -43,15 +44,19 @@ export function Agenda({ jeton, vide, titre = true }) {
   return (
     <>
       {titre && <Titre>Rendez-vous du jour</Titre>}
-      {rdvs === null ? (echec && (
+      {/* Trois états, et non deux : pas encore chargé, chargé et vide, chargé
+          et plein. Sans squelette, le premier ressemblait au deuxième — un
+          écran nu — et on ne pouvait pas savoir si la page travaillait. */}
+      {rdvs === null ? (echec ? (
         <Erreur>Les rendez-vous n'ont pas pu être chargés. Réessayez dans un
           instant.</Erreur>
-      )) : rdvs.length === 0 ? vide : (
-        <ul className="mt-4 space-y-2">
+      ) : <Squelette />) : rdvs.length === 0 ? vide : (
+        <ul aria-busy={rdvs === null} className="mt-4 space-y-2">
           {rdvs.map((rdv) => (
             <li key={rdv.reference ?? `${rdv.heure}-${rdv.motif}`}
-                className={`flex items-center gap-4 rounded-[var(--rayon)] border
-                            border-bordure-douce bg-surface p-3
+                className={`${LIGNE} flex items-center gap-4
+                            rounded-[var(--rayon)] border border-bordure-douce
+                            bg-surface p-3
                             ${rdv.statut === 'ANNULE' ? 'opacity-60' : ''}`}>
               <div className="shrink-0 text-center">
                 <div className="text-xl font-bold tabular-nums">
@@ -184,8 +189,13 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
         <button type="submit" className={`w-full ${secondaire}`}>Ajouter l'animal</button>
       </form>
 
+      {/* Hauteur déclarée ici et non héritée : une ligne de carnet porte
+          selon l'animal une adresse copiable et deux boutons QR, donc aucune
+          hauteur ne serait juste. Le squelette y dit « ça travaille », il ne
+          prétend pas réserver la place. */}
+      {animaux === null && !echec && <Squelette lignes={2} hauteur="h-14" />}
       {animaux?.length === 0 && vide}
-      <ul className="mt-4 space-y-2">
+      <ul aria-busy={animaux === null} className="mt-4 space-y-2">
         {animaux?.map((animal) => (
           <li key={animal.id}
               className="rounded-[var(--rayon)] border border-bordure-douce

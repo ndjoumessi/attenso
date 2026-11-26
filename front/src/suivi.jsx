@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { attenue } from './composants/formulaire.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
@@ -18,15 +19,22 @@ function versOctets(base64url) {
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 }
 
+/**
+ * `aria-busy` et l'atténuation vivent ICI : ce bouton n'est désactivé que
+ * pendant un envoi, et c'est le seul endroit qui le sait pour ses deux
+ * usages. Les poser chez l'appelant les ferait disparaître — ce composant
+ * ne répand pas ses props.
+ */
 function Bouton({ onClick, disabled, children }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-            className="w-full cible rounded-[var(--rayon)] border
+            aria-busy={disabled || undefined}
+            className={`w-full cible rounded-[var(--rayon)] border
                        border-bordure-controle bg-surface px-4 font-semibold
-                       [touch-action:manipulation] disabled:opacity-60
+                       [touch-action:manipulation] ${attenue(disabled)}
                        hover:bg-surface-douce
                        focus-visible:outline-2 focus-visible:outline-offset-2
-                       focus-visible:outline-[var(--anneau)]">
+                       focus-visible:outline-[var(--anneau)]`}>
       {children}
     </button>
   );

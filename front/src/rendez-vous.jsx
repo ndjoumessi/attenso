@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { attenue } from './composants/formulaire.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
@@ -62,10 +63,12 @@ export function RendezVous() {
         <p className="mt-4 text-sur-fond-doux">Motif : {rdv.motif}</p>
       )}
 
+      {/* En INFO et non en accent : un rendez-vous annulé n'est pas une
+          réussite, et le vert de la marque le présentait comme telle. */}
       {annule && (
         <div role="status"
-             className="mt-4 rounded-[var(--rayon)] border border-accent
-                        bg-accent-voile px-4 py-3 text-accent-texte">
+             className="mt-4 rounded-[var(--rayon)] border border-info
+                        bg-info-voile px-4 py-3 text-info-texte">
           Ce rendez-vous est annulé.
         </div>
       )}
@@ -77,11 +80,11 @@ export function RendezVous() {
 
       {rdv && !annule && (
         <>
-          <button type="button" onClick={annuler} disabled={envoi}
-                  className="mt-6 w-full cible rounded-[var(--rayon)] border
+          <button type="button" onClick={annuler} disabled={envoi} aria-busy={envoi}
+                  className={`mt-6 w-full cible rounded-[var(--rayon)] border
                              border-alerte bg-transparent px-6 font-semibold
                              text-alerte [touch-action:manipulation]
-                             disabled:opacity-60 hover:bg-alerte-voile">
+                             ${attenue(envoi)} hover:bg-alerte-voile`}>
             Annuler ce rendez-vous
           </button>
           <p className="mt-2 text-sm text-sur-fond-doux">

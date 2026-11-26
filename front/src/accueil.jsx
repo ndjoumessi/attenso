@@ -10,7 +10,7 @@ import {
 } from '../../src/main/resources/static/app/vue-file.js';
 import { aujourdhui, jourLong } from '../../src/main/resources/static/app/formats.js';
 import { SidebarInset, SidebarProvider } from '@/ui/sidebar';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from './composants/formulaire.jsx';
+import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal, attenue } from './composants/formulaire.jsx';
 import { Connexion } from './accueil/Connexion.jsx';
 import { File } from './accueil/File.jsx';
 import { Titre } from './accueil/Sections.jsx';
@@ -442,7 +442,7 @@ function MotDePasse({ jeton, courriel = '', echecCompte = false, titre = true })
           </p>
         </div>
         <Erreur>{erreur}</Erreur>
-        <Principal type="submit" disabled={envoi}>
+        <Principal type="submit" disabled={envoi} aria-busy={envoi}>
           {envoi ? 'Un instant…' : 'Changer mon mot de passe'}
         </Principal>
       </form>
