@@ -32,7 +32,15 @@ const ORIGINE = 'https://attenso.test';
 // La coquille a donc une requête de moins. Vérifié avant d'accepter : aucune
 // entrée Vite ajoutée, et `chrome-*.js` pèse 2 837 o — négligeable contre les
 // 220 Ko du runtime React qu'elle met déjà en cache.
-const FICHIERS_DE_LA_COQUILLE = 16;
+// 16 → 17 le 2026-11-26 : `rendez-vous.jsx` importe `vue-suivi.js` pour le
+// prédicat `lienVivant`, partagé avec la page de suivi, et Vite a donc EXTRAIT
+// ce module en chunk. Les deux conditions sont vérifiées : aucune entrée Vite
+// ajoutée, et c'est bien un module partagé devenu chunk. La coquille ne met
+// pas en cache une ligne de code de plus — `vue-suivi` était déjà dedans, à
+// l'intérieur de `suivi-*.js` : mesuré avant/après, suivi passe de 6 181 o à
+// 4 746 o et le chunk extrait pèse 1 564 o, soit 129 o de frais de découpe.
+// Ce qui change vraiment, c'est une requête de plus à l'installation.
+const FICHIERS_DE_LA_COQUILLE = 17;
 
 /** Une réponse factice, assez pour distinguer d'où elle vient. */
 function reponse(provenance, chemin) {

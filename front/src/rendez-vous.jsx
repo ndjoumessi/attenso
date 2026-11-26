@@ -7,6 +7,9 @@ import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   heureCourte, jourLong,
 } from '../../src/main/resources/static/app/formats.js';
+import {
+  lienVivant,
+} from '../../src/main/resources/static/app/vue-suivi.js';
 
 export function RendezVous() {
   const [rdv, setRdv] = useState(null);
@@ -44,25 +47,36 @@ export function RendezVous() {
       <p className="min-h-5 text-sm font-semibold uppercase tracking-wide
                     text-sur-fond-doux">{rdv ? rdv.clinique : ''}</p>
 
-      <div aria-live="polite" aria-atomic="true"
-           className="mt-4 rounded-[var(--rayon-lg)] border border-bordure-douce
-                      bg-surface p-8 text-center shadow-1">
-        <p className="text-sm font-semibold uppercase tracking-wide
-                      text-sur-fond-doux">Votre rendez-vous</p>
-        {/* Un rendez-vous annulé garde son heure affichée en grisé plutôt que
-            de disparaître : la personne doit pouvoir vérifier ce qu'elle vient
-            de faire. */}
-        {/* Même créneau vide que sur le suivi, même raison : ici le cadratin
-            mesurait 48,9 px dans un corps de 60 px. L'espace insécable tient
-            la hauteur de la ligne, et c'est « chargement… » qui parle. */}
-        <p className={`mt-2 text-6xl font-bold leading-none tracking-tighter
-                       tabular-nums ${annule ? 'text-sur-fond-doux line-through' : ''}`}>
-          {rdv ? heureCourte(rdv.heure) : '\u00A0'}
-        </p>
-        <p className="mt-3 text-lg text-sur-fond-doux">
-          {rdv ? jourLong(rdv.jour) : erreur ? '' : 'chargement…'}
-        </p>
-      </div>
+      {/* Même prédicat que la page de suivi, et pour le même défaut : un lien
+          mort laissait cette carte au-dessus de l'erreur, « Votre rendez-vous »
+          suivi d'un créneau vide et de rien — une boîte de 206 px qui n'annonce
+          aucun rendez-vous, posée juste au-dessus du message qui dit pourquoi.
+          Elle reste en revanche affichée quand une erreur réseau accompagne un
+          rendez-vous déjà connu : « le rendez-vous n'est PAS annulé » n'a de
+          sens que si l'heure reste sous les yeux. */}
+      {lienVivant(rdv, erreur) && (
+        <div aria-live="polite" aria-atomic="true"
+             className="mt-4 rounded-[var(--rayon-lg)] border border-bordure-douce
+                        bg-surface p-8 text-center shadow-1">
+          <p className="text-sm font-semibold uppercase tracking-wide
+                        text-sur-fond-doux">Votre rendez-vous</p>
+          {/* Un rendez-vous annulé garde son heure affichée en grisé plutôt que
+              de disparaître : la personne doit pouvoir vérifier ce qu'elle vient
+              de faire. */}
+          {/* Même créneau vide que sur le suivi, même raison : ici le cadratin
+              mesurait 48,9 px dans un corps de 60 px. L'espace insécable tient
+              la hauteur de la ligne, et c'est « chargement… » qui parle. */}
+          <p className={`mt-2 text-6xl font-bold leading-none tracking-tighter
+                         tabular-nums ${annule ? 'text-sur-fond-doux line-through' : ''}`}>
+            {rdv ? heureCourte(rdv.heure) : '\u00A0'}
+          </p>
+          {/* Plus de branche pour l'erreur : la carte ne survit plus à un lien
+              mort, donc « chargement… » ne peut plus s'afficher sous un 404. */}
+          <p className="mt-3 text-lg text-sur-fond-doux">
+            {rdv ? jourLong(rdv.jour) : 'chargement…'}
+          </p>
+        </div>
+      )}
 
       {rdv?.motif && (
         <p className="mt-4 text-sur-fond-doux">Motif : {rdv.motif}</p>
