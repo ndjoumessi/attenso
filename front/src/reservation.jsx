@@ -156,6 +156,7 @@ export function Reservation() {
             <div className="mt-3 flex flex-wrap gap-2">
               {liste.map((creneau) => (
                 <button key={`${creneau.jour}-${creneau.heure}`} type="button"
+                        aria-label={`${jourLong(jour)} à ${heureCourte(creneau.heure)}`}
                         onClick={() => setChoisi({
                           creneau,
                           libelle: `${jourLong(jour)} à ${heureCourte(creneau.heure)}`,

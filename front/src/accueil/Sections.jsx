@@ -211,11 +211,17 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                     par animal au montage ferait payer la liste entière pour un
                     geste qui porte sur un seul. */}
                 <div className="mt-2 flex flex-wrap gap-2">
+                  {/* Le nom accessible porte l'animal : sans lui, une liste
+                      de six carnets rend six « Montrer le QR » identiques. Le
+                      libellé visible reste court, la ligne le désambiguïse pour
+                      l'œil — pas pour l'arbre d'accessibilité. */}
                   <button type="button" onClick={() => montrerLeQr(animal.id)}
+                          aria-label={`${qrOuvert === animal.id ? 'Masquer' : 'Montrer'} le QR de ${animal.nom}`}
                           className={SECONDAIRE}>
                     {qrOuvert === animal.id ? 'Masquer le QR' : 'Montrer le QR'}
                   </button>
                   <button type="button" onClick={() => revoquer(animal.id)}
+                          aria-label={`Révoquer le QR de ${animal.nom}`}
                           title="Le QR actuel cessera de fonctionner et un nouveau sera émis."
                           className={SECONDAIRE}>
                     Révoquer le QR
@@ -226,7 +232,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                                   bg-white p-4">
                     {qrCarnet
                       ? <Qr qr={qrCarnet} className="aspect-square w-48" />
-                      : <p className="text-sm text-[#333]">Un instant…</p>}
+                      : <p className="text-sm text-[var(--sur-papier)]">Un instant…</p>}
                   </div>
                 )}
                 {echecQr && (
