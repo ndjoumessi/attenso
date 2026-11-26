@@ -118,6 +118,7 @@ function Ligne({ donnees, maintenant, horsReseau, surAction, surDeplacement }) {
         <div className="flex shrink-0 flex-col gap-2">
           {deplacementsPour(donnees.statut).map(([route, titre, fleche]) => (
             <button key={route} type="button" title={titre} disabled={horsReseau}
+                    aria-label={`${titre} le ticket ${donnees.numeroJour}`}
                     onClick={() => surDeplacement(donnees.id, route)}
                     className={`cible-min w-11 rounded-[var(--rayon)] border
                                border-bordure-controle bg-surface font-bold
