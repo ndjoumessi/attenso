@@ -76,6 +76,17 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
         {/* Qui est connecté, sur une tablette de comptoir partagée. Le départ
             reste dans l'en-tête de l'écran, avec son avertissement. */}
         <p className="text-sm text-sur-barre-doux">{identite}</p>
+        {/* La seule sortie du tableau était « Se déconnecter » : pour aller
+            voir le site, il fallait fermer sa session. Un LIEN, donc, et
+            surtout pas un bouton qui quitte — les gestes en attente de rejeu
+            partiraient avec. */}
+        {/* Sans flèche : ce n'est pas un RETOUR mais un lien latéral vers le
+            site public, et la flèche de retour appartient à la coquille
+            partagée — sa garde me l'a rappelé en rougissant. */}
+        <a href="/" className="cible-min mt-1 inline-flex items-center text-sm
+                               text-sur-barre-doux underline underline-offset-2">
+          Le site Attenso
+        </a>
       </SidebarFooter>
     </Sidebar>
   );
