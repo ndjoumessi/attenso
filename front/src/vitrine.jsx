@@ -1,5 +1,6 @@
 import { ApercuFile } from './composants/apercu-file.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
+import { Marque } from './composants/marque.jsx';
 import { Appel, Bande, Colonne, Fleche, Mesure, RYTHME } from './composants/base.jsx';
 
 const ONDE = 'M3 12h4l3-8 4 16 3-8h4';
@@ -30,12 +31,7 @@ function Entete() {
                        bg-fond/85 backdrop-blur-md">
       <Colonne className="flex h-16 items-center justify-between gap-4">
         <span className="inline-flex items-center gap-2 text-xl font-medium tracking-tight">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
-               aria-hidden="true" className="shrink-0 text-accent-texte">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 2" />
-          </svg>
+          <Marque className="text-accent-texte" />
           Attenso
         </span>
         <Appel href="/connexion" variante="discret" taille="petit">Se connecter</Appel>
