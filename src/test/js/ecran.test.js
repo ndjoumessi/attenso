@@ -49,8 +49,17 @@ describe("l'écran ne met jamais un tiret en typographie d'affichage", () => {
    */
   it('ferme les deux chemins qui amenaient un tiret dans cette typographie', () => {
     const source = sansCommentaires(lire(ECRAN));
-    const grand = source.match(/text-\[clamp[\s\S]{0,260}?<\/p>/)?.[0] ?? '';
+    // Repéré par sa CONDITION et non par sa position. Cette garde prenait le
+    // premier `clamp` du fichier, ce qui désignait le grand nombre tant qu'il
+    // était le premier à en porter un. Le jour où l'en-tête est passé en vw,
+    // elle a changé de bloc sans changer de nom : ici elle a rougi, mais si
+    // l'en-tête n'avait pas eu de ternaire elle serait restée verte en
+    // examinant le mauvais paragraphe — un proxy de position, exactement la
+    // forme de garde qui ne prouve rien.
+    const grand = source.match(/aUnNumero\s*&&\s*\([\s\S]{0,400}?<\/p>/)?.[0] ?? '';
     assert.ok(grand, 'le bloc du grand nombre est introuvable');
+    assert.match(grand, /text-\[clamp/,
+      "le bloc trouvé n'est pas en typographie d'affichage : la garde vise à côté");
     assert.doesNotMatch(grand, /'—'|"—"|RIEN/,
       'un tiret littéral revient dans la typographie d\'affichage');
     assert.doesNotMatch(grand, /vue\s*\?[\s\S]*?:/,
@@ -108,23 +117,35 @@ describe('les lignes du mur grandissent avec la dalle', () => {
     });
   }
 
-  // L'ordre du source est aussi l'ordre de lecture : nombre, légende,
-  // suivants, délai. Le compte est piné — en ajouter une cinquième sans y
-  // penser, ou en retirer une, doit faire rougir.
+  // L'ordre du source : l'en-tête d'abord — il est en haut de l'écran — puis
+  // l'ordre de lecture, nombre, légende, suivants, délai. Le compte est piné :
+  // en ajouter une sans y penser, ou en retirer une, doit faire rougir.
+  const ENTETE = 'le nom de la clinique';
   const LIGNES = ['le grand nombre', 'la légende', 'les suivants', 'le délai'];
+  const TOUTES = [ENTETE, ...LIGNES];
 
-  it('dimensionne les quatre lignes en vw', () => {
+  /** L'en-tête est le premier du source ; les quatre autres sont le corps. */
+  const corps = (trouves) => trouves.slice(1);
+
+  it('dimensionne les cinq lignes en vw', () => {
     const trouves = clamps(sansCommentaires(lire(ECRAN)));
-    assert.equal(trouves.length, LIGNES.length,
-      `${trouves.length} ligne(s) en clamp, attendu ${LIGNES.length} : ${LIGNES.join(', ')}`);
+    assert.equal(trouves.length, TOUTES.length,
+      `${trouves.length} ligne(s) en clamp, attendu ${TOUTES.length} : ${TOUTES.join(', ')}`);
     trouves.forEach((c, i) => {
       assert.match(c.prefere, /vw$/,
-        `${LIGNES[i]} : la valeur préférée « ${c.prefere} » ne suit pas la dalle`);
+        `${TOUTES[i]} : la valeur préférée « ${c.prefere} » ne suit pas la dalle`);
     });
   });
 
+  /**
+   * L'en-tête est le premier du source et le dernier de l'attention : il dit
+   * où l'on est, pas ce qui arrive. Une garde qui exigerait l'ordre strict
+   * sur les cinq le classerait en tête parce qu'il est en haut du balisage —
+   * elle garderait la POSITION et non la hiérarchie. On vérifie donc l'ordre
+   * sur le corps, et séparément que l'en-tête ne domine rien.
+   */
   it("garde l'ordre de lecture du mur", () => {
-    const trouves = clamps(sansCommentaires(lire(ECRAN)));
+    const trouves = corps(clamps(sansCommentaires(lire(ECRAN))));
     for (let i = 1; i < trouves.length; i += 1) {
       assert.ok(trouves[i].plafondPx < trouves[i - 1].plafondPx,
         `${LIGNES[i]} (${trouves[i].plafondPx} px) n'est pas plus petite que `
@@ -132,14 +153,30 @@ describe('les lignes du mur grandissent avec la dalle', () => {
     }
   });
 
-  // 48 px à 1080p → capitale de 21,3 mm → lisible à 4,26 m. En dessous, la
-  // dernière ligne repasse sous la promesse de l'écran.
+  it("n'accorde pas à l'en-tête plus de poids qu'aux lignes d'appui", () => {
+    const trouves = clamps(sansCommentaires(lire(ECRAN)));
+    const plusPetiteDuCorps = Math.min(...corps(trouves).map((c) => c.plafondPx));
+    assert.ok(trouves[0].plafondPx <= plusPetiteDuCorps,
+      `${ENTETE} plafonne à ${trouves[0].plafondPx} px et passe devant `
+      + `la plus petite ligne d'appui (${plusPetiteDuCorps} px)`);
+    // Fenêtre BORNÉE : le clamp doit porter le paragraphe qui REND le nom.
+    // « un clamp existe quelque part dans le fichier » resterait vert si
+    // l'en-tête gardait ses paliers et qu'un cinquième clamp vivait ailleurs.
+    assert.match(sansCommentaires(lire(ECRAN)),
+      /text-\[clamp\([^)]*\)\][\s\S]{0,300}?vue\.clinique/,
+      "le nom de la clinique n'est pas dimensionné par un clamp");
+  });
+
+  // 48 px à 1080p → capitale de 21,3 mm → lisible à 4,26 m. En dessous, une
+  // ligne repasse sous la promesse de l'écran. Sur TOUTES les lignes, et non
+  // sur la dernière du source : depuis que l'en-tête est dimensionné comme
+  // les autres, la plus petite n'est plus forcément la dernière écrite.
   it('tient les quatre mètres sur la plus petite ligne', () => {
     const trouves = clamps(sansCommentaires(lire(ECRAN)));
-    const derniere = trouves[trouves.length - 1];
-    assert.ok(derniere.plafondPx >= 48,
-      `le délai plafonne à ${derniere.plafondPx} px : capitale de `
-      + `${Math.round(derniere.plafondPx * 0.7 * 0.634 * 10) / 10} mm, `
+    const plusPetite = trouves.reduce((a, b) => (b.plafondPx < a.plafondPx ? b : a));
+    assert.ok(plusPetite.plafondPx >= 48,
+      `la plus petite ligne plafonne à ${plusPetite.plafondPx} px : capitale de `
+      + `${Math.round(plusPetite.plafondPx * 0.7 * 0.634 * 10) / 10} mm, `
       + 'soit moins de quatre mètres');
   });
 });
