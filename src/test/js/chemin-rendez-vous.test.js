@@ -116,6 +116,27 @@ describe('l\'affiche du comptoir donne l\'adresse de réservation', () => {
   });
 
   /**
+   * L'adresse prend sa PROPRE LIGNE.
+   *
+   * <p>Collée à son libellé, `break-all` la coupait au milieu d'un mot : sur
+   * l'adresse Railway de la démonstration, mesuré dans un aperçu de la feuille,
+   * la dernière ligne ne portait qu'un « o ». Le préfixe fait 35 caractères,
+   * contre 8 pour « ou tapez » de la ligne du comptoir — c'est lui qui poussait
+   * l'adresse au-delà de la largeur.
+   *
+   * <p>Aucune garde de texte ne pouvait le voir : la chaîne était juste, le
+   * rendu non. Celle-ci garde la seule chose qui s'en déduit dans le source —
+   * que l'adresse soit un bloc.
+   */
+  it('met l\'adresse sur sa propre ligne, pour qu\'elle ne soit pas coupée', () => {
+    const i = SOURCE.indexOf('vue.urlRendezVous');
+    const balise = SOURCE.lastIndexOf('<strong', i);
+    const classes = SOURCE.slice(balise, i);
+    assert.match(classes, /\bblock\b/,
+      'l\'adresse de réservation n\'est pas sur sa propre ligne');
+  });
+
+  /**
    * Un seul QR. Deux codes sur une affiche et personne ne sait lequel
    * scanner — et celui du comptoir est l'action du jour.
    */
