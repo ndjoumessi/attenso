@@ -105,8 +105,15 @@ export function Affiche() {
               Google pour lui. Écrite, pas encodée : un second QR sur la même
               affiche et plus personne ne sait lequel scanner. */}
           <p className="mt-2 text-base text-[var(--sur-papier-doux)]">
-            Pour un rendez-vous un autre jour&nbsp;:{' '}
-            <strong className="break-all font-mono text-[var(--sur-papier)]">
+            Pour un rendez-vous un autre jour&nbsp;:
+            {/* `block` : l'adresse prend sa propre ligne. Collée au libellé,
+                elle se faisait couper par `break-all` au milieu d'un mot —
+                mesuré sur l'adresse Railway de la démonstration, qui finissait
+                par un « o » seul sur la dernière ligne. Le préfixe fait 35
+                caractères, contre 8 pour « ou tapez » juste au-dessus : c'est
+                lui qui poussait l'adresse au-delà de la largeur. Sur sa propre
+                ligne, elle tient quel que soit le domaine. */}
+            <strong className="block break-all font-mono text-[var(--sur-papier)]">
               {urlLisible(vue.urlRendezVous)}
             </strong>
           </p>
