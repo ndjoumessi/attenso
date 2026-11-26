@@ -70,11 +70,24 @@ public class ServiceAgenda {
 
 	@Transactional
 	public int genererPour(Tenant tenant) {
-		List<PlageHoraire> plages = dao.plages(tenant.id());
+		return genererDepuis(tenant.id(), LocalDate.now(horloge.withZone(tenant.zone())));
+	}
+
+	/**
+	 * Le même travail, à partir d'un jour DONNÉ.
+	 *
+	 * <p>La date est un paramètre et non une lecture de l'horloge, parce que
+	 * l'amorçage de la démonstration sème sous une horloge fixée : il doit
+	 * matérialiser les créneaux du jour qu'il sème, et non de celui où tourne
+	 * la machine. {@link #genererPour} reste la porte de la tâche de nuit, qui
+	 * a un locataire et pas de date.
+	 */
+	@Transactional
+	public int genererDepuis(UUID tenantId, LocalDate depuis) {
+		List<PlageHoraire> plages = dao.plages(tenantId);
 		if (plages.isEmpty()) {
 			return 0;
 		}
-		LocalDate depuis = LocalDate.now(horloge.withZone(tenant.zone()));
 		int produits = 0;
 		for (int decalage = 0; decalage < JOURS_OUVERTS; decalage++) {
 			LocalDate jour = depuis.plusDays(decalage);
@@ -85,7 +98,7 @@ public class ServiceAgenda {
 				for (LocalTime heure = plage.debut();
 						!heure.plusMinutes(plage.dureeMinutes()).isAfter(plage.fin());
 						heure = heure.plusMinutes(plage.dureeMinutes())) {
-					dao.materialiser(tenant.id(), jour, heure, plage.places());
+					dao.materialiser(tenantId, jour, heure, plage.places());
 					produits++;
 				}
 			}

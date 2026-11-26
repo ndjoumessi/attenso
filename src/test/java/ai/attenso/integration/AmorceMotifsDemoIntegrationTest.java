@@ -42,6 +42,9 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 	ai.attenso.agenda.AgendaDao agenda;
 
 	@Autowired
+	ai.attenso.agenda.ServiceAgenda serviceAgenda;
+
+	@Autowired
 	ai.attenso.carnet.CarnetDao carnets;
 
 	@Autowired
@@ -56,7 +59,7 @@ class AmorceMotifsDemoIntegrationTest extends SocleIntegration {
 				"Clinique de démonstration", "accueil@demo.attenso.test",
 				"mdp-de-demonstration-de-test", null, null, null, false);
 		this.amorce = new AmorceClinique(proprietes, tenants, applicatif, motsDePasse, jetons,
-				motifs, agenda, carnets, horloge);
+				motifs, agenda, serviceAgenda, carnets, horloge);
 	}
 
 	private List<MotifPriorite> motifsDeLaDemo() {

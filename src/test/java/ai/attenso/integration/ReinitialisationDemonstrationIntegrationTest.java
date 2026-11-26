@@ -3,10 +3,16 @@ package ai.attenso.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.attenso.agenda.Creneau;
+import ai.attenso.agenda.ServiceAgenda;
 import ai.attenso.amorce.ReinitialisationDemonstration;
+import ai.attenso.tenant.ContexteTenant;
+import ai.attenso.tenant.Tenant;
+import ai.attenso.tenant.TenantRepository;
 import java.sql.Date;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +44,12 @@ class ReinitialisationDemonstrationIntegrationTest extends ReinitialisationBase 
 
 	@Autowired
 	Clock horloge;
+
+	@Autowired
+	ServiceAgenda agenda;
+
+	@Autowired
+	TenantRepository cliniques;
 
 	private void lancer() {
 		reinitialisation.run(new DefaultApplicationArguments(new String[0]));
@@ -187,5 +199,31 @@ class ReinitialisationDemonstrationIntegrationTest extends ReinitialisationBase 
 		assertThat(graceDe(demo)).isEqualTo(420);
 		assertThat(graceDuTicketAppele(demo)).as("le ticket appelé hérite de la grâce de la clinique")
 				.isEqualTo(420);
+	}
+
+	/**
+	 * Le chemin qui a cassé la production, et celui-là précisément.
+	 *
+	 * <p>Le réamorçage efface {@code creneau} ET {@code plage_horaire} avant de
+	 * ressemer : ce n'est pas l'ordre de l'installation, et c'est lui qui
+	 * tournait le 2026-11-26 à 8 h 28 quand « Prendre rendez-vous » s'est mis à
+	 * répondre « Aucun créneau n'est ouvert pour le moment ». La garde jumelle
+	 * d'{@code AmorceDemonstrationIntegrationTest} couvre le code partagé ;
+	 * celle-ci couvre la séquence effacement puis semis.
+	 */
+	@Test
+	@DisplayName("après un rejeu, la page de prise de rendez-vous a de quoi proposer")
+	void unCreneauResteReservableApresLeRejeu() {
+		UUID demo = cliniqueDeDemonstration();
+
+		lancer();
+
+		LocalDate aujourdhui = LocalDate.now(horloge);
+		List<Creneau> libres = ContexteTenant.avec(demo, () -> {
+			Tenant clinique = cliniques.findById(demo).orElseThrow();
+			return agenda.disponibles(clinique, aujourdhui, aujourdhui.plusDays(28));
+		});
+
+		assertThat(libres).as("créneaux réservables après le rejeu").isNotEmpty();
 	}
 }
