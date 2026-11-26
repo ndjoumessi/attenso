@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from './composants/formulaire.jsx';
+import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal, attenue } from './composants/formulaire.jsx';
 
 const PERIME = "Ce lien n'est plus valable. Les liens expirent au bout d'une "
   + "heure et ne servent qu'une fois : redemandez-en un depuis la page de "
@@ -81,7 +81,7 @@ export function Reinitialisation() {
           </p>
         </div>
         <Erreur>{erreur}</Erreur>
-        <Principal type="submit" disabled={envoi}>
+        <Principal type="submit" disabled={envoi} aria-busy={envoi}>
           {envoi ? 'Un instant…' : 'Enregistrer'}
         </Principal>
       </form>

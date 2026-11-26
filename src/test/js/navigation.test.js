@@ -565,13 +565,20 @@ describe('les vues du groupe Journée', () => {
     const corps = corpsDeSection(VUES_JOURNEE[0]);
     assert.match(corps, /\.catch\(\(\) => setEchec\(true\)\)/,
       'l\'échec du chargement n\'est pas retenu');
-    // Le ternaire entier, borné : `rdvs === null ? (echec && (<Erreur>…))`
-    // vient AVANT `rdvs.length === 0 ? vide`. Déplacer le bloc d'échec après,
-    // ou remplacer sa branche par `vide`, afficherait « aucun rendez-vous »
-    // pendant le chargement et en cas d'échec.
-    assert.match(corps,
-      /\{rdvs === null \? \(echec && \(\s*<Erreur>[^<]*<\/Erreur>\s*\)\) : rdvs\.length === 0 \? vide : \(/,
-      'tant que rien n\'est chargé, un échec doit se dire, et le reste se taire');
+    // La PROPRIÉTÉ, et non la forme du ternaire : la branche « pas encore
+    // chargé » doit dire l'échec s'il y en a un, montrer qu'elle travaille
+    // sinon, et surtout ne jamais atteindre `vide` — « aucun rendez-vous »
+    // pendant un chargement est un mensonge.
+    //
+    // L'assertion d'avant tenait le ternaire au caractère près ; elle a
+    // rougi sur un code qui respectait pourtant la propriété, le jour où la
+    // branche de chargement a gagné son squelette.
+    const branche = corps.slice(corps.indexOf('{rdvs === null ?'),
+      corps.indexOf('rdvs.length === 0'));
+    assert.ok(branche, 'la branche « pas encore chargé » a disparu');
+    assert.match(branche, /<Erreur>/, 'un échec de chargement ne se dit plus');
+    assert.doesNotMatch(branche, /\bvide\b/,
+      '« aucun rendez-vous » peut s\'afficher avant que la liste soit chargée');
   });
 
   /**

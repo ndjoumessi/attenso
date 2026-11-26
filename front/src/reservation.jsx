@@ -4,7 +4,7 @@ import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   grouperParJour, heureCourte, jourLong,
 } from '../../src/main/resources/static/app/formats.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Principal } from './composants/formulaire.jsx';
+import { AIDE, CHAMP, ETIQUETTE, Erreur, Principal, attenue } from './composants/formulaire.jsx';
 
 const slug = () => location.pathname.split('/').filter(Boolean)[1];
 
@@ -116,7 +116,7 @@ export function Reservation() {
                    placeholder="Vaccin, contrôle…" className={CHAMP} />
           </div>
           <Erreur>{erreurForm}</Erreur>
-          <Principal type="submit" disabled={envoi}>
+          <Principal type="submit" disabled={envoi} aria-busy={envoi}>
             {envoi ? 'Un instant…' : 'Confirmer le rendez-vous'}
           </Principal>
           <button type="button" onClick={() => setChoisi(null)}

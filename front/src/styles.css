@@ -29,6 +29,10 @@
   --color-alerte: var(--alerte);
   --color-sur-alerte: var(--sur-alerte);
   --color-alerte-voile: var(--alerte-voile);
+  --color-info: var(--info);
+  --color-sur-info: var(--sur-info);
+  --color-info-voile: var(--info-voile);
+  --color-info-texte: var(--info-texte);
   --color-attention: var(--attention);
   --color-sur-attention: var(--sur-attention);
   --color-attention-voile: var(--attention-voile);

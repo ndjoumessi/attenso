@@ -95,6 +95,14 @@
   --sur-alerte: #ffffff;
   --alerte-voile: #fbeae6;
 
+  /* Information neutre : ni succès, ni alerte, ni attente d'action. Ces
+     messages empruntaient --accent, qui est la couleur de la MARQUE et de
+     l'appel — « Ce rendez-vous est annulé » s'affichait en vert de succès. */
+  --info: #1f4e79;                /*  8.37:1 sur --fond */
+  --sur-info: #ffffff;            /*  8.66:1 sur --info */
+  --info-voile: #e8eef5;
+  --info-texte: #1f4e79;          /* sur --info-voile : 7.42:1 */
+
   --attention: #8a5a00;           /* 5.72:1 sur --fond ; blanc dessus 5.93:1 */
   --sur-attention: #ffffff;
   --attention-voile: #fdf3df;
@@ -168,6 +176,13 @@
        sur le voile. Le bandeau des gestes en attente porte la même classe :
        le défaut touchait déjà l'écran de panne, où la lecture compte le plus. */
     --accent-texte: #5fb89a;      /* sur --accent-voile : 5.18:1 */
+
+    --info: #6ba8db;              /*  6.49:1 */
+    --sur-info: #0d1a26;          /*  6.92:1 sur --info */
+    --info-voile: #1c2e3f;
+    /* Comme --accent-texte : l'aplat lisible sur le fond ne l'est pas
+       forcément sur son propre voile. Calculé, pas recopié. */
+    --info-texte: #7cb4e2;        /* sur --info-voile : 6.27:1 */
 
     --alerte: #ef8a76;            /*  6.74:1 */
     --sur-alerte: #3a1109;

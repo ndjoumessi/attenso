@@ -16,19 +16,23 @@ export const ETIQUETTE = 'block font-semibold';
 
 export const AIDE = 'mt-2 text-sm leading-relaxed text-sur-fond-doux';
 
-export function Principal({ children, ...reste }) {
+/**
+ * `aria-busy` est posé ICI et non chez l'appelant : ce bouton est désactivé
+ * pendant l'envoi, et c'est le seul endroit qui le sait pour tous ses usages.
+ */
+export function Principal({ children, disabled, ...reste }) {
   return (
-    <button {...reste}
-            className="w-full cible rounded-[var(--rayon)] bg-accent px-6 text-lg
+    <button {...reste} disabled={disabled} aria-busy={disabled || undefined}
+            className={`w-full cible rounded-[var(--rayon)] bg-accent px-6 text-lg
                        font-bold text-sur-accent shadow-1
-                       [touch-action:manipulation] disabled:opacity-60
+                       [touch-action:manipulation] ${attenue(disabled)}
                        disabled:cursor-not-allowed
                        transition-[filter,box-shadow,transform]
                        duration-[var(--duree-courte)] ease-[var(--courbe-entree)]
                        hover:shadow-2 hover:brightness-110
                        active:translate-y-px active:shadow-1 active:brightness-95
                        focus-visible:outline-2 focus-visible:outline-offset-2
-                       focus-visible:outline-[var(--anneau)]">
+                       focus-visible:outline-[var(--anneau)]`}>
       {children}
     </button>
   );
@@ -43,11 +47,26 @@ export function Erreur({ children }) {
   );
 }
 
+/**
+ * L'atténuation d'un bouton désactivé — JAMAIS pendant un envoi.
+ *
+ * `opacity` compose l'élément ENTIER avec la page : fond et texte reçoivent
+ * le même mélange. Mesuré sur le bouton principal en thème clair, le texte
+ * passe de 7,64:1 à 2,97:1. Or `disabled` servait aussi d'état de chargement,
+ * donc « Un instant… » devenait presque illisible au moment précis où il
+ * demande d'attendre.
+ *
+ * WCAG 1.4.3 exempte les contrôles inactifs — mais un bouton qui envoie n'est
+ * pas inactif, il travaille. On garde donc l'opacité pleine, et `aria-busy`
+ * le dit à la voix.
+ */
+export const attenue = (envoi) => (envoi ? '' : 'disabled:opacity-60');
+
 export function Info({ children }) {
   if (!children) return null;
   return (
     <div role="status"
-         className="rounded-[var(--rayon)] border border-accent bg-accent-voile
-                    px-4 py-3 leading-relaxed text-accent-texte">{children}</div>
+         className="rounded-[var(--rayon)] border border-info bg-info-voile
+                    px-4 py-3 leading-relaxed text-info-texte">{children}</div>
   );
 }
