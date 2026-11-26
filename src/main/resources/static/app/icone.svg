@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- La marque d'Attenso. La géométrie est la même que `front/src/composants/
+     marque.jsx` — une garde le vérifie, parce que deux dessins qui se
+     ressemblent aujourd'hui divergent demain.
+     Le carré vert est ici et pas dans le composant : à l'onglet comme sur un
+     écran d'accueil, la marque a besoin de son fond ; dans l'en-tête du site,
+     elle prend la couleur du texte. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="512" height="512">
+  <rect width="24" height="24" rx="5.5" fill="#1b5e4b"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.75" stroke-linecap="round">
+    <path d="M5 7h13"/>
+    <path d="M5 12h9"/>
+    <path d="M5 17h5"/>
+  </g>
+</svg>
