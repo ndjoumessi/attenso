@@ -49,9 +49,19 @@ export function Ecran({ jeton }) {
     <main aria-live="polite" aria-atomic="true"
           className="flex min-h-dvh flex-col items-center justify-center
                      gap-6 px-8 py-10 text-center">
-      <p className="text-2xl font-semibold tracking-wide
-                    text-[var(--mur-encre-douce)] sm:text-3xl">
-        {vue ? vue.clinique : '—'}
+      {/* L'en-tête suit la dalle comme les quatre lignes en dessous. Il était
+          la DERNIÈRE à rester en paliers : mesuré en production à 1920 × 1080,
+          30 px, soit une capitale de 13 mm, lisible à 2,7 m sur un écran qui
+          promet quatre mètres. Il plafonne au même corps que le délai — la
+          plus petite ligne d'appui — et pas au-dessus : il dit où l'on est,
+          pas ce qui arrive.
+
+          Et plus de cadratin : à ce corps il se verrait, et la page n'a pas
+          de nom à montrer tant que le serveur n'a pas répondu. L'espace
+          insécable tient la ligne, comme sur le suivi et les rendez-vous. */}
+      <p className="text-[clamp(1.25rem,2.5vw,3rem)] font-semibold tracking-wide
+                    text-[var(--mur-encre-douce)]">
+        {vue ? vue.clinique : '\u00A0'}
       </p>
 
       {/* Le grand nombre. Dimensionné en vw pour rester lisible à quatre
