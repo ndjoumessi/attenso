@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { attenue } from './composants/formulaire.jsx';
+import {
+  PRESSE, attenue,
+} from './composants/formulaire.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
@@ -34,7 +36,7 @@ function Bouton({ onClick, disabled, children }) {
                        [touch-action:manipulation] ${attenue(disabled)}
                        hover:bg-surface-douce
                        focus-visible:outline-2 focus-visible:outline-offset-2
-                       focus-visible:outline-[var(--anneau)]`}>
+                       focus-visible:outline-[var(--anneau)] ${PRESSE}`}>
       {children}
     </button>
   );

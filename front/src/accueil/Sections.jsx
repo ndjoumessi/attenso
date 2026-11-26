@@ -3,7 +3,9 @@ import { LIGNE, Squelette } from '../composants/squelette.jsx';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
 import { Adresse } from '../composants/adresse.jsx';
-import { AIDE, CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
+import {
+  AIDE, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+} from '../composants/formulaire.jsx';
 import { Qr } from '../composants/qr.jsx';
 import { entete } from './session.js';
 
@@ -11,8 +13,6 @@ export function Titre({ children }) {
   return <h2 className="mt-12 text-xl font-bold tracking-tight">{children}</h2>;
 }
 
-const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle '
-  + 'bg-surface px-4 font-semibold hover:bg-surface-douce disabled:opacity-50';
 
 /**
  * Rendez-vous du jour (EF-905).
@@ -186,7 +186,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                  className="size-5 accent-[var(--accent)]" />
           Émettre un QR de carnet
         </label>
-        <button type="submit" className={`w-full ${secondaire}`}>Ajouter l'animal</button>
+        <button type="submit" className={`w-full ${SECONDAIRE}`}>Ajouter l'animal</button>
       </form>
 
       {/* Hauteur déclarée ici et non héritée : une ligne de carnet porte
@@ -212,12 +212,12 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                     geste qui porte sur un seul. */}
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button type="button" onClick={() => montrerLeQr(animal.id)}
-                          className={secondaire}>
+                          className={SECONDAIRE}>
                     {qrOuvert === animal.id ? 'Masquer le QR' : 'Montrer le QR'}
                   </button>
                   <button type="button" onClick={() => revoquer(animal.id)}
                           title="Le QR actuel cessera de fonctionner et un nouveau sera émis."
-                          className={secondaire}>
+                          className={SECONDAIRE}>
                     Révoquer le QR
                   </button>
                 </div>

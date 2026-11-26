@@ -4,7 +4,9 @@ import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   grouperParJour, heureCourte, jourLong,
 } from '../../src/main/resources/static/app/formats.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Principal, attenue } from './composants/formulaire.jsx';
+import {
+  AIDE, CHAMP, ETIQUETTE, Erreur, PRESSE, Principal, attenue,
+} from './composants/formulaire.jsx';
 
 const slug = () => location.pathname.split('/').filter(Boolean)[1];
 
@@ -120,9 +122,9 @@ export function Reservation() {
             {envoi ? 'Un instant…' : 'Confirmer le rendez-vous'}
           </Principal>
           <button type="button" onClick={() => setChoisi(null)}
-                  className="w-full cible rounded-[var(--rayon)] border
+                  className={`w-full cible rounded-[var(--rayon)] border
                              border-bordure-controle bg-surface px-6 font-semibold
-                             hover:bg-surface-douce">
+                             hover:bg-surface-douce ${PRESSE}`}>
             Choisir une autre heure
           </button>
         </form>
@@ -158,11 +160,11 @@ export function Reservation() {
                           creneau,
                           libelle: `${jourLong(jour)} à ${heureCourte(creneau.heure)}`,
                         })}
-                        className="cible-min min-w-20 rounded-[var(--rayon)] border
+                        className={`cible-min min-w-20 rounded-[var(--rayon)] border
                                    border-bordure-controle bg-surface px-4
                                    font-semibold tabular-nums
                                    [touch-action:manipulation]
-                                   hover:border-accent hover:bg-accent-voile">
+                                   hover:border-accent hover:bg-accent-voile ${PRESSE}`}>
                   {heureCourte(creneau.heure)}
                 </button>
               ))}

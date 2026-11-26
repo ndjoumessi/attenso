@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
+import { balisesButton } from './aide/balises.js';
 
 const RACINE = resolve(import.meta.dirname, '../../..');
 const lire = (c) => readFileSync(resolve(RACINE, c), 'utf8');
@@ -42,7 +43,10 @@ describe('un bouton qui travaille reste lisible', () => {
   it("n'atténue jamais un bouton qui travaille", () => {
     const fautifs = [];
     for (const c of FICHIERS) {
-      for (const balise of rendu(lire(c)).match(/<button[\s\S]*?>/g) ?? []) {
+      // `/<button[\s\S]*?>/` s'arrêtait au `>` d'un `onClick={() => x}` :
+      // 10 des 27 balises de ce dépôt lui revenaient AMPUTÉES, donc une
+      // propriété écrite après la flèche lui était invisible.
+      for (const balise of balisesButton(rendu(lire(c)))) {
         const occupe = /aria-busy=/.test(balise);
         const attenueEnDur = /disabled:opacity/.test(balise);
         const parLaFonction = /attenue\(/.test(balise);

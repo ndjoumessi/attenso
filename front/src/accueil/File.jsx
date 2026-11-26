@@ -3,6 +3,7 @@ import {
   CLASSES, LIBELLES, actionsPour, deplacementsPour,
 } from '../../../src/main/resources/static/app/vue-file.js';
 import { duree, minutes } from '../../../src/main/resources/static/app/formats.js';
+import { PRESSE } from '../composants/formulaire.jsx';
 
 // Les classes de LIGNE viennent du module de vue, qui est testé. On les
 // traduit ici en teintes, et une seule fois : ajouter un état côté serveur
@@ -46,7 +47,7 @@ function Action({ forme, onClick, disabled, children }) {
     <button type="button" onClick={onClick} disabled={disabled}
             className={`cible rounded-[var(--rayon)] border px-4 font-semibold
                         [touch-action:manipulation] disabled:opacity-50
-                        ${FORMES[forme] ?? FORMES['']}`}>
+                        ${FORMES[forme] ?? FORMES['']} ${PRESSE}`}>
       {children}
     </button>
   );
@@ -116,9 +117,9 @@ function Ligne({ donnees, maintenant, horsReseau, surAction, surDeplacement }) {
           {deplacementsPour(donnees.statut).map(([route, titre, fleche]) => (
             <button key={route} type="button" title={titre} disabled={horsReseau}
                     onClick={() => surDeplacement(donnees.id, route)}
-                    className="cible-min w-11 rounded-[var(--rayon)] border
+                    className={`cible-min w-11 rounded-[var(--rayon)] border
                                border-bordure-controle bg-surface font-bold
-                               disabled:opacity-50 hover:bg-surface-douce">
+                               disabled:opacity-50 hover:bg-surface-douce ${PRESSE}`}>
               {fleche}
             </button>
           ))}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
+import {
+  AIDE, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+} from '../composants/formulaire.jsx';
 import { entete } from './session.js';
 import { Titre } from './Sections.jsx';
 
@@ -15,8 +17,6 @@ const ZONES = {
     'Au-dessus de 50 % : le parcours fonctionne.'],
 };
 
-const secondaire = 'cible rounded-[var(--rayon)] border border-bordure-controle '
-  + 'bg-surface px-4 font-semibold hover:bg-surface-douce disabled:opacity-50';
 
 function Compteur({ libelle, valeur }) {
   return (
@@ -120,7 +120,7 @@ export function Mesure({ jeton, surErreur, titre = true }) {
                  value={arrivants}
                  onChange={(e) => setArrivants(e.target.value)} />
         </div>
-        <button type="submit" className={`w-full ${secondaire}`}>
+        <button type="submit" className={`w-full ${SECONDAIRE}`}>
           Enregistrer le comptage
         </button>
       </form>
@@ -145,7 +145,7 @@ export function Mesure({ jeton, surErreur, titre = true }) {
       )}
 
       <p className="mt-4">
-        <button type="button" onClick={exporter} className={secondaire}>
+        <button type="button" onClick={exporter} className={SECONDAIRE}>
           Télécharger l'historique (CSV)
         </button>
       </p>

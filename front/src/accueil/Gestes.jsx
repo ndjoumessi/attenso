@@ -25,7 +25,8 @@ import { entete } from './session.js';
 const DECLENCHEUR = 'cible inline-flex items-center justify-center gap-2 '
   + 'rounded-[var(--rayon)] border bg-surface px-5 font-bold shadow-1 '
   + '[touch-action:manipulation] disabled:opacity-50 '
-  + 'transition-[filter,box-shadow] duration-[var(--duree-courte)] '
+  + 'transition-[filter,box-shadow,scale] duration-[var(--duree-courte)] '
+  + 'ease-[var(--courbe-entree)] active:scale-[0.97] '
   + 'hover:shadow-2 focus-visible:outline-2 focus-visible:outline-offset-2 '
   + 'focus-visible:outline-[var(--anneau)]';
 
@@ -180,8 +181,10 @@ function Geste({ geste, motifs, echecMotifs = false, jeton, horsReseau,
                               text-lg font-bold shadow-1
                               [touch-action:manipulation] disabled:opacity-60
                               disabled:cursor-not-allowed
-                              transition-[filter,box-shadow]
-                              duration-[var(--duree-courte)] hover:shadow-2
+                              transition-[filter,box-shadow,scale]
+                              duration-[var(--duree-courte)]
+                              ease-[var(--courbe-entree)] active:scale-[0.97]
+                              hover:shadow-2
                               focus-visible:outline-2 focus-visible:outline-offset-2
                               focus-visible:outline-[var(--anneau)]
                               ${ton.validation}`}>
