@@ -5,6 +5,7 @@ import { euros, nomPalier } from '../../src/main/resources/static/app/formats.js
 import {
   ANNEAU, PRESSE,
 } from './composants/formulaire.jsx';
+import { Adresse } from './composants/adresse.jsx';
 
 const RETOURS = {
   ok: "Paiement enregistré. Votre clinique s'ouvre dès que notre prestataire "
@@ -18,12 +19,11 @@ const champ = 'mt-2 w-full rounded-[var(--rayon)] border border-bordure-controle
 const etiquette = 'block font-semibold';
 const aide = 'mt-2 text-sm leading-relaxed text-sur-fond-doux';
 
-function Adresse({ children }) {
-  return (
-    <code className="break-all rounded-[var(--rayon-sm)] bg-surface-douce px-2 py-1
-                     font-mono text-sm">{children}</code>
-  );
-}
+// La copie locale d'`Adresse` — un simple `<code>` — a été retirée le
+// 2026-11-26. Ces trois adresses sont celles que la clinique doit EMPORTER, et
+// l'une d'elles dit « Gardez-la : elle ne sera plus affichée » : c'est
+// exactement le cas pour lequel le composant partagé existe. Elles se
+// coupaient en plus au milieu d'un mot, posées en ligne dans un paragraphe.
 
 export function Inscription() {
   const [paliers, setPaliers] = useState([]);
@@ -287,27 +287,30 @@ function Resultat({ reponse }) {
       <h2 className="mt-10 text-xl font-bold">Votre identifiant de connexion</h2>
       <p className="mt-2">
         Pour entrer sur votre tableau, le champ «&nbsp;Clinique&nbsp;»
-        attend&nbsp;: <Adresse>{reponse.slug}</Adresse>
-        <span className="mt-1 block text-sm text-sur-fond-doux">
-          Il se retrouve aussi dans l'adresse de votre QR code, ci-dessous.
-        </span>
+        attend&nbsp;:
+      </p>
+      <Adresse url={reponse.slug}
+               nomAccessible="Copier l'identifiant de connexion" />
+      <p className="mt-1 text-sm text-sur-fond-doux">
+        Il se retrouve aussi dans l'adresse de votre QR code, ci-dessous.
       </p>
 
       <h2 className="mt-8 text-xl font-bold">À imprimer et poser au comptoir</h2>
-      <p className="mt-2">
-        Le QR code de vos clients pointe vers&nbsp;:{' '}
-        <Adresse>{base + reponse.urlComptoir}</Adresse>
-      </p>
+      <p className="mt-2">Le QR code de vos clients pointe vers&nbsp;:</p>
+      <Adresse url={base + reponse.urlComptoir}
+               nomAccessible="Copier l'adresse du QR du comptoir" />
 
       {reponse.urlEcran && (
         <>
           <h2 className="mt-8 text-xl font-bold">Votre écran de salle d'attente</h2>
           <p className="mt-2">
             Collez cette adresse dans le navigateur de l'écran, une seule
-            fois&nbsp;: <Adresse>{base + reponse.urlEcran}</Adresse>
-            <span className="mt-1 block text-sm text-sur-fond-doux">
-              Gardez-la : elle ne sera plus affichée.
-            </span>
+            fois&nbsp;:
+          </p>
+          <Adresse url={base + reponse.urlEcran}
+                   nomAccessible="Copier l'adresse de l'écran de salle" />
+          <p className="mt-1 text-sm text-sur-fond-doux">
+            Gardez-la : elle ne sera plus affichée.
           </p>
         </>
       )}
