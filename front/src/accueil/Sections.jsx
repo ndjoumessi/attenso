@@ -203,7 +203,8 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
             <strong>{animal.nom} — {animal.espece}</strong>
             {animal.jetonCarnet && (
               <div className="mt-2">
-                <Adresse url={`${location.origin}/carnet/${animal.jetonCarnet}`} />
+                <Adresse url={`${location.origin}/carnet/${animal.jetonCarnet}`}
+                         nomAccessible={`Copier l'adresse du carnet de ${animal.nom}`} />
                 {/* EF-906 promet un accès « en scannant un QR code ». Le
                     tableau disait « Émettre un QR », « Révoquer le QR », et
                     n'en montrait aucun : il n'en existait nulle part, pas même
