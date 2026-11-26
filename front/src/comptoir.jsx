@@ -29,10 +29,15 @@ export function Comptoir() {
   // d'aucune donnée réseau. Le pré-rendu montre donc le formulaire, et le
   // barrage se pose ensuite, comme le nom de la clinique.
   const [inactive, setInactive] = useState(false);
+  // Le slug ne se connaît qu'à l'exécution, et le premier rendu est PRÉ-RENDU :
+  // le poser directement dans un href ferait diverger l'hydratation, exactement
+  // comme le nom de la clinique. Vide au départ, donc pas de lien au pré-rendu.
+  const [slug, setSlug] = useState('');
   const champ = useRef(null);
 
   useEffect(() => {
     const slug = location.pathname.split('/').filter(Boolean)[1];
+    setSlug(slug ?? '');
     // Le nom nomme le RESPONSABLE DE TRAITEMENT dans la mention d'information
     // (EC-04). S'il manque, la mention reste vraie mais générique : on
     // n'affiche jamais un faux nom.
@@ -147,6 +152,24 @@ export function Comptoir() {
           </p>
         </details>
       </form>
+      {/* LE SEUL CHEMIN PUBLIC vers la réservation. L'affiche du comptoir
+          encode `/t/{slug}`, cette page-ci : avant, l'adresse `/rdv/{slug}`
+          n'existait que dans le tableau de bord de la clinique, et seulement
+          tant que son agenda du jour était vide. Aucun client ne pouvait donc
+          l'atteindre.
+
+          Secondaire, et délibérément : on est AU COMPTOIR, l'action du jour
+          reste « J'y suis ». Le libellé dit « un autre jour » pour qu'on ne le
+          confonde pas avec la prise de ticket. */}
+      {slug && (
+        <p className="mt-8 text-sm text-sur-fond-doux">
+          <a href={`/rdv/${encodeURIComponent(slug)}`}
+             className={`cible-min inline-flex items-center font-semibold
+                         text-accent-texte underline underline-offset-2 ${ANNEAU}`}>
+            Prendre rendez-vous pour un autre jour
+          </a>
+        </p>
+      )}
       {/* Joignable depuis toute page, comme la coquille le promet. Cette
           page a pris — ou va prendre — un numéro de mobile ; n'offrir aucun
           chemin vers la politique de confidentialité serait la seule page du
