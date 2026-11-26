@@ -14,7 +14,13 @@ import ai.attenso.affiche.Qr;
  *        validé auprès des opérateurs, elle ne doit pas le promettre. Une
  *        affiche qui ment est pire qu'une affiche moins engageante : le client
  *        range son téléphone et attend un message qui ne viendra pas.
+ * @param urlRendezVous l'adresse de la page de réservation, écrite en clair
+ *        et sans QR. Pas de second code : deux QR sur une affiche, personne
+ *        ne sait lequel scanner, et celui du comptoir est l'action du jour.
+ *        Elle est là pour être RECOPIÉE — en vitrine, sur la fiche Google, sur
+ *        le répondeur — par le client qui n'est pas encore entré et n'a donc
+ *        ni QR ni SMS à sa disposition.
  * @param qr la grille du QR et son tracé
  */
-public record VueAffiche(String nom, String url, boolean sms, Qr qr) {
+public record VueAffiche(String nom, String url, String urlRendezVous, boolean sms, Qr qr) {
 }

@@ -94,3 +94,33 @@ describe('le tableau de bord montre l\'adresse de réservation en permanence', (
     assert.match(vide, /aucun horaire[\s\S]{0,80}ouvert à la réservation/);
   });
 });
+
+/**
+ * L'affiche imprimée porte l'adresse de réservation.
+ *
+ * <p>C'est le dernier maillon manquant du chemin. Le produit n'a aucune
+ * navigation côté client : QR, SMS ou jeton, et rien d'autre. Le client qui
+ * n'est pas encore entré n'a ni QR (il n'est pas au comptoir) ni SMS (il n'a
+ * pas de ticket) — l'affiche en vitrine est tout ce qui lui reste.
+ */
+describe('l\'affiche du comptoir donne l\'adresse de réservation', () => {
+  const SOURCE = rendu(lire('front/src/affiche.jsx'));
+
+  it('imprime l\'adresse, lisible, depuis la vue du serveur', () => {
+    assert.match(SOURCE, /urlLisible\(vue\.urlRendezVous\)/,
+      'l\'affiche n\'imprime pas l\'adresse de réservation');
+    // Bornée à la balise : « rendez-vous » apparaît aussi dans la prose.
+    const i = SOURCE.indexOf('vue.urlRendezVous');
+    assert.match(SOURCE.slice(Math.max(0, i - 300), i), /Pour un rendez-vous/,
+      'l\'adresse est imprimée sans dire à quoi elle sert');
+  });
+
+  /**
+   * Un seul QR. Deux codes sur une affiche et personne ne sait lequel
+   * scanner — et celui du comptoir est l'action du jour.
+   */
+  it('n\'encode pas un second QR', () => {
+    assert.equal((SOURCE.match(/<Qr\b/g) ?? []).length, 1,
+      'l\'affiche porte plus d\'un QR');
+  });
+});

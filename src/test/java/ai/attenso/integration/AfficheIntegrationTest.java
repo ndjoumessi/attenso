@@ -70,6 +70,34 @@ class AfficheIntegrationTest extends SocleIntegration {
 		assertThat(LecteurQr.lire(qrDe(vue))).isEqualTo("https://attenso.test/t/cerisiers");
 	}
 
+	/**
+	 * L'affiche porte aussi l'adresse de RÉSERVATION, écrite et non encodée.
+	 *
+	 * <p>Le produit n'a aucune navigation côté client : chaque page se rejoint
+	 * par un lien direct — le QR du comptoir, un SMS, un jeton. Un client qui
+	 * n'est pas encore entré n'a donc ni l'un ni l'autre, et n'avait aucun
+	 * chemin vers la réservation. Cette ligne est la seule chose qu'une
+	 * clinique puisse recopier en vitrine ou sur sa fiche Google.
+	 *
+	 * <p>Les deux adresses sortent de la MÊME base : deux sources pour une
+	 * seule adresse publique, et un jour l'une des deux est fausse. Sur du
+	 * papier, elle se corrige au massicot.
+	 */
+	@Test
+	@DisplayName("l'affiche porte l'adresse de réservation, sur la même base que le QR")
+	void lAfficheDonneAussiLAdresseDeReservation() throws Exception {
+		UUID tenantId = creerClinique("cerisiers", "Clinique des Cerisiers", 2, 180);
+		creerUtilisateur(tenantId, "gerant@cerisiers.fr", MDP, Role.GERANT);
+
+		JsonNode vue = affiche(connecter("cerisiers", "gerant@cerisiers.fr"));
+
+		assertThat(vue.get("urlRendezVous").asString())
+				.isEqualTo("https://attenso.test/rdv/cerisiers");
+		// Le QR, lui, ne change pas : il reste celui du comptoir. Un second code
+		// sur la même affiche et personne ne sait lequel scanner.
+		assertThat(LecteurQr.lire(qrDe(vue))).isEqualTo("https://attenso.test/t/cerisiers");
+	}
+
 	@Test
 	@DisplayName("deux cliniques ne reçoivent pas la même affiche")
 	void deuxCliniquesNOntPasLaMemeAffiche() throws Exception {

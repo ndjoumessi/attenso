@@ -44,7 +44,10 @@ public class ControleurAffiche {
 		// adresse publique, c'est la garantie qu'un jour l'une des deux sera
 		// fausse — et celle imprimée sur l'affiche serait la pire des deux.
 		String url = lien.base() + "/t/" + clinique.slug();
-		return new VueAffiche(clinique.nom(), url, clinique.peutEnvoyerDesSms(),
-				qr.encoder(url));
+		// La MÊME base, pour la même raison : l'affiche est imprimée, et une
+		// adresse fausse sur du papier se corrige au massicot.
+		String rendezVous = lien.base() + "/rdv/" + clinique.slug();
+		return new VueAffiche(clinique.nom(), url, rendezVous,
+				clinique.peutEnvoyerDesSms(), qr.encoder(url));
 	}
 }
