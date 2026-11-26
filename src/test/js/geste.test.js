@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
-import { balisesButton } from './aide/balises.js';
+import { balises, balisesButton } from './aide/balises.js';
 
 const RACINE = resolve(import.meta.dirname, '../../..');
 const lire = (c) => readFileSync(resolve(RACINE, c), 'utf8');
@@ -23,12 +23,24 @@ function sources(dossier = 'front/src', prefixe = '') {
   return out;
 }
 
+/**
+ * Une déclaration `const X = …;` et son corps entier.
+ *
+ * <p>Le motif d'avant exigeait que la constante se REFERME sur le délimiteur
+ * qui l'ouvre. Or une constante peut ouvrir sur une chaîne et finir sur un
+ * gabarit — `DECLENCHEUR` le fait depuis qu'il interpole l'anneau. Elle
+ * n'était alors plus reconnue du tout, et sa garde a déclaré nu un bouton
+ * qui ne l'était pas : un faux positif, mais le même motif aurait tout aussi
+ * bien pu taire un vrai défaut.
+ */
+const CONSTANTES = /(?:export )?const ([A-Za-z_][A-Za-z0-9_]*) = ([\s\S]*?);\n/g;
+
 /** Les constantes de classes qui portent le geste, d'où qu'elles viennent. */
 function porteuses() {
   const noms = new Set(['PRESSE']);
   for (const [, s] of sources()) {
-    for (const m of s.matchAll(/(?:export )?const ([A-Za-z_][A-Za-z0-9_]*) = (`|')([\s\S]*?)\2;/g)) {
-      if (m[3].includes('active:scale') || /\$\{PRESSE\}/.test(m[3])) noms.add(m[1]);
+    for (const m of s.matchAll(CONSTANTES)) {
+      if (m[2].includes('active:scale') || /\$\{PRESSE\}/.test(m[2])) noms.add(m[1]);
     }
   }
   return [...noms];
@@ -124,5 +136,73 @@ describe('le bloc Mouvement ne déclare rien de mort', () => {
       ...sources().map(([, s]) => s)].join('\n');
     const morts = declares.filter((n) => !tout.includes(`var(${n})`));
     assert.deepEqual(morts, [], 'des jetons de mouvement ne servent à rien');
+  });
+});
+
+/**
+ * L'anneau de focus était écrit à la main sur dix boutons — et ABSENT des
+ * dix-sept liens, qui retombaient donc sur celui du navigateur. Deux anneaux
+ * différents dans la même page selon qu'on tabule vers un bouton ou vers un
+ * lien. Personne ne le voit élément par élément ; tout le monde le ressent
+ * sur un parcours au clavier.
+ */
+describe('tout ce qui prend le focus porte le même anneau', () => {
+  /** Les constantes de classes qui portent l'anneau, d'où qu'elles viennent. */
+  function porteuses() {
+    const noms = new Set(['ANNEAU']);
+    for (const [, s] of sources()) {
+      for (const m of s.matchAll(CONSTANTES)) {
+        if (/\$\{ANNEAU\}|outline-\[var\(--anneau\)\]/.test(m[2])) noms.add(m[1]);
+      }
+    }
+    return [...noms];
+  }
+
+  it('sur les liens comme sur les boutons, depuis une seule source', () => {
+    const noms = porteuses();
+    const nus = [];
+    for (const [nom, s] of sources()) {
+      for (const element of ['button', 'a']) {
+        for (const b of balises(s, element)) {
+          if (!b.includes('className')) continue;
+          if (noms.some((n) => new RegExp(`\\b${n}\\b`).test(b))) continue;
+          nus.push(`${nom} : <${element}> ${b.slice(0, 50).replace(/\s+/g, ' ')}`);
+        }
+      }
+    }
+    assert.deepEqual(nus, [], 'des éléments focalisables n\'ont pas l\'anneau du projet');
+  });
+
+  /**
+   * La source dit bien l'anneau DU PROJET. Les autres assertions ne vérifient
+   * qu'une référence à `ANNEAU` ; mesuré par mutation, remplacer sa couleur
+   * par `outline-blue-500` les laissait toutes vertes. Une source unique qui
+   * dit la mauvaise chose se propage simplement partout, d'un coup.
+   */
+  it('tient la couleur et l\'épaisseur du projet', () => {
+    const src = rendu(lire('front/src/composants/formulaire.jsx'));
+    const m = src.match(/export const ANNEAU = ([\s\S]*?);\n/);
+    assert.ok(m, 'l\'anneau partagé a disparu');
+    assert.match(m[1], /outline-\[var\(--anneau\)\]/,
+      'l\'anneau n\'utilise pas la couleur du projet');
+    assert.match(m[1], /focus-visible:outline-2/, 'l\'anneau n\'a plus d\'épaisseur');
+  });
+
+  /**
+   * UNE source. Un anneau recopié diverge — et c'est exactement ce qui
+   * était arrivé : dix copies du même triplet, et les liens oubliés.
+   */
+  it('ne réécrit l\'anneau nulle part ailleurs', () => {
+    const copies = [];
+    for (const [nom, s] of sources()) {
+      const n = (s.match(/outline-\[var\(--anneau\)\]/g) ?? []).length;
+      // Le fichier source a droit à UNE occurrence : sa définition. Exempter
+      // le fichier entier, comme je l'avais fait, laissait `CHAMP` réécrire
+      // l'anneau juste au-dessus d'`ANNEAU` sans que rien ne le dise — et
+      // c'est une mutation qui frappait la mauvaise ligne qui me l'a appris.
+      const permis = nom === 'composants/formulaire.jsx' ? 1 : 0;
+      if (n > permis) copies.push(`${nom} (${n} fois)`);
+    }
+    assert.deepEqual(copies, [], 'l\'anneau est réécrit hors de sa source');
   });
 });

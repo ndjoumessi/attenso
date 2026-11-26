@@ -9,10 +9,10 @@
  * mauvaise étendue ne garde rien — elle avait déjà déclaré deux boutons
  * dépourvus d'un geste qu'ils portaient.
  */
-export function balisesButton(source) {
+export function balises(source, nom = 'button') {
   const out = [];
-  for (const m of source.matchAll(/<button\b/g)) {
-    let i = m.index + '<button'.length;
+  for (const m of source.matchAll(new RegExp(`<${nom}\\b`, 'g'))) {
+    let i = m.index + nom.length + 1;
     let profondeur = 0;
     while (i < source.length) {
       const c = source[i];
@@ -27,3 +27,6 @@ export function balisesButton(source) {
   }
   return out;
 }
+
+/** Les `<button>` seuls — le cas de loin le plus fréquent. */
+export const balisesButton = (source) => balises(source, 'button');

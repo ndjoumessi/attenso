@@ -3,7 +3,9 @@ import { appel } from '../../../../src/main/resources/static/app/attenso.js';
 import {
   promesse, urlLisible,
 } from '../../../../src/main/resources/static/app/vue-affiche.js';
-import { AIDE, Erreur } from '../../composants/formulaire.jsx';
+import {
+  AIDE, ANNEAU, Erreur,
+} from '../../composants/formulaire.jsx';
 import { Qr } from '../../composants/qr.jsx';
 import { Titre } from '../Sections.jsx';
 import { entete } from '../session.js';
@@ -67,7 +69,7 @@ export function Affiche({ jeton, titre = true }) {
 
       <p className="mt-4">
         <a href="/affiche" target="_blank" rel="noopener"
-           className="cible-min inline-flex items-center text-accent-texte underline">
+           className={`cible-min inline-flex items-center text-accent-texte underline ${ANNEAU}`}>
           Ouvrir l'affiche à imprimer →
         </a>
       </p>

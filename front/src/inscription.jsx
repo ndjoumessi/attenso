@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import { euros, nomPalier } from '../../src/main/resources/static/app/formats.js';
-import { PRESSE } from './composants/formulaire.jsx';
+import {
+  ANNEAU, PRESSE,
+} from './composants/formulaire.jsx';
 
 const RETOURS = {
   ok: "Paiement enregistré. Votre clinique s'ouvre dès que notre prestataire "
@@ -12,8 +14,7 @@ const RETOURS = {
 };
 
 const champ = 'mt-2 w-full rounded-[var(--rayon)] border border-bordure-controle '
-  + 'bg-surface px-4 py-3 cible focus-visible:outline-2 '
-  + 'focus-visible:outline-offset-2 focus-visible:outline-[var(--anneau)]';
+  + `bg-surface px-4 py-3 cible ${ANNEAU}`;
 const etiquette = 'block font-semibold';
 const aide = 'mt-2 text-sm leading-relaxed text-sur-fond-doux';
 
@@ -119,8 +120,8 @@ export function Inscription() {
             Écrivez-nous et nous installons votre clinique à la main, le jour même.
           </p>
           <a href="mailto:contact@attenso.fr"
-             className="cible-min mt-4 inline-flex items-center font-semibold
-                        text-accent-texte underline underline-offset-2">
+             className={`cible-min mt-4 inline-flex items-center font-semibold
+                        text-accent-texte underline underline-offset-2 ${ANNEAU}`}>
             contact@attenso.fr
           </a>
         </div>
@@ -203,10 +204,10 @@ export function Inscription() {
           <span>
             J'accepte les{' '}
             <a href="/cgv" target="_blank" rel="noopener"
-               className="text-accent-texte underline">conditions générales</a>
+               className={`text-accent-texte underline ${ANNEAU}`}>conditions générales</a>
             {' '}et la{' '}
             <a href="/confidentialite" target="_blank" rel="noopener"
-               className="text-accent-texte underline">politique de confidentialité</a>
+               className={`text-accent-texte underline ${ANNEAU}`}>politique de confidentialité</a>
           </span>
         </label>
 
@@ -232,7 +233,7 @@ export function Inscription() {
                 className={`w-full cible rounded-[var(--rayon)] bg-accent px-6
                            text-lg font-bold text-sur-accent shadow-1
                            [touch-action:manipulation] disabled:opacity-60
-                           hover:brightness-110 active:brightness-95 ${PRESSE}`}>
+                           hover:brightness-110 active:brightness-95 ${PRESSE} ${ANNEAU}`}>
           {envoi ? 'Un instant…' : 'Créer ma file d’attente'}
         </button>
       </form>
@@ -242,9 +243,9 @@ export function Inscription() {
           ici depuis sa correction ; l'inverse manquait encore. */}
       <p className="mt-8 text-center text-sm text-sur-fond-doux">
         Déjà un compte ?{' '}
-        <a href="/connexion" className="cible-min inline-flex items-center
+        <a href="/connexion" className={`cible-min inline-flex items-center
                                         font-semibold text-accent-texte
-                                        underline underline-offset-2">
+                                        underline underline-offset-2 ${ANNEAU}`}>
           Se connecter
         </a>
       </p>
@@ -267,9 +268,9 @@ function Resultat({ reponse }) {
       </div>
 
       <a href={reponse.urlPaiement}
-         className="mt-6 flex w-full cible items-center justify-center
+         className={`mt-6 flex w-full cible items-center justify-center
                     rounded-[var(--rayon)] bg-accent px-6 text-lg font-bold
-                    text-sur-accent no-underline shadow-1 hover:brightness-110">
+                    text-sur-accent no-underline shadow-1 hover:brightness-110 ${ANNEAU}`}>
         Payer et ouvrir ma clinique
       </a>
       <p className={aide}>
@@ -329,7 +330,7 @@ function Resultat({ reponse }) {
 
       <p className={aide}>
         Une fois le paiement confirmé, votre tableau d'accueil s'ouvre sur{' '}
-        <a href="/connexion" className="text-accent-texte underline">/connexion</a>,
+        <a href="/connexion" className={`text-accent-texte underline ${ANNEAU}`}>/connexion</a>,
         avec <strong className="text-sur-fond">trois</strong> choses&nbsp;:
         l'identifiant ci-dessus, votre adresse et le mot de passe que vous venez
         de choisir. La page en promettait deux, et le formulaire en demande trois.

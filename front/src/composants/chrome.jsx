@@ -1,4 +1,5 @@
-// La coquille des pages publiques : le retour, et la bande légale.
+
+import { ANNEAU } from './formulaire.jsx';// La coquille des pages publiques : le retour, et la bande légale.
 //
 // Les deux étaient recopiés page par page — la bande trois fois, le retour
 // quatre — et une seule copie portait les classes qui donnent 44 px. Mesuré
@@ -19,7 +20,7 @@
 // plancher, prose exemptée.
 
 const LIEN = 'cible-min inline-flex items-center text-accent-texte underline '
-  + 'underline-offset-2';
+  + `underline-offset-2 ${ANNEAU}`;
 
 /** Les trois pages légales, joignables depuis toute page. */
 const LEGAL = [
@@ -38,7 +39,7 @@ const LEGAL = [
 export function Retour({ href = '/', children = 'Attenso', className = '' }) {
   return (
     <a href={href} className={`cible-min mb-4 inline-flex items-center gap-1.5
-                               text-sm font-semibold text-accent-texte ${className}`}>
+                               text-sm font-semibold text-accent-texte ${className} ${ANNEAU}`}>
       <span aria-hidden="true">←</span> {children}
     </a>
   );

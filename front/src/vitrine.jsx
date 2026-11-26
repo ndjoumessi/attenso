@@ -2,6 +2,7 @@ import { ApercuFile } from './composants/apercu-file.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
 import { Marque } from './composants/marque.jsx';
 import { Appel, Bande, Colonne, Fleche, Mesure, RYTHME } from './composants/base.jsx';
+import { ANNEAU } from './composants/formulaire.jsx';
 
 const ONDE = 'M3 12h4l3-8 4 16 3-8h4';
 const BULLE = 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z';
@@ -299,7 +300,7 @@ function Souscrire() {
         </div>
         <p className="mt-4 text-sm text-sur-fond-doux">
           Une question d'abord&nbsp;?{' '}
-          <a className="underline" href="mailto:contact@attenso.fr">contact@attenso.fr</a>,
+          <a className={`underline ${ANNEAU}`} href="mailto:contact@attenso.fr">contact@attenso.fr</a>,
           réponse sous deux jours ouvrés.
         </p>
       </div>
@@ -321,9 +322,9 @@ function Pied() {
         {/* « Se connecter » n'est pas une mention légale : il garde sa
             place, et la bande partagée porte les trois autres. */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <a href="/connexion" className="cible-min inline-flex items-center
+          <a href="/connexion" className={`cible-min inline-flex items-center
                                           text-accent-texte underline
-                                          underline-offset-2">Se connecter</a>
+                                          underline-offset-2 ${ANNEAU}`}>Se connecter</a>
           <BandeLegale variante="rangee" />
         </div>
       </Colonne>
@@ -335,9 +336,9 @@ export function Vitrine() {
   return (
     <>
       <a href="#contenu"
-         className="sr-only focus:not-sr-only focus:absolute focus:z-30 focus:m-3
+         className={`sr-only focus:not-sr-only focus:absolute focus:z-30 focus:m-3
                     focus:rounded-[var(--rayon)] focus:bg-accent focus:px-4 focus:py-3
-                    focus:text-sur-accent">
+                    focus:text-sur-accent ${ANNEAU}`}>
         Aller au contenu
       </a>
       <Entete />

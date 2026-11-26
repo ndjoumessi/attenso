@@ -1,4 +1,5 @@
-// Les primitives de la vitrine. Écrites à la main, et c'est une décision :
+
+import { ANNEAU } from './formulaire.jsx';// Les primitives de la vitrine. Écrites à la main, et c'est une décision :
 // 21st.dev et les trois registres shadcn rendent des composants qui supposent
 // une palette Tailwind par défaut (slate, zinc, primary). Attenso a la sienne,
 // dont chaque couleur est MESURÉE contre son fond et revérifiée par un test.
@@ -37,8 +38,7 @@ export function Appel({ href, children, variante = 'plein', taille = 'normal' })
         border font-semibold no-underline [touch-action:manipulation]
         transition-[filter,background-color,border-color,box-shadow,scale]
         duration-[var(--duree-courte)] ease-[var(--courbe-entree)]
-        focus-visible:outline-2 focus-visible:outline-offset-2
-        focus-visible:outline-[var(--anneau)]
+        ${ANNEAU}
         ${formes[variante]} ${tailles[taille]}`}
     >
       {children}

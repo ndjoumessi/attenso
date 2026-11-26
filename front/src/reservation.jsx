@@ -5,7 +5,7 @@ import {
   grouperParJour, heureCourte, jourLong,
 } from '../../src/main/resources/static/app/formats.js';
 import {
-  AIDE, CHAMP, ETIQUETTE, Erreur, PRESSE, Principal, attenue,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, PRESSE, Principal, attenue,
 } from './composants/formulaire.jsx';
 
 const slug = () => location.pathname.split('/').filter(Boolean)[1];
@@ -80,10 +80,10 @@ export function Reservation() {
           <p className="mt-3 text-lg text-sur-fond-doux">{jourLong(confirme.jour)}</p>
         </div>
         <a href={`/r/${confirme.reference}`}
-           className="mt-6 flex w-full cible items-center justify-center
+           className={`mt-6 flex w-full cible items-center justify-center
                       rounded-[var(--rayon)] border border-bordure-controle
                       bg-surface px-6 font-semibold no-underline
-                      hover:bg-surface-douce">
+                      hover:bg-surface-douce ${ANNEAU}`}>
           Voir ou annuler
         </a>
         <p className={AIDE}>
@@ -124,7 +124,7 @@ export function Reservation() {
           <button type="button" onClick={() => setChoisi(null)}
                   className={`w-full cible rounded-[var(--rayon)] border
                              border-bordure-controle bg-surface px-6 font-semibold
-                             hover:bg-surface-douce ${PRESSE}`}>
+                             hover:bg-surface-douce ${PRESSE} ${ANNEAU}`}>
             Choisir une autre heure
           </button>
         </form>
@@ -164,7 +164,7 @@ export function Reservation() {
                                    border-bordure-controle bg-surface px-4
                                    font-semibold tabular-nums
                                    [touch-action:manipulation]
-                                   hover:border-accent hover:bg-accent-voile ${PRESSE}`}>
+                                   hover:border-accent hover:bg-accent-voile ${PRESSE} ${ANNEAU}`}>
                   {heureCourte(creneau.heure)}
                 </button>
               ))}

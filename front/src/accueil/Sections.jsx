@@ -4,7 +4,7 @@ import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
 import { Adresse } from '../composants/adresse.jsx';
 import {
-  AIDE, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
 } from '../composants/formulaire.jsx';
 import { Qr } from '../composants/qr.jsx';
 import { entete } from './session.js';
@@ -186,7 +186,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                  className="size-5 accent-[var(--accent)]" />
           Émettre un QR de carnet
         </label>
-        <button type="submit" className={`w-full ${SECONDAIRE}`}>Ajouter l'animal</button>
+        <button type="submit" className={`w-full ${SECONDAIRE} ${ANNEAU}`}>Ajouter l'animal</button>
       </form>
 
       {/* Hauteur déclarée ici et non héritée : une ligne de carnet porte

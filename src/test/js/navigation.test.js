@@ -609,7 +609,15 @@ describe('les vues du groupe Journée', () => {
       readFileSync(resolve(RACINE, 'front/src/composants/adresse.jsx'), 'utf8'));
     const i = adresse.indexOf('<a href={href}');
     assert.notEqual(i, -1, 'le lien de réservation est introuvable');
-    const classes = adresse.slice(i).match(/className="([^"]*)"/)[1].split(/\s+/);
+    // BORNÉ à la balise, et les deux écritures acceptées. `slice(i)` suivi
+    // d'un `className="…"` partait chercher le PREMIER attribut à guillemets
+    // doubles venant après — devenu celui du `<code>` de repli quand ce lien
+    // est passé en gabarit. Le test lisait alors les classes d'un autre
+    // élément et accusait un lien conforme.
+    const balise = adresse.slice(i, adresse.indexOf('>', i) + 1);
+    const attribut = balise.match(/className=(?:"([^"]*)"|\{`([\s\S]*?)`\})/);
+    assert.ok(attribut, 'le lien de réservation n\'a plus de classes');
+    const classes = (attribut[1] ?? attribut[2]).split(/\s+/);
     assert.ok(classes.includes('cible-min') || classes.includes('cible'),
       `lien sans cible tactile : ${classes.join(' ')}`);
   });

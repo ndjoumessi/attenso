@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal, attenue } from './composants/formulaire.jsx';
+import {
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, Info, Principal, attenue,
+} from './composants/formulaire.jsx';
 
 const PERIME = "Ce lien n'est plus valable. Les liens expirent au bout d'une "
   + "heure et ne servent qu'une fois : redemandez-en un depuis la page de "
@@ -50,9 +52,9 @@ export function Reinitialisation() {
           <Info>Votre mot de passe est changé. Connectez-vous avec le nouveau.</Info>
         </div>
         <a href="/connexion"
-           className="mt-6 flex w-full cible items-center justify-center
+           className={`mt-6 flex w-full cible items-center justify-center
                       rounded-[var(--rayon)] bg-accent px-6 text-lg font-bold
-                      text-sur-accent no-underline shadow-1 hover:brightness-110">
+                      text-sur-accent no-underline shadow-1 hover:brightness-110 ${ANNEAU}`}>
           Me connecter
         </a>
       </main>

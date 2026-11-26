@@ -11,7 +11,7 @@ import {
 import { aujourdhui, jourLong } from '../../src/main/resources/static/app/formats.js';
 import { SidebarInset, SidebarProvider } from '@/ui/sidebar';
 import {
-  AIDE, CHAMP, ETIQUETTE, Erreur, Info, PRESSE, Principal, attenue,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, Info, PRESSE, Principal, attenue,
 } from './composants/formulaire.jsx';
 import { Connexion } from './accueil/Connexion.jsx';
 import { File } from './accueil/File.jsx';
@@ -363,7 +363,7 @@ function Entete({ titre, vue, commandes, surDeconnexion }) {
             vais » reste sur l'écran, parce que son avertissement sur les
             gestes non envoyés s'affiche juste en dessous. */}
         <button type="button" onClick={quitter}
-                className={`cible-min text-sm text-accent-texte underline ${PRESSE}`}>
+                className={`cible-min text-sm text-accent-texte underline ${PRESSE} ${ANNEAU}`}>
           Se déconnecter
         </button>
       </div>
