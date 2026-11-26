@@ -98,7 +98,7 @@
   /* Le vert des TEXTES posés sur --accent-voile, qui n'est pas celui des
      aplats. En clair les deux coïncident ; en sombre non, et les confondre
      donne 4.28:1 — sous le seuil AA. Voir la note du bloc sombre. */
-  --accent-texte: #1b5e4b;        /* sur --accent-voile : 6.46:1 */
+  --accent-texte: #1b5e4b;        /* sur --accent-voile : 6.68:1 */
 
   --alerte: #a8321e;              /* 6.46:1 sur --fond ; blanc dessus 6.69:1 */
   --sur-alerte: #ffffff;
@@ -124,13 +124,13 @@
      exactement l'inverse de ce qu'on veut. */
   --bande-contraste: #15181d;
   --sur-bande-contraste: #ffffff;        /* 17.79:1 */
-  --sur-bande-contraste-doux: #c9cdd4;   /* 10.2:1  */
+  --sur-bande-contraste-doux: #c9cdd4;   /* sur --bande-contraste : 11.16:1 */
 
   /* Le mur de la salle d'attente garde son fond sombre dans les deux
      modes : il est lu à quatre mètres, et un fond clair y éblouit. */
   --mur-fond: #15181d;
   --mur-encre: #ffffff;           /* 17.79:1 */
-  --mur-encre-douce: #c9cdd4;     /* 10.2:1  — remplace une opacité, qui
+  --mur-encre-douce: #c9cdd4;     /* sur --mur-fond : 11.16:1 — remplace une opacité, qui
                                      ne garantit aucun contraste */
 
   /* L'affiche du comptoir, pour la même raison que le mur, à l'envers :
@@ -211,9 +211,9 @@
     --sur-barre-active: #10231c;  /*  5.70:1 sur --barre-active */
     --barre-bordure: #646d7b;     /*  3.16:1 sur --fond ; 3.41:1 sur --barre */
 
-    --bande-contraste: #2b313b;          /* 1.4:1 de séparation avec --fond */
-    --sur-bande-contraste: #f2f4f7;      /* 11.76:1 */
-    --sur-bande-contraste-doux: #a8b1be; /*  5.98:1 */
+    --bande-contraste: #2b313b;          /* 1.26:1 de séparation avec --fond */
+    --sur-bande-contraste: #f2f4f7;      /* sur --bande-contraste : 11.87:1 */
+    --sur-bande-contraste-doux: #a8b1be; /* sur --bande-contraste : 6.04:1 */
 
     --ombre-1: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px rgb(0 0 0 / 30%);
     --ombre-2: 0 2px 4px rgb(0 0 0 / 50%), 0 12px 32px rgb(0 0 0 / 40%);

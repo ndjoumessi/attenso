@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import {
-  AIDE, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
 } from '../composants/formulaire.jsx';
 import { entete } from './session.js';
 import { Titre } from './Sections.jsx';
@@ -120,7 +120,7 @@ export function Mesure({ jeton, surErreur, titre = true }) {
                  value={arrivants}
                  onChange={(e) => setArrivants(e.target.value)} />
         </div>
-        <button type="submit" className={`w-full ${SECONDAIRE}`}>
+        <button type="submit" className={`w-full ${SECONDAIRE} ${ANNEAU}`}>
           Enregistrer le comptage
         </button>
       </form>

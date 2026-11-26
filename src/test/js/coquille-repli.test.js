@@ -27,7 +27,12 @@ const ORIGINE = 'https://attenso.test';
  * vérifiées : aucune entrée Vite ajoutée, et la croissance est bien un module
  * partagé devenu chunk. Légitime ; la prochaine croissance doit se voir.
  */
-const FICHIERS_DE_LA_COQUILLE = 17;
+// 17 → 16 le 2026-11-26 : `chrome.jsx` importe maintenant `formulaire.jsx`
+// pour l'anneau de focus partagé, et Vite a FUSIONNÉ les deux chunks communs.
+// La coquille a donc une requête de moins. Vérifié avant d'accepter : aucune
+// entrée Vite ajoutée, et `chrome-*.js` pèse 2 837 o — négligeable contre les
+// 220 Ko du runtime React qu'elle met déjà en cache.
+const FICHIERS_DE_LA_COQUILLE = 16;
 
 /** Une réponse factice, assez pour distinguer d'où elle vient. */
 function reponse(provenance, chemin) {

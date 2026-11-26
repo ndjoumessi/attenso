@@ -6,7 +6,9 @@ import {
 } from '@/ui/sidebar';
 import { GROUPES, VUES } from './navigation.js';
 import { CLE_CLINIQUE } from './session.js';
-import { PRESSE } from '../composants/formulaire.jsx';
+import {
+  ANNEAU, PRESSE,
+} from '../composants/formulaire.jsx';
 
 /**
  * La barre latérale du tableau du personnel.
@@ -84,8 +86,8 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
         {/* Sans flèche : ce n'est pas un RETOUR mais un lien latéral vers le
             site public, et la flèche de retour appartient à la coquille
             partagée — sa garde me l'a rappelé en rougissant. */}
-        <a href="/" className="cible-min mt-1 inline-flex items-center text-sm
-                               text-sur-barre-doux underline underline-offset-2">
+        <a href="/" className={`cible-min mt-1 inline-flex items-center text-sm
+                               text-sur-barre-doux underline underline-offset-2 ${ANNEAU}`}>
           Le site Attenso
         </a>
       </SidebarFooter>
@@ -150,7 +152,7 @@ export function OuvreLaBarre() {
     <button type="button" onClick={toggleSidebar}
             className={`cible-min mb-4 inline-flex items-center gap-2 rounded border
                        border-bordure-controle bg-surface px-4 font-semibold
-                       hover:bg-surface-douce ${PRESSE}`}>
+                       hover:bg-surface-douce ${PRESSE} ${ANNEAU}`}>
       <PanelLeftIcon aria-hidden="true" className="size-5" />
       Menu
     </button>

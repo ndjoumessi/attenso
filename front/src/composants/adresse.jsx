@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { PRESSE } from './formulaire.jsx';
+import {
+  ANNEAU, PRESSE,
+} from './formulaire.jsx';
 
 // Les adresses que la clinique doit TRANSMETTRE — le carnet d'un animal, la
 // page de réservation — étaient posées en texte brut. Sur une tablette posée
@@ -40,9 +42,9 @@ export function Adresse({ url, href = null, etiquette = "Copier l'adresse" }) {
           peut qu'ouvrir sur soi-même n'apporte rien. */}
       {href ? (
         <a href={href} target="_blank" rel="noopener"
-           className="cible-min min-w-0 flex-1 inline-flex items-center break-all
+           className={`cible-min min-w-0 flex-1 inline-flex items-center break-all
                       rounded-[var(--rayon-sm)] bg-surface-douce px-2 py-1
-                      font-mono text-sm text-accent-texte underline">{url}</a>
+                      font-mono text-sm text-accent-texte underline ${ANNEAU}`}>{url}</a>
       ) : (
         <code className="min-w-0 flex-1 break-all rounded-[var(--rayon-sm)]
                          bg-surface-douce px-2 py-1 font-mono text-sm
@@ -52,8 +54,7 @@ export function Adresse({ url, href = null, etiquette = "Copier l'adresse" }) {
               className={`cible-min shrink-0 rounded-[var(--rayon)] border
                          border-bordure-controle px-3 text-sm font-semibold
                          [touch-action:manipulation] hover:bg-surface-douce
-                         focus-visible:outline-2 focus-visible:outline-offset-2
-                         focus-visible:outline-[var(--anneau)] ${PRESSE}`}>
+                         ${ANNEAU} ${PRESSE}`}>
         {etiquette}
       </button>
       {/* `role="status"` et non un simple texte : la confirmation est la seule

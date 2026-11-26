@@ -2,15 +2,29 @@
 // Elles existent parce que les mêmes classes revenaient à l'identique sur
 // cinq pages : un champ y change de bordure, et il doit changer partout.
 
+/**
+ * L'anneau de focus du projet, et sa SEULE source.
+ *
+ * <p>Il était réécrit à la main sur dix boutons — et absent des DIX-SEPT
+ * liens, qui retombaient donc sur l'anneau par défaut du navigateur. Deux
+ * anneaux différents dans la même page selon qu'on tabule vers un bouton ou
+ * vers un lien : personne ne le remarque élément par élément, tout le monde
+ * le ressent sur un parcours au clavier.
+ *
+ * <p>`outline` et non `ring` : il se pose PAR-DESSUS les bords arrondis sans
+ * participer à la mise en page, donc sans décaler quoi que ce soit — un lien
+ * en pleine phrase ne doit pas bouger quand il prend le focus.
+ */
+export const ANNEAU = 'focus-visible:outline-2 focus-visible:outline-offset-2 '
+  + 'focus-visible:outline-[var(--anneau)]';
+
 // Au survol la bordure se renforce, au focus elle passe à l'accent : le champ
 // actif se repère d'un coup d'œil, même sans l'anneau, sur une tablette vue de
 // biais. Les deux restent au-dessus du 3:1 (bordure-controle l'est, accent aussi).
 export const CHAMP = 'mt-2 w-full rounded-[var(--rayon)] border '
   + 'border-bordure-controle bg-surface px-4 py-3 cible '
   + 'transition-[border-color,box-shadow] duration-[var(--duree-courte)] '
-  + 'hover:border-sur-fond-doux focus-visible:border-accent '
-  + 'focus-visible:outline-2 focus-visible:outline-offset-2 '
-  + 'focus-visible:outline-[var(--anneau)]';
+  + `hover:border-sur-fond-doux focus-visible:border-accent ${ANNEAU}`;
 
 export const ETIQUETTE = 'block font-semibold';
 
@@ -51,7 +65,7 @@ export const PRESSE = 'transition-transform duration-[var(--duree-courte)] '
  */
 export const SECONDAIRE = `cible rounded-[var(--rayon)] border `
   + `border-bordure-controle bg-surface px-4 font-semibold `
-  + `hover:bg-surface-douce disabled:opacity-50 ${PRESSE}`;
+  + `hover:bg-surface-douce disabled:opacity-50 ${PRESSE} ${ANNEAU}`;
 
 /**
  * `aria-busy` est posé ICI et non chez l'appelant : ce bouton est désactivé
@@ -68,8 +82,7 @@ export function Principal({ children, disabled, ...reste }) {
                        duration-[var(--duree-courte)] ease-[var(--courbe-entree)]
                        hover:shadow-2 hover:brightness-110
                        active:scale-[0.97] active:shadow-1 active:brightness-95
-                       focus-visible:outline-2 focus-visible:outline-offset-2
-                       focus-visible:outline-[var(--anneau)]`}>
+                       ${ANNEAU}`}>
       {children}
     </button>
   );

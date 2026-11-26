@@ -4,7 +4,9 @@ import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   ADRESSE_INACTIVE, adresseInactive,
 } from '../../src/main/resources/static/app/vue-comptoir.js';
-import { PRESSE } from './composants/formulaire.jsx';
+import {
+  ANNEAU, PRESSE,
+} from './composants/formulaire.jsx';
 
 const GENERIQUE = 'Cette clinique';
 
@@ -93,10 +95,9 @@ export function Comptoir() {
           ref={champ} id="telephone" name="telephone" type="tel" inputMode="tel"
           autoComplete="tel" placeholder="06 12 34 56 78" required
           disabled={inactive} aria-describedby="aide"
-          className="mt-2 w-full rounded-[var(--rayon)] border border-bordure-controle
-                     bg-surface px-4 py-3 text-lg cible
-                     focus-visible:outline-2 focus-visible:outline-offset-2
-                     focus-visible:outline-[var(--anneau)]"
+          className={`mt-2 w-full rounded-[var(--rayon)] border border-bordure-controle
+                      bg-surface px-4 py-3 text-lg cible
+                      ${ANNEAU}`}
         />
         <p id="aide" className="mt-2 text-sm leading-relaxed text-sur-fond-doux">
           Numéro utilisé uniquement pour vous prévenir aujourd'hui, puis effacé le
@@ -116,8 +117,7 @@ export function Comptoir() {
                            text-lg font-bold text-sur-accent shadow-1
                            [touch-action:manipulation] disabled:opacity-60
                            hover:brightness-110 active:brightness-95
-                           focus-visible:outline-2 focus-visible:outline-offset-2
-                           focus-visible:outline-[var(--anneau)] ${PRESSE}`}>
+                           ${ANNEAU} ${PRESSE}`}>
           {envoi ? 'Un instant…' : "J'y suis"}
         </button>
 

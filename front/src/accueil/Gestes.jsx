@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
-import { AIDE, CHAMP, ETIQUETTE, Erreur } from '../composants/formulaire.jsx';
+import {
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur,
+} from '../composants/formulaire.jsx';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
   DialogTrigger,
@@ -27,8 +29,7 @@ const DECLENCHEUR = 'cible inline-flex items-center justify-center gap-2 '
   + '[touch-action:manipulation] disabled:opacity-50 '
   + 'transition-[filter,box-shadow,scale] duration-[var(--duree-courte)] '
   + 'ease-[var(--courbe-entree)] active:scale-[0.97] '
-  + 'hover:shadow-2 focus-visible:outline-2 focus-visible:outline-offset-2 '
-  + 'focus-visible:outline-[var(--anneau)]';
+  + `hover:shadow-2 ${ANNEAU}`;
 
 /**
  * Le ton de chaque geste, à sa clé.
@@ -127,7 +128,7 @@ function Geste({ geste, motifs, echecMotifs = false, jeton, horsReseau,
         {/* Le libellé reste écrit : l'icône ne paraît jamais seule, ici comme
             dans la barre. */}
         <button type="button" disabled={horsReseau}
-                className={`${DECLENCHEUR} ${ton.declencheur}`}>
+                className={`${DECLENCHEUR} ${ton.declencheur} ${ANNEAU}`}>
           <geste.icone aria-hidden="true" className="size-5" />
           {geste.libelle}
         </button>
@@ -185,8 +186,7 @@ function Geste({ geste, motifs, echecMotifs = false, jeton, horsReseau,
                               duration-[var(--duree-courte)]
                               ease-[var(--courbe-entree)] active:scale-[0.97]
                               hover:shadow-2
-                              focus-visible:outline-2 focus-visible:outline-offset-2
-                              focus-visible:outline-[var(--anneau)]
+                              ${ANNEAU}
                               ${ton.validation}`}>
             {envoi ? 'Un instant…' : geste.valider}
           </button>

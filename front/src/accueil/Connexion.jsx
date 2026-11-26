@@ -6,7 +6,7 @@ import {
 } from '../../../src/main/resources/static/app/vue-file.js';
 import { BandeLegale, Retour } from '../composants/chrome.jsx';
 import {
-  AIDE, CHAMP, ETIQUETTE, Erreur, Info, PRESSE, Principal,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, Info, PRESSE, Principal,
 } from '../composants/formulaire.jsx';
 import { CLE_CLINIQUE, CLE_JETON, CLE_SLUG } from './session.js';
 
@@ -129,7 +129,7 @@ export function Connexion({ surConnexion }) {
         <p>
           <button type="button"
                   onClick={(e) => oublier(e.currentTarget.form)}
-                  className={`cible-min text-accent-texte underline ${PRESSE}`}>
+                  className={`cible-min text-accent-texte underline ${PRESSE} ${ANNEAU}`}>
             Mot de passe oublié ?
           </button>
         </p>
@@ -152,9 +152,9 @@ export function Connexion({ surConnexion }) {
           {/* `inline-flex` et non un lien en ligne : `cible-min` règle une
               hauteur MINIMALE, qui n'a aucun effet sur un élément en ligne.
               Mesuré avant correction : 17 px de haut. */}
-          <a href="/inscription" className="cible-min inline-flex items-center
+          <a href="/inscription" className={`cible-min inline-flex items-center
                                             font-semibold text-accent-texte
-                                            underline underline-offset-2">
+                                            underline underline-offset-2 ${ANNEAU}`}>
             Inscrire ma clinique
           </a>
         </p>

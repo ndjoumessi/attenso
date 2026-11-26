@@ -65,8 +65,15 @@ describe('la coquille partagée des pages publiques', () => {
     // constante. C'est le test qui avait tort, et c'est dit plutôt que fait
     // en silence.
     const brut = sansCommentaires(lire(CHROME));
-    const constantes = [...brut.matchAll(/const ([A-Z_]+) = ((?:'[^']*'\s*\+?\s*)+);/g)]
-      .map(([, nom, valeur]) => [nom, valeur.match(/'[^']*'/g).join('').replaceAll("'", '')]);
+    // Les fragments sont lus quel que soit leur délimiteur : une constante
+    // peut ouvrir sur `'…'` et finir sur un gabarit `` `…` `` depuis qu'elle
+    // interpole l'anneau partagé. Le motif d'avant n'acceptait que les
+    // guillemets simples et ne trouvait alors plus RIEN — c'est l'assertion
+    // de garde ci-dessous qui l'a dit, au lieu de laisser passer un test
+    // devenu vide.
+    const constantes = [...brut.matchAll(/const ([A-Z_]+) = ([\s\S]*?);\n/g)]
+      .map(([, nom, valeur]) => [nom, (valeur.match(/'[^']*'|`[^`]*`/g) ?? [])
+        .join(' ').replaceAll(/['`]/g, '')]);
     const source = constantes.reduce(
       (texte, [nom, valeur]) => texte.replaceAll(`{${nom}}`, `"${valeur}"`), brut,
     );

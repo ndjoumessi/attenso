@@ -5,7 +5,9 @@ import {
   promesse, urlLisible,
 } from '../../src/main/resources/static/app/vue-affiche.js';
 import { Qr } from './composants/qr.jsx';
-import { PRESSE } from './composants/formulaire.jsx';
+import {
+  ANNEAU, PRESSE,
+} from './composants/formulaire.jsx';
 
 const CLE_JETON = 'attenso.jeton';
 
@@ -55,7 +57,7 @@ export function Affiche() {
         <button type="button" onClick={() => window.print()} disabled={!vue}
                 className={`mt-6 cible rounded-[var(--rayon)] bg-accent px-6
                            font-bold text-sur-accent shadow-1 disabled:opacity-60
-                           hover:brightness-110 ${PRESSE}`}>
+                           hover:brightness-110 ${PRESSE} ${ANNEAU}`}>
           Imprimer l'affiche
         </button>
       </div>
