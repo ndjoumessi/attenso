@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PRESSE } from './formulaire.jsx';
 
 // Les adresses que la clinique doit TRANSMETTRE — le carnet d'un animal, la
 // page de réservation — étaient posées en texte brut. Sur une tablette posée
@@ -48,11 +49,11 @@ export function Adresse({ url, href = null, etiquette = "Copier l'adresse" }) {
                          text-sur-fond-doux">{url}</code>
       )}
       <button type="button" onClick={copier}
-              className="cible-min shrink-0 rounded-[var(--rayon)] border
+              className={`cible-min shrink-0 rounded-[var(--rayon)] border
                          border-bordure-controle px-3 text-sm font-semibold
                          [touch-action:manipulation] hover:bg-surface-douce
                          focus-visible:outline-2 focus-visible:outline-offset-2
-                         focus-visible:outline-[var(--anneau)]">
+                         focus-visible:outline-[var(--anneau)] ${PRESSE}`}>
         {etiquette}
       </button>
       {/* `role="status"` et non un simple texte : la confirmation est la seule

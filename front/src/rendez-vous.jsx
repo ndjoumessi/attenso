@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { attenue } from './composants/formulaire.jsx';
+import {
+  PRESSE, attenue,
+} from './composants/formulaire.jsx';
 import { BandeLegale } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
@@ -84,7 +86,7 @@ export function RendezVous() {
                   className={`mt-6 w-full cible rounded-[var(--rayon)] border
                              border-alerte bg-transparent px-6 font-semibold
                              text-alerte [touch-action:manipulation]
-                             ${attenue(envoi)} hover:bg-alerte-voile`}>
+                             ${attenue(envoi)} hover:bg-alerte-voile ${PRESSE}`}>
             Annuler ce rendez-vous
           </button>
           <p className="mt-2 text-sm text-sur-fond-doux">

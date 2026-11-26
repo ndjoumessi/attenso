@@ -4,6 +4,7 @@ import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   ADRESSE_INACTIVE, adresseInactive,
 } from '../../src/main/resources/static/app/vue-comptoir.js';
+import { PRESSE } from './composants/formulaire.jsx';
 
 const GENERIQUE = 'Cette clinique';
 
@@ -111,12 +112,12 @@ export function Comptoir() {
         )}
 
         <button type="submit" disabled={envoi || inactive}
-                className="mt-6 w-full cible rounded-[var(--rayon)] bg-accent px-6
+                className={`mt-6 w-full cible rounded-[var(--rayon)] bg-accent px-6
                            text-lg font-bold text-sur-accent shadow-1
                            [touch-action:manipulation] disabled:opacity-60
                            hover:brightness-110 active:brightness-95
                            focus-visible:outline-2 focus-visible:outline-offset-2
-                           focus-visible:outline-[var(--anneau)]">
+                           focus-visible:outline-[var(--anneau)] ${PRESSE}`}>
           {envoi ? 'Un instant…' : "J'y suis"}
         </button>
 

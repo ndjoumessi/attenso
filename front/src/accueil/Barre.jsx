@@ -6,6 +6,7 @@ import {
 } from '@/ui/sidebar';
 import { GROUPES, VUES } from './navigation.js';
 import { CLE_CLINIQUE } from './session.js';
+import { PRESSE } from '../composants/formulaire.jsx';
 
 /**
  * La barre latérale du tableau du personnel.
@@ -147,9 +148,9 @@ export function OuvreLaBarre() {
   if (!isMobile) return null;
   return (
     <button type="button" onClick={toggleSidebar}
-            className="cible-min mb-4 inline-flex items-center gap-2 rounded border
+            className={`cible-min mb-4 inline-flex items-center gap-2 rounded border
                        border-bordure-controle bg-surface px-4 font-semibold
-                       hover:bg-surface-douce">
+                       hover:bg-surface-douce ${PRESSE}`}>
       <PanelLeftIcon aria-hidden="true" className="size-5" />
       Menu
     </button>

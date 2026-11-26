@@ -55,12 +55,21 @@
   --cible: 56px;
   --cible-min: 44px;
 
-  /* --- Mouvement ------------------------------------------------------- */
+  /* --- Mouvement -------------------------------------------------------
+     Deux jetons, et ils servent tous les deux. Il y en avait cinq ; les
+     trois autres — `--duree`, `--sortie`, `--courbe-sortie` — n'avaient
+     AUCUNE référence nulle part. `--courbe-sortie` était le pire des trois :
+     cubic-bezier(0.4, 0, 1, 1) est un ease-in, qui n'a parcouru que 1,8 % du
+     chemin au dixième de sa durée. C'est la courbe qui part lentement, donc
+     celle qui fait paraître une interface molle — et elle portait le nom
+     qu'on vient chercher pour animer une sortie. Un jeton mort ne coûte rien ;
+     un jeton mort qui est un piège finit par être utilisé.
+
+     Mesuré, `--courbe-entree` est à 50 % du chemin au cinquième du temps :
+     une vraie décélération forte. Si une sortie demande un jour sa courbe,
+     elle sera ajoutée AVEC son usage, et mesurée. */
   --duree-courte: 150ms;
-  --duree: 220ms;
-  --sortie: 140ms;              /* une sortie plus rapide qu'une entrée */
   --courbe-entree: cubic-bezier(0.2, 0, 0, 1);
-  --courbe-sortie: cubic-bezier(0.4, 0, 1, 1);
 
   /* --- Plans ----------------------------------------------------------- */
   --plan-contenu: 0;

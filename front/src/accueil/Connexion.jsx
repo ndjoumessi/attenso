@@ -5,7 +5,9 @@ import {
   doitOublierLeJournal,
 } from '../../../src/main/resources/static/app/vue-file.js';
 import { BandeLegale, Retour } from '../composants/chrome.jsx';
-import { AIDE, CHAMP, ETIQUETTE, Erreur, Info, Principal } from '../composants/formulaire.jsx';
+import {
+  AIDE, CHAMP, ETIQUETTE, Erreur, Info, PRESSE, Principal,
+} from '../composants/formulaire.jsx';
 import { CLE_CLINIQUE, CLE_JETON, CLE_SLUG } from './session.js';
 
 export function Connexion({ surConnexion }) {
@@ -127,7 +129,7 @@ export function Connexion({ surConnexion }) {
         <p>
           <button type="button"
                   onClick={(e) => oublier(e.currentTarget.form)}
-                  className="cible-min text-accent-texte underline">
+                  className={`cible-min text-accent-texte underline ${PRESSE}`}>
             Mot de passe oublié ?
           </button>
         </p>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Retour } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import { euros, nomPalier } from '../../src/main/resources/static/app/formats.js';
+import { PRESSE } from './composants/formulaire.jsx';
 
 const RETOURS = {
   ok: "Paiement enregistré. Votre clinique s'ouvre dès que notre prestataire "
@@ -228,10 +229,10 @@ export function Inscription() {
         )}
 
         <button type="submit" disabled={envoi || !choisi}
-                className="w-full cible rounded-[var(--rayon)] bg-accent px-6
+                className={`w-full cible rounded-[var(--rayon)] bg-accent px-6
                            text-lg font-bold text-sur-accent shadow-1
                            [touch-action:manipulation] disabled:opacity-60
-                           hover:brightness-110 active:brightness-95">
+                           hover:brightness-110 active:brightness-95 ${PRESSE}`}>
           {envoi ? 'Un instant…' : 'Créer ma file d’attente'}
         </button>
       </form>

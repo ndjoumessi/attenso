@@ -22,7 +22,7 @@ export function Appel({ href, children, variante = 'plein', taille = 'normal' })
     // L'ombre monte d'un cran au survol : le bouton se soulève sous le doigt,
     // et `active` le repose. Un simple éclaircissement ne disait pas « cliquable ».
     plein: 'bg-accent text-sur-accent border-accent shadow-1 hover:shadow-2 '
-      + 'hover:brightness-110 active:translate-y-px active:shadow-1 active:brightness-95',
+      + 'hover:brightness-110 active:scale-[0.97] active:shadow-1 active:brightness-95',
     discret: 'bg-transparent text-accent-texte border-bordure-controle '
       + 'hover:border-accent hover:bg-accent-voile active:bg-accent-voile',
   };
@@ -35,7 +35,7 @@ export function Appel({ href, children, variante = 'plein', taille = 'normal' })
       href={href}
       className={`inline-flex items-center justify-center gap-2 rounded-[var(--rayon)]
         border font-semibold no-underline [touch-action:manipulation]
-        transition-[filter,background-color,border-color,box-shadow,transform]
+        transition-[filter,background-color,border-color,box-shadow,scale]
         duration-[var(--duree-courte)] ease-[var(--courbe-entree)]
         focus-visible:outline-2 focus-visible:outline-offset-2
         focus-visible:outline-[var(--anneau)]
