@@ -99,6 +99,17 @@ export function Affiche() {
             Aucune application à installer. Votre numéro sert à vous prévenir
             aujourd'hui, puis il est effacé.
           </p>
+          {/* Le client qui n'est pas encore entré n'a NI QR NI SMS : il n'est
+              pas au comptoir et n'a pas de ticket. Cette ligne est la seule
+              chose qu'une clinique puisse recopier en vitrine ou sur sa fiche
+              Google pour lui. Écrite, pas encodée : un second QR sur la même
+              affiche et plus personne ne sait lequel scanner. */}
+          <p className="mt-2 text-base text-[var(--sur-papier-doux)]">
+            Pour un rendez-vous un autre jour&nbsp;:{' '}
+            <strong className="break-all font-mono text-[var(--sur-papier)]">
+              {urlLisible(vue.urlRendezVous)}
+            </strong>
+          </p>
         </section>
       )}
     </main>
