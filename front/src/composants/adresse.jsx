@@ -20,7 +20,9 @@ const DUREE_CONFIRMATION = 2000;
  * confirmation fausse est pire que pas de bouton, parce qu'on colle du vide
  * sans le savoir.
  */
-export function Adresse({ url, href = null, etiquette = "Copier l'adresse" }) {
+export function Adresse({
+  url, href = null, etiquette = "Copier l'adresse", nomAccessible = null,
+}) {
   const [etat, setEtat] = useState(null);
 
   async function copier() {
@@ -50,7 +52,14 @@ export function Adresse({ url, href = null, etiquette = "Copier l'adresse" }) {
                          bg-surface-douce px-2 py-1 font-mono text-sm
                          text-sur-fond-doux">{url}</code>
       )}
+      {/* Le libellé visible reste court ; quand plusieurs adresses vivent dans
+          la même liste, c'est `nomAccessible` qui dit LAQUELLE. Sans lui, la
+          liste des carnets rendait autant de boutons « Copier l'adresse » que
+          d'animaux, indiscernables pour qui énumère les éléments focalisables.
+          Une adresse seule sur sa page n'en a pas besoin : son libellé suffit,
+          et un nom constant répété une fois ne gêne personne. */}
       <button type="button" onClick={copier}
+              aria-label={nomAccessible ?? undefined}
               className={`cible-min shrink-0 rounded-[var(--rayon)] border
                          border-bordure-controle px-3 text-sm font-semibold
                          [touch-action:manipulation] hover:bg-surface-douce

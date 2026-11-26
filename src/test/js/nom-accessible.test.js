@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 const RACINE = resolve(import.meta.dirname, '../../..');
@@ -84,10 +84,47 @@ function regionsMap(source) {
  * page rendue. Cette garde prouve une condition nécessaire, pas l'absence du
  * défaut.
  */
-function nomDesigneLElement(bloc, parametres) {
-  const gabarit = bloc.match(/aria-label=\{`([^`]*)`\}/);
+function nomDesigneLElement(bloc, parametres, attribut = 'aria-label') {
+  const gabarit = bloc.match(new RegExp(`${attribut}=\\{\`([^\`]*)\``));
   if (!gabarit) return false;
   return parametres.some((p) => new RegExp(`\\$\\{[^}]*\\b${p}\\b`).test(gabarit[1]));
+}
+
+/**
+ * Les composants qui rendent un `<button>`, par fichier où ils sont définis.
+ *
+ * <p>Par FICHIER, et non par nom : `vitrine.jsx` importe un `Mesure` de mise
+ * en page depuis `composants/base.jsx`, et `accueil/Mesure.jsx` exporte un
+ * `Mesure` qui, lui, rend des boutons. Un ensemble de noms confondait les deux
+ * et désignait un faux coupable — mesuré en écrivant cette garde.
+ */
+function composantsABouton() {
+  const out = new Map();
+  for (const [nom, source] of sources()) {
+    for (const m of source.matchAll(/export function ([A-Z][\w$]*)\s*\(/g)) {
+      const suivant = source.indexOf('\nexport function ', m.index + 1);
+      const corps = source.slice(m.index, suivant === -1 ? source.length : suivant);
+      if (!/<button/.test(corps)) continue;
+      const cle = `front/src/${nom}`;
+      if (!out.has(cle)) out.set(cle, new Set());
+      out.get(cle).add(m[1]);
+    }
+  }
+  return out;
+}
+
+/** Les composants importés par ce fichier : nom local → fichier qui le définit. */
+function importsDe(chemin, source) {
+  const out = new Map();
+  for (const m of source.matchAll(/import \{([^}]*)\} from '([^']+)'/g)) {
+    if (!m[2].startsWith('.')) continue;
+    const cible = join(dirname(chemin), m[2]);
+    for (const brut of m[1].split(',')) {
+      const local = brut.trim().split(/\s+as\s+/).pop().trim();
+      if (/^[A-Z]/.test(local)) out.set(local, cible);
+    }
+  }
+  return out;
 }
 
 /**
@@ -126,6 +163,58 @@ describe('deux boutons d\'une même liste ne portent pas le même nom', () => {
     }
     assert.deepEqual([...constants], [],
       'des boutons de liste sont indiscernables au nom accessible');
+  });
+
+  /**
+   * Le bouton peut vivre dans un COMPOSANT rendu par la liste, pas seulement
+   * dans son balisage. C'est l'angle mort annoncé ci-dessus, et il s'est
+   * matérialisé : la liste des carnets rendait un `<Adresse>` par animal, donc
+   * autant de boutons « Copier l'adresse » identiques. Aucun `<button>` dans
+   * le `.map` — le balayage précédent ne pouvait pas le voir. Trouvé en lisant
+   * l'arbre d'accessibilité d'une page servie, pas le source.
+   *
+   * <p>Le composant reçoit alors `nomAccessible`, un gabarit qui interpole
+   * l'élément, pendant que son libellé visible reste court.
+   */
+  it('un composant à bouton rendu dans une liste nomme son élément', () => {
+    const aBouton = composantsABouton();
+    const constants = new Set();
+    let vus = 0;
+    for (const [nom, source] of sources()) {
+      const imports = importsDe(`front/src/${nom}`, source);
+      for (const { parametres, corps } of regionsMap(source)) {
+        for (const m of corps.matchAll(/<([A-Z][\w$]*)[\s/>][\s\S]*?\/>/g)) {
+          const cible = imports.get(m[1]);
+          if (!cible || !aBouton.get(cible)?.has(m[1])) continue;
+          vus += 1;
+          if (!nomDesigneLElement(m[0], parametres, 'nomAccessible')) {
+            constants.add(`${nom} : ${m[0].replace(/\s+/g, ' ').slice(0, 80)}`);
+          }
+        }
+      }
+    }
+    assert.deepEqual([...constants], [],
+      'des composants à bouton rendus en liste sont indiscernables au nom');
+    // La morsure : sans elle, un import déplacé rendrait la garde vide et verte.
+    assert.ok(vus >= 1, 'aucun composant à bouton examiné dans une liste');
+  });
+
+  /**
+   * L'autre moitié de la chaîne. La garde au-dessus vérifie que l'APPEL passe
+   * un nom ; celle-ci, que le composant en FAIT un nom accessible. Sans elle,
+   * retirer l'attribut dans `adresse.jsx` laissait tout vert — mutation
+   * essayée, restée verte avant d'écrire ceci.
+   */
+  it('un composant qui reçoit nomAccessible le pose en aria-label', () => {
+    const sansAttribut = [];
+    for (const [nom, source] of sources()) {
+      if (!/\bnomAccessible\b/.test(source)) continue;
+      // Le fichier qui le reçOIT en paramètre, pas celui qui le passe.
+      if (!/function [A-Z][\w$]*\(\{[\s\S]*?\bnomAccessible\b[\s\S]*?\}\)/.test(source)) continue;
+      if (!/aria-label=\{\s*nomAccessible\b/.test(source)) sansAttribut.push(nom);
+    }
+    assert.deepEqual(sansAttribut, [],
+      'un composant reçoit nomAccessible sans jamais le poser en aria-label');
   });
 
   /**
