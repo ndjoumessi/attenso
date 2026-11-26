@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BandeLegale } from './composants/chrome.jsx';
 import { appel } from '../../src/main/resources/static/app/attenso.js';
 import {
   heureCourte, jourLong,
@@ -88,6 +89,11 @@ export function RendezVous() {
           </p>
         </>
       )}
+      {/* Joignable depuis toute page, comme la coquille le promet. Cette
+          page a pris — ou va prendre — un numéro de mobile ; n'offrir aucun
+          chemin vers la politique de confidentialité serait la seule page du
+          site à ne pas en avoir. */}
+      <BandeLegale />
     </main>
   );
 }

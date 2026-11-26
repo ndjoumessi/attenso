@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { BandeLegale } from './composants/chrome.jsx';
 import { appel, flux } from '../../src/main/resources/static/app/attenso.js';
 import {
   carte, consigne, lienVivant, peutDemanderUneNotification,
@@ -217,6 +218,11 @@ export function Suivi() {
           la fermer et revenir : le lien reste valable aujourd'hui.
         </p>
       )}
+      {/* Joignable depuis toute page, comme la coquille le promet. Cette
+          page a pris — ou va prendre — un numéro de mobile ; n'offrir aucun
+          chemin vers la politique de confidentialité serait la seule page du
+          site à ne pas en avoir. */}
+      <BandeLegale />
     </main>
   );
 }
