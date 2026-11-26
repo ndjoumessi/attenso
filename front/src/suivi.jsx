@@ -164,11 +164,20 @@ export function Suivi() {
                         text-sur-fond-doux">
             {vue ? vue.etiquette : 'Personnes avant vous'}
           </p>
+          {/* Le créneau garde sa HAUTEUR mais ne dessine RIEN tant qu'il
+              n'y a pas de chiffre. Le cadratin qui l'occupait mesure 58,5 px
+              de large dans un corps de 72 px, en gras : à cette taille ce
+              n'est plus de la ponctuation mais une barre pleine au milieu de
+              la carte — exactement celle qui se lisait « écran cassé » sur le
+              mur (ecran.jsx, 281,6 px). L'espace insécable tient les 72 px de
+              la ligne : mesuré dans la police réelle, la carte fait 206 px
+              avec ou sans chiffre, donc rien ne saute quand il arrive. C'est
+              « chargement… », juste dessous, qui porte le message. */}
           <p className={`mt-2 font-bold leading-none tabular-nums
                          ${vue?.appel
                            ? 'text-5xl text-accent-texte'
                            : 'text-7xl tracking-tighter'}`}>
-            {vue ? vue.valeur : '—'}
+            {vue ? vue.valeur : '\u00A0'}
           </p>
           <p className="mt-3 text-lg text-sur-fond-doux">
             {vue ? vue.dessous : 'chargement…'}

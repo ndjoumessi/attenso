@@ -52,9 +52,12 @@ export function RendezVous() {
         {/* Un rendez-vous annulé garde son heure affichée en grisé plutôt que
             de disparaître : la personne doit pouvoir vérifier ce qu'elle vient
             de faire. */}
+        {/* Même créneau vide que sur le suivi, même raison : ici le cadratin
+            mesurait 48,9 px dans un corps de 60 px. L'espace insécable tient
+            la hauteur de la ligne, et c'est « chargement… » qui parle. */}
         <p className={`mt-2 text-6xl font-bold leading-none tracking-tighter
                        tabular-nums ${annule ? 'text-sur-fond-doux line-through' : ''}`}>
-          {rdv ? heureCourte(rdv.heure) : '—'}
+          {rdv ? heureCourte(rdv.heure) : '\u00A0'}
         </p>
         <p className="mt-3 text-lg text-sur-fond-doux">
           {rdv ? jourLong(rdv.jour) : erreur ? '' : 'chargement…'}
