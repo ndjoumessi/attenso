@@ -1,6 +1,7 @@
 package ai.attenso.amorce;
 
 import ai.attenso.agenda.AgendaDao;
+import ai.attenso.agenda.ServiceAgenda;
 import ai.attenso.carnet.CarnetDao;
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.tenant.NomExpediteur;
@@ -60,13 +61,16 @@ public class AmorceClinique implements ApplicationRunner {
 
 	private final AgendaDao agenda;
 
+	private final ServiceAgenda serviceAgenda;
+
 	private final CarnetDao carnets;
 
 	private final Clock horloge;
 
 	public AmorceClinique(ProprietesAmorce proprietes, TenantRepository tenants,
 			JdbcTemplate jdbc, PasswordEncoder motsDePasse, GenerateurReference jetons,
-			MotifDao motifs, AgendaDao agenda, CarnetDao carnets, Clock horloge) {
+			MotifDao motifs, AgendaDao agenda, ServiceAgenda serviceAgenda,
+			CarnetDao carnets, Clock horloge) {
 		this.proprietes = proprietes;
 		this.tenants = tenants;
 		this.jdbc = jdbc;
@@ -74,6 +78,7 @@ public class AmorceClinique implements ApplicationRunner {
 		this.jetons = jetons;
 		this.motifs = motifs;
 		this.agenda = agenda;
+		this.serviceAgenda = serviceAgenda;
 		this.carnets = carnets;
 		this.horloge = horloge;
 	}
@@ -374,6 +379,16 @@ public class AmorceClinique implements ApplicationRunner {
 						(short) 1);
 			}
 		}
+
+		// Une PLAGE est une tranche hebdomadaire ; la page publique, elle, lit des
+		// CRÉNEAUX matérialisés, et seulement ceux qui ont une place libre. Sans
+		// cette ligne le semis n'en produisait que trois — ceux de ses trois
+		// rendez-vous, aussitôt pleins — et « Prendre rendez-vous » répondait
+		// « Aucun créneau n'est ouvert pour le moment ». Mesuré en production le
+		// 2026-11-26. La tâche de nuit de 3 h 15 le réparait, donc jamais le jour
+		// même : un réamorçage passé 3 h 15 laissait la page vide jusqu'au
+		// lendemain. Même geste que POST /api/agenda/plages, pour la même raison.
+		serviceAgenda.genererDepuis(tenantId, aujourdhui);
 		LocalDate demain = prochainJourOuvre(aujourdhui);
 		LocalDate apresDemain = prochainJourOuvre(demain);
 		poserUnRendezVous(tenantId, demain, LocalTime.of(9, 30), "Rappel de vaccin annuel");

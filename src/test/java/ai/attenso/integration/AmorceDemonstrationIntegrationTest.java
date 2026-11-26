@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import ai.attenso.agenda.AgendaDao;
+import ai.attenso.agenda.Creneau;
+import ai.attenso.agenda.ServiceAgenda;
 import ai.attenso.amorce.AmorceClinique;
 import ai.attenso.amorce.ProprietesAmorce;
 import ai.attenso.carnet.CarnetDao;
@@ -11,6 +13,7 @@ import ai.attenso.mesure.MesureDao;
 import ai.attenso.priorite.MotifDao;
 import ai.attenso.securite.GenerateurReference;
 import ai.attenso.tenant.ContexteTenant;
+import ai.attenso.tenant.Tenant;
 import ai.attenso.tenant.TenantRepository;
 import java.sql.Date;
 import java.time.Clock;
@@ -82,6 +85,9 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 	@Autowired
 	MesureDao mesure;
 
+	@Autowired
+	ServiceAgenda serviceAgenda;
+
 	private AmorceClinique amorce(Instant instant, boolean demonstration) {
 		return amorce(instant, true, demonstration);
 	}
@@ -91,7 +97,7 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 				"Clinique de démonstration", "accueil@demo.attenso.test",
 				"mdp-de-demonstration-de-test", null, null, null, false);
 		return new AmorceClinique(proprietes, tenants, applicatif, motsDePasse, jetons, motifs,
-				agenda, carnets, Clock.fixed(instant, PARIS));
+				agenda, serviceAgenda, carnets, Clock.fixed(instant, PARIS));
 	}
 
 	private void installer(Instant instant) {
@@ -499,5 +505,43 @@ class AmorceDemonstrationIntegrationTest extends SocleIntegration {
 		// Ce test garde le garde-fou du slug de run(), et lui seul : il resterait
 		// vert si la garde par tickets de semerLaDemonstration disparaissait.
 		assertThat(compter("ticket")).isEqualTo(avant);
+	}
+
+	/**
+	 * La page publique de prise de rendez-vous a de quoi proposer.
+	 *
+	 * <p>Elle ne lit pas les PLAGES — les tranches d'ouverture hebdomadaires —
+	 * mais les CRÉNEAUX matérialisés, et seulement ceux qui ont une place
+	 * libre. Le semis posait bien les plages, et ne matérialisait que les trois
+	 * créneaux de ses trois rendez-vous, chacun d'une place, chacune prise dans
+	 * la foulée. Résultat mesuré en production le 2026-11-26 : « Aucun créneau
+	 * n'est ouvert pour le moment », tous tests verts.
+	 *
+	 * <p>Rien ne le voyait parce que la seule garde de l'agenda vérifiait que
+	 * les rendez-vous OCCUPENT leur créneau — la propriété voisine, et vraie.
+	 * Ce qui manquait, c'est qu'il en reste un de libre.
+	 *
+	 * <p>La tâche de nuit de 3 h 15 réparait l'oubli chaque nuit, ce qui l'a
+	 * rendu invisible : un réamorçage avant 3 h 15 passe inaperçu, un
+	 * réamorçage après laisse la page vide jusqu'au lendemain. C'est-à-dire
+	 * tous les jours de démonstration.
+	 *
+	 * <p>Passe par {@code disponibles}, la méthode que la page appelle
+	 * vraiment, et non par un comptage SQL : c'est elle qui porte le filtre des
+	 * créneaux complets.
+	 */
+	@Test
+	@DisplayName("après le semis, il reste un créneau réservable : la page de rendez-vous n'est pas vide")
+	void unCreneauResteReservableApresLeSemis() {
+		installer(MI_JOURNEE);
+
+		UUID tenantId = clinique();
+		LocalDate jour = LocalDate.of(2027, 3, 10);
+		List<Creneau> libres = ContexteTenant.avec(tenantId, () -> {
+			Tenant clinique = tenants.findById(tenantId).orElseThrow();
+			return serviceAgenda.disponibles(clinique, jour, jour.plusDays(28));
+		});
+
+		assertThat(libres).as("créneaux réservables proposés par /t/demo/creneaux").isNotEmpty();
 	}
 }
