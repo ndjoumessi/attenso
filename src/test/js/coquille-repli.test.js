@@ -40,7 +40,14 @@ const ORIGINE = 'https://attenso.test';
 // l'intérieur de `suivi-*.js` : mesuré avant/après, suivi passe de 6 181 o à
 // 4 746 o et le chunk extrait pèse 1 564 o, soit 129 o de frais de découpe.
 // Ce qui change vraiment, c'est une requête de plus à l'installation.
-const FICHIERS_DE_LA_COQUILLE = 17;
+// 17 → 18 le 2026-11-26 : la page d'inscription a cessé de recopier `Adresse`
+// pour prendre le composant partagé, et Vite l'a donc extrait en chunk —
+// troisième page à l'importer. Conditions vérifiées : aucune entrée Vite
+// ajoutée, croissance due à un module partagé devenu chunk. Mesuré
+// avant/après : `accueil-*.js` tombe de 176 020 o à 174 698 o, l'inscription
+// de 11 290 o à 11 263 o, et le chunk extrait pèse 1 503 o — 154 o de frais
+// de découpe, et une requête de plus à l'installation.
+const FICHIERS_DE_LA_COQUILLE = 18;
 
 /** Une réponse factice, assez pour distinguer d'où elle vient. */
 function reponse(provenance, chemin) {

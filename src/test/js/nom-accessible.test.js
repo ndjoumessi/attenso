@@ -200,6 +200,51 @@ describe('deux boutons d\'une même liste ne portent pas le même nom', () => {
   });
 
   /**
+   * Hors de toute liste, une page peut aligner plusieurs fois le même
+   * composant à bouton. La vue de résultat de l'inscription en pose trois :
+   * l'identifiant de connexion, l'adresse du QR, celle de l'écran — les trois
+   * choses que la clinique doit emporter, et dont l'une porte « Gardez-la :
+   * elle ne sera plus affichée ». Trois boutons au même nom y seraient aussi
+   * indiscernables que dans une liste.
+   *
+   * <p>Le `.map` ne peut rien ici : il n'y en a pas. La propriété est
+   * « plusieurs fois dans le MÊME fichier », et les noms doivent différer deux
+   * à deux.
+   */
+  it('plusieurs composants à bouton sur une page portent des noms distincts', () => {
+    const aBouton = composantsABouton();
+    const fautes = [];
+    let pagesVues = 0;
+    for (const [nom, source] of sources()) {
+      const imports = importsDe(`front/src/${nom}`, source);
+      const parNom = new Map();
+      for (const m of source.matchAll(/<([A-Z][\w$]*)[\s/>][\s\S]*?\/>/g)) {
+        const cible = imports.get(m[1]);
+        if (!cible || !aBouton.get(cible)?.has(m[1])) continue;
+        if (!parNom.has(m[1])) parNom.set(m[1], []);
+        parNom.get(m[1]).push(m[0]);
+      }
+      for (const [composant, appels] of parNom) {
+        if (appels.length < 2) continue;
+        pagesVues += 1;
+        const noms = appels.map((a) => a.match(/nomAccessible=\{?(`[^`]*`|"[^"]*")/)?.[1]);
+        if (noms.some((n) => !n)) {
+          fautes.push(`${nom} : ${appels.length} <${composant}> dont un sans nom`);
+        }
+        else if (new Set(noms).size !== noms.length) {
+          fautes.push(`${nom} : deux <${composant}> partagent un nom`);
+        }
+      }
+    }
+    assert.deepEqual(fautes, [],
+      'des composants à bouton d\'une même page sont indiscernables au nom');
+    // La morsure. Sans elle, cette garde deviendrait vide et verte le jour où
+    // la dernière page à plusieurs adresses change de forme.
+    assert.ok(pagesVues >= 1,
+      'aucune page n\'aligne plusieurs composants à bouton : garde vide');
+  });
+
+  /**
    * L'autre moitié de la chaîne. La garde au-dessus vérifie que l'APPEL passe
    * un nom ; celle-ci, que le composant en FAIT un nom accessible. Sans elle,
    * retirer l'attribut dans `adresse.jsx` laissait tout vert — mutation
