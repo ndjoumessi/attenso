@@ -68,22 +68,42 @@ export function Ecran({ jeton }) {
           {nombre}
         </p>
       )}
-      {/* Sans grand nombre, c'est la légende qui mène. `vue-ecran.js` garde sa
-          décision — ne pas annoncer le vide quand des gens attendent —, mais
-          il faut un point d'accroche à quatre mètres. */}
+      {/* LES LIGNES D'APPUI SUIVENT LE MÊME PRINCIPE QUE LE GRAND NOMBRE —
+          dimensionnées en vw — et pour la même raison, qui n'était appliquée
+          qu'à lui. Mesurées en production à 1920 × 1080, elles faisaient 36,
+          30 et 20 px, et ne grandissaient plus au-delà : des points de
+          rupture, pas une proportion.
+
+          Sur un téléviseur de 55 pouces en 1080p, un pixel CSS vaut 0,63 mm
+          et la hauteur de capitale environ 0,7 fois le corps. Ces trois
+          lignes mesuraient donc 16, 13 et 9 mm de capitale. La règle d'usage
+          d'un panneau — capitale ≥ distance de lecture / 200 — demande 20 mm
+          à quatre mètres : les trois étaient sous le seuil, la dernière de
+          moitié. Elle se lisait à moins de deux mètres, sur un écran dont
+          c'est la promesse d'être lu à quatre.
+
+          Les plafonds — 72, 60 et 48 px — tiennent l'ordre de lecture :
+          le délai n'est qu'une estimation, il reste la plus petite des trois
+          et atteint tout juste les quatre mètres (4,3 m). Les planchers
+          servent l'aperçu sur un portable, où vw ne donne presque rien.
+
+          La branche sans numéro reste en points de rupture : à 60 px elle
+          est déjà lisible à cinq mètres, donc rien à corriger là. */}
       <p className={aUnNumero
-        ? 'text-3xl text-[var(--mur-encre-douce)] sm:text-4xl'
+        ? 'text-[clamp(1.75rem,3.75vw,4.5rem)] text-[var(--mur-encre-douce)]'
         : 'text-5xl font-semibold text-[var(--mur-encre-douce)] sm:text-6xl'}>
         {vue ? legende(vue) : 'en attente'}
       </p>
 
       {suivants && (
-        <p className="mt-4 text-2xl text-[var(--mur-encre-douce)] sm:text-3xl">
+        <p className="mt-4 text-[clamp(1.5rem,3.1vw,3.75rem)]
+                      text-[var(--mur-encre-douce)]">
           {suivants}
         </p>
       )}
       {delai && (
-        <p className="text-xl text-[var(--mur-encre-douce)]">{delai}</p>
+        <p className="text-[clamp(1.25rem,2.5vw,3rem)]
+                      text-[var(--mur-encre-douce)]">{delai}</p>
       )}
     </main>
   );

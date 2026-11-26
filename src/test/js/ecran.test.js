@@ -70,3 +70,76 @@ describe("l'écran ne met jamais un tiret en typographie d'affichage", () => {
       'la légende ne change pas de taille selon qu\'un numéro s\'affiche ou non');
   });
 });
+
+/**
+ * CE QUE LE MUR SE LAISSE LIRE À QUATRE MÈTRES.
+ *
+ * <p>Le grand nombre était dimensionné en vw « pour rester lisible à quatre
+ * mètres quel que soit le téléviseur ». Les lignes d'appui, elles, étaient
+ * figées par points de rupture : mesurées à 1920 × 1080 sur la page servie en
+ * production, 36, 30 et 20 px.
+ *
+ * <p>L'arithmétique, pour qu'elle soit refaisable. Sur un 55 pouces en 1080p,
+ * la dalle fait 685 mm de haut, donc un pixel CSS vaut 0,63 mm ; la hauteur de
+ * capitale vaut environ 0,7 fois le corps. Ces trois lignes mesuraient donc
+ * 16, 13 et 9 mm de capitale, là où la règle d'un panneau — capitale ≥
+ * distance / 200 — en demande 20 à quatre mètres.
+ *
+ * <p>Pourquoi vw et non des points de rupture : à 1920 et à 1366, mesuré dans
+ * le navigateur sur la page construite, les distances de lecture sont les
+ * MÊMES (6,4 / 5,3 / 4,3 m). Un corps en vw est une proportion de la dalle,
+ * donc indépendant de la résolution que le téléviseur annonce ; un palier
+ * `sm:` ne l'est pas.
+ *
+ * <p>Comme la garde du tiret au-dessus, celle-ci ne voit PAS la taille de
+ * rendu. Elle garde le mécanisme (vw) et le seuil (48 px sur la plus petite
+ * ligne), parce que c'est au navigateur qu'on a demandé les millimètres.
+ */
+describe('les lignes du mur grandissent avec la dalle', () => {
+  const PX_PAR_REM = 16;
+  const enPx = (valeur) => (valeur.endsWith('rem')
+    ? parseFloat(valeur) * PX_PAR_REM : parseFloat(valeur));
+
+  /** Les `clamp()` de la page, dans l'ordre du source. */
+  function clamps(source) {
+    return [...source.matchAll(/text-\[clamp\(([^)]*)\)\]/g)].map((m) => {
+      const [plancher, prefere, plafond] = m[1].split(',').map((v) => v.trim());
+      return { plancher, prefere, plafond, plafondPx: enPx(plafond) };
+    });
+  }
+
+  // L'ordre du source est aussi l'ordre de lecture : nombre, légende,
+  // suivants, délai. Le compte est piné — en ajouter une cinquième sans y
+  // penser, ou en retirer une, doit faire rougir.
+  const LIGNES = ['le grand nombre', 'la légende', 'les suivants', 'le délai'];
+
+  it('dimensionne les quatre lignes en vw', () => {
+    const trouves = clamps(sansCommentaires(lire(ECRAN)));
+    assert.equal(trouves.length, LIGNES.length,
+      `${trouves.length} ligne(s) en clamp, attendu ${LIGNES.length} : ${LIGNES.join(', ')}`);
+    trouves.forEach((c, i) => {
+      assert.match(c.prefere, /vw$/,
+        `${LIGNES[i]} : la valeur préférée « ${c.prefere} » ne suit pas la dalle`);
+    });
+  });
+
+  it("garde l'ordre de lecture du mur", () => {
+    const trouves = clamps(sansCommentaires(lire(ECRAN)));
+    for (let i = 1; i < trouves.length; i += 1) {
+      assert.ok(trouves[i].plafondPx < trouves[i - 1].plafondPx,
+        `${LIGNES[i]} (${trouves[i].plafondPx} px) n'est pas plus petite que `
+        + `${LIGNES[i - 1]} (${trouves[i - 1].plafondPx} px)`);
+    }
+  });
+
+  // 48 px à 1080p → capitale de 21,3 mm → lisible à 4,26 m. En dessous, la
+  // dernière ligne repasse sous la promesse de l'écran.
+  it('tient les quatre mètres sur la plus petite ligne', () => {
+    const trouves = clamps(sansCommentaires(lire(ECRAN)));
+    const derniere = trouves[trouves.length - 1];
+    assert.ok(derniere.plafondPx >= 48,
+      `le délai plafonne à ${derniere.plafondPx} px : capitale de `
+      + `${Math.round(derniere.plafondPx * 0.7 * 0.634 * 10) / 10} mm, `
+      + 'soit moins de quatre mètres');
+  });
+});
