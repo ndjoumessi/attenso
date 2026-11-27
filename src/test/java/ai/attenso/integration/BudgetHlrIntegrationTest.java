@@ -38,7 +38,7 @@ class BudgetHlrIntegrationTest extends SocleIntegration {
 			+ "exactement dix passent")
 	void laReservationEstIndivisible() throws Exception {
 		UUID clinique = creerClinique("budget-course", "Clinique", 2, 180);
-		LocalDate jour = LocalDate.now();
+		LocalDate jour = aujourdhui();
 
 		ExecutorService fils = Executors.newFixedThreadPool(SIMULTANES);
 		CountDownLatch depart = new CountDownLatch(1);
@@ -84,7 +84,7 @@ class BudgetHlrIntegrationTest extends SocleIntegration {
 	void leCompteurEstCloisonne() {
 		UUID alpha = creerClinique("budget-alpha", "Alpha", 2, 180);
 		UUID beta = creerClinique("budget-beta", "Beta", 2, 180);
-		LocalDate jour = LocalDate.now();
+		LocalDate jour = aujourdhui();
 
 		ContexteTenant.executer(alpha, () -> {
 			assertThat(budget.reserver(alpha, jour, 1)).isTrue();

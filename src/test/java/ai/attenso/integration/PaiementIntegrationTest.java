@@ -14,7 +14,6 @@ import ai.attenso.paiement.PasserelleFausse;
 import ai.attenso.paiement.SouscriptionIndisponible;
 import ai.attenso.tenant.ContexteTenant;
 import com.stripe.net.Webhook;
-import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -400,11 +399,11 @@ class PaiementIntegrationTest extends SocleIntegration {
 
 		// Le jour même, rien ne se ferme : la période est payée.
 		assertThat(ContexteTenant.avec(tenantId,
-				() -> paiements.fermerSiEchu(tenantId, LocalDate.now()))).isFalse();
+				() -> paiements.fermerSiEchu(tenantId, aujourdhui()))).isFalse();
 		assertThat(actif(tenantId)).isTrue();
 
 		boolean ferme = ContexteTenant.avec(tenantId,
-				() -> paiements.fermerSiEchu(tenantId, LocalDate.now().plusDays(1)));
+				() -> paiements.fermerSiEchu(tenantId, aujourdhui().plusDays(1)));
 
 		assertThat(ferme).isTrue();
 		assertThat(actif(tenantId)).isFalse();

@@ -62,7 +62,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("une plage hebdomadaire produit des créneaux à la bonne durée")
 	void unePlageProduitDesCreneaux() {
 		UUID id = installer("agenda");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(id, lundi, (short) 1);
 
 		List<ai.attenso.agenda.Creneau> creneaux = dao.creneaux(id, lundi, lundi);
@@ -78,7 +78,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("regénérer ne duplique pas les créneaux ni n'efface les réservations")
 	void regenererNeDupliquePas() {
 		UUID id = installer("agenda-regen");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(id, lundi, (short) 2);
 		agenda.reserver(clinique, lundi, LocalTime.of(9, 0), "0611111111", null);
 
@@ -92,7 +92,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("le quota tient sous réservations simultanées")
 	void leQuotaTientSousConcurrence() throws Exception {
 		UUID id = installer("agenda-quota");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(id, lundi, (short) 3);
 
 		// Compter puis insérer laisserait passer ensemble toutes les demandes
@@ -129,7 +129,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("annuler rend la place, sinon l'agenda se vide tout seul")
 	void annulerRendLaPlace() {
 		UUID id = installer("agenda-annule");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(id, lundi, (short) 1);
 		RendezVous rdv = agenda.reserver(clinique, lundi, LocalTime.of(9, 0), null, null);
 		assertThatThrownBy(() -> agenda.reserver(clinique, lundi, LocalTime.of(9, 0), null,
@@ -147,7 +147,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("annuler deux fois ne rend pas deux places")
 	void annulerDeuxFoisNeRendPasDeuxPlaces() {
 		UUID id = installer("agenda-double-annule");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(id, lundi, (short) 2);
 		RendezVous rdv = agenda.reserver(clinique, lundi, LocalTime.of(9, 0), null, null);
 
@@ -163,7 +163,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("un créneau déjà passé n'est plus proposé")
 	void unCreneauPasseNEstPlusPropose() {
 		UUID id = installer("agenda-passe");
-		LocalDate hier = LocalDate.now().minusDays(1);
+		LocalDate hier = aujourdhui().minusDays(1);
 		dao.materialiser(id, hier, LocalTime.of(9, 0), (short) 5);
 
 		assertThat(agenda.disponibles(clinique, hier, hier.plusDays(30))).isEmpty();
@@ -173,7 +173,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("réserver un créneau passé est refusé, et ne prend aucune place")
 	void reserverUnCreneauPasseEstRefuse() {
 		UUID id = installer("agenda-passe-api");
-		LocalDate hier = LocalDate.now().minusDays(1);
+		LocalDate hier = aujourdhui().minusDays(1);
 		dao.materialiser(id, hier, LocalTime.of(9, 0), (short) 5);
 
 		// Le test voisin ne couvre que l'AFFICHAGE. Ne pas le rejouer ici
@@ -189,7 +189,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("le rappel J-1 part une seule fois, même si la tâche repasse")
 	void leRappelPartUneSeuleFois() {
 		UUID id = installer("agenda-rappel");
-		LocalDate demain = LocalDate.now().plusDays(1);
+		LocalDate demain = aujourdhui().plusDays(1);
 		ouvrirPour(id, demain, (short) 2);
 		agenda.reserver(clinique, demain, LocalTime.of(9, 0), "0611111111", null);
 
@@ -209,7 +209,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("un rendez-vous sans numéro ne déclenche aucun rappel")
 	void sansNumeroPasDeRappel() {
 		UUID id = installer("agenda-sans-numero");
-		LocalDate demain = LocalDate.now().plusDays(1);
+		LocalDate demain = aujourdhui().plusDays(1);
 		ouvrirPour(id, demain, (short) 2);
 		agenda.reserver(clinique, demain, LocalTime.of(9, 0), null, null);
 
@@ -220,7 +220,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("un rendez-vous annulé ne reçoit pas son rappel")
 	void unRendezVousAnnuleNeRecoitPasDeRappel() {
 		UUID id = installer("agenda-annule-rappel");
-		LocalDate demain = LocalDate.now().plusDays(1);
+		LocalDate demain = aujourdhui().plusDays(1);
 		ouvrirPour(id, demain, (short) 2);
 		RendezVous rdv = agenda.reserver(clinique, demain, LocalTime.of(9, 0), "0611111111",
 				null);
@@ -233,7 +233,7 @@ class AgendaIntegrationTest extends SocleIntegration {
 	@DisplayName("les créneaux d'une clinique sont invisibles à une autre")
 	void lesCreneauxSontCloisonnes() {
 		UUID a = installer("agenda-alpha");
-		LocalDate lundi = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(1);
+		LocalDate lundi = aujourdhui().with(DayOfWeek.MONDAY).plusWeeks(1);
 		ouvrirPour(a, lundi, (short) 2);
 		UUID b = creerClinique("agenda-beta", "Beta", 2, 180);
 
