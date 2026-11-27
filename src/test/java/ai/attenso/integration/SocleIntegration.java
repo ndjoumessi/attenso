@@ -2,6 +2,8 @@ package ai.attenso.integration;
 
 import ai.attenso.tenant.ContexteTenant;
 import ai.attenso.utilisateur.Role;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
@@ -130,6 +132,23 @@ public abstract class SocleIntegration {
 
 	@Autowired
 	protected ai.attenso.web.LimiteurDebit limiteur;
+
+	/** L'horloge du produit : Europe/Paris, et non le fuseau de la machine. */
+	@Autowired
+	protected Clock horloge;
+
+	/**
+	 * « Aujourd'hui » du point de vue de la clinique.
+	 *
+	 * <p>À préférer à {@code LocalDate.now()} partout : le produit date dans le
+	 * fuseau de la clinique, et un test qui date dans celui de la machine
+	 * échoue entre 23 h et minuit UTC — une heure par jour où le CI, qui tourne
+	 * en UTC, est rouge sans que le code soit en cause. {@code JourDesTestsTest}
+	 * l'impose.
+	 */
+	protected LocalDate aujourdhui() {
+		return LocalDate.now(horloge);
+	}
 
 	@BeforeEach
 	void preparerLeSocle() {

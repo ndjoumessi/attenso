@@ -110,8 +110,8 @@ class CarnetIntegrationTest extends SocleIntegration {
 		UUID id = installer("carnet-rappel");
 		Animal chat = carnets.creer(id, "Mistigri", "Chat", "0611111111", true);
 		// Échéance dans deux semaines : dans la fenêtre de trois semaines.
-		dao.ajouterVaccination(id, chat.id(), "Leucose", LocalDate.now().minusYears(1),
-				LocalDate.now().plusDays(14), null);
+		dao.ajouterVaccination(id, chat.id(), "Leucose", aujourdhui().minusYears(1),
+				aujourdhui().plusDays(14), null);
 
 		int premier = carnets.rappelerPour(clinique);
 		int second = carnets.rappelerPour(clinique);
@@ -132,7 +132,7 @@ class CarnetIntegrationTest extends SocleIntegration {
 	void sansDateDeRappelRienNePart() {
 		UUID id = installer("carnet-sans-rappel");
 		Animal chat = carnets.creer(id, "Felix", "Chat", "0611111111", true);
-		dao.ajouterVaccination(id, chat.id(), "Primo-injection", LocalDate.now(), null, null);
+		dao.ajouterVaccination(id, chat.id(), "Primo-injection", aujourdhui(), null, null);
 
 		// L'absence de date n'est pas « en retard » : la confondre enverrait
 		// un SMS payant à chaque balayage pour un rappel qui n'existe pas.
@@ -144,8 +144,8 @@ class CarnetIntegrationTest extends SocleIntegration {
 	void unRappelLointainAttend() {
 		UUID id = installer("carnet-lointain");
 		Animal chat = carnets.creer(id, "Felix", "Chat", "0611111111", true);
-		dao.ajouterVaccination(id, chat.id(), "Typhus", LocalDate.now(),
-				LocalDate.now().plusMonths(6), null);
+		dao.ajouterVaccination(id, chat.id(), "Typhus", aujourdhui(),
+				aujourdhui().plusMonths(6), null);
 
 		assertThat(carnets.rappelerPour(clinique)).isZero();
 	}
@@ -155,8 +155,8 @@ class CarnetIntegrationTest extends SocleIntegration {
 	void unRappelDepasseEstQuandMemeEnvoye() {
 		UUID id = installer("carnet-retard");
 		Animal chat = carnets.creer(id, "Felix", "Chat", "0611111111", true);
-		dao.ajouterVaccination(id, chat.id(), "Typhus", LocalDate.now().minusYears(2),
-				LocalDate.now().minusDays(10), null);
+		dao.ajouterVaccination(id, chat.id(), "Typhus", aujourdhui().minusYears(2),
+				aujourdhui().minusDays(10), null);
 
 		// Une journée où la tâche n'a pas tourné ne doit pas faire sauter
 		// définitivement le rappel.
