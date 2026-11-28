@@ -166,3 +166,34 @@ describe('les drapeaux d\'échec partent à faux', () => {
     });
   }
 });
+
+/**
+ * Une action sur un compte relit la liste.
+ *
+ * <p>Désactiver quelqu'un, le réactiver, changer son rôle : `agir` poste, puis
+ * relit. Sans cette relecture, l'écran garde l'état d'avant — on clique
+ * « Désactiver », et il ne se passe rien de visible. Sur une tablette de
+ * comptoir partagée, on reclique.
+ *
+ * <p>Mesuré le 2026-11-28 : retirer `await relireEquipe();` de `agir` ne
+ * faisait rougir aucun des 387 tests. Le registre le disait — « l'Important 3
+ * n'existe qu'à cause de cet appel » — et personne ne le gardait.
+ *
+ * <p>L'`await` fait partie de la propriété : sans lui, `agir` rend la main
+ * avant que la liste soit relue, et l'appelant qui réactive le bouton le
+ * réactiverait sur l'ancien écran.
+ */
+describe('une action sur un compte relit la liste', () => {
+  it('`agir` attend la relecture, dans le chemin de succès', () => {
+    const source = sansCommentaires(lire('front/src/accueil/Exploitation.jsx'));
+    const i = source.indexOf('async function agir(');
+    assert.notEqual(i, -1, '`agir` a disparu');
+    const fin = source.indexOf('} catch', i);
+    assert.notEqual(fin, -1, 'le `catch` de `agir` est introuvable');
+    // Le chemin de SUCCÈS seulement : une relecture dans le `catch` ne
+    // prouverait rien, l'action ayant échoué.
+    assert.match(source.slice(i, fin), /await relireEquipe\(\);/,
+      '`agir` ne relit pas la liste après avoir agi : l\'écran garde l\'état '
+      + 'd\'avant, et on reclique');
+  });
+});
