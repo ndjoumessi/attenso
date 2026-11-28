@@ -116,6 +116,15 @@ describe('le routage par fragment dans le tableau', () => {
     // dégradé visible. Ce projet a déjà perdu deux comportements dans une
     // migration.
     assert.ok(/<Bandeaux/.test(source), 'les bandeaux ont disparu du tableau');
+    // SANS CONDITION, et pas seulement présents. Mesuré le 2026-11-28 :
+    // `{false && <Bandeaux …}` laissait cette garde verte — les bandeaux
+    // auraient disparu de l'écran en restant dans le fichier. C'est le
+    // filet de sécurité de tout le mode hors réseau.
+    const avantLeRendu = source.slice(Math.max(0, source.indexOf('<Bandeaux') - 60),
+      source.indexOf('<Bandeaux'));
+    assert.doesNotMatch(avantLeRendu, /&&\s*$|\?\s*$/,
+      'les bandeaux sont rendus derrière une condition : ils peuvent disparaître '
+      + 'de l\'écran sans disparaître du fichier');
     assert.ok(source.includes('vue ==='), 'commutateur de vue introuvable');
     const commutateur = source.slice(source.indexOf('vue ==='));
     assert.ok(!/\<Bandeaux/.test(commutateur));
@@ -681,5 +690,28 @@ describe('le tableau se traverse au clavier', () => {
       `le lien d\'évitement vise #${lien[1]}, qui n\'existe pas dans la page`);
     assert.ok(source.indexOf(lien[0]) < source.indexOf('<Barre'),
       'le lien d\'évitement est rendu après la barre : on l\'atteint trop tard');
+  });
+});
+
+/**
+ * Le dégagement de la croix de fermeture n'existe que dans le tiroir.
+ *
+ * <p>`sheet.jsx` pose la croix en `absolute top-4 right-4`, 44 px : elle
+ * occupe les soixante premiers pixels depuis le bord droit, et `pr-16` les
+ * dégage. Mais AU-DESSUS du seuil il n'y a pas de croix, et prendre 64 px sur
+ * un en-tête de 256 px replierait le nom de la clinique pour rien.
+ *
+ * <p>Aucune garde ne tenait ça. Mesuré le 2026-11-28 : sortir `pr-16` de la
+ * branche `isMobile` ne faisait rougir aucun des 383 tests.
+ */
+describe('le d\'égagement de la croix reste dans le tiroir', () => {
+  it('`pr-16` vit dans la branche isMobile, pas à côté', () => {
+    const source = sansCommentaires(lire('front/src/accueil/Barre.jsx'));
+    assert.match(source, /pr-16/, 'la croix du tiroir ne se dégage plus');
+    // Fenêtre BORNÉE à la ternaire elle-même : `pr-16` ailleurs dans le
+    // gabarit s'appliquerait aussi au-dessus du seuil.
+    assert.match(source, /isMobile \? 'pr-16' : ''/,
+      '`pr-16` n\'est plus conditionné au tiroir : il rogne 64 px sur un '
+      + 'en-tête de 256 px là où il n\'y a aucune croix à dégager');
   });
 });

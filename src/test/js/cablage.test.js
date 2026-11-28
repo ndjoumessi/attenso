@@ -131,3 +131,38 @@ describe('Mesure et Carnets disent leur échec eux-mêmes', () => {
     });
   }
 });
+
+/**
+ * Un drapeau d'échec démarre à FAUX.
+ *
+ * <p>Mesuré le 2026-11-28 : mettre `useState('reseau')` à la place de
+ * `useState(false)` sur `echec` ne faisait rougir aucun des 383 tests. La
+ * conséquence à l'écran est pourtant immédiate — « Les carnets n'ont pas pu
+ * être chargés » s'afficherait AVANT la première requête, pendant que le
+ * chargement se passe bien. Un message d'échec faux est pire qu'un message
+ * absent : on y croit, et on arrête d'attendre.
+ *
+ * <p>Les gardes voisines vérifient que l'échec est retenu et qu'il se dit.
+ * Aucune ne disait d'où il part.
+ */
+describe('les drapeaux d\'échec partent à faux', () => {
+  const VUES = [
+    ['Mesure', 'front/src/accueil/Mesure.jsx'],
+    ['Agenda et Carnets', 'front/src/accueil/Sections.jsx'],
+    ['Exploitation et Comptes', 'front/src/accueil/Exploitation.jsx'],
+  ];
+
+  for (const [nom, fichier] of VUES) {
+    it(`${nom} : aucun drapeau d'échec ne démarre vrai`, () => {
+      const source = sansCommentaires(lire(fichier));
+      const departs = [...source.matchAll(
+        /\[(echec[A-Za-z]*|expiree|refuse), set[A-Za-z]+\] = useState\(([^)]*)\)/g)];
+      assert.ok(departs.length > 0, `aucun drapeau d'échec trouvé dans ${fichier}`);
+      for (const [, drapeau, valeur] of departs) {
+        assert.equal(valeur, 'false',
+          `${drapeau} démarre à \`${valeur}\` : l'écran annoncerait un échec `
+          + 'avant la première requête');
+      }
+    });
+  }
+});
