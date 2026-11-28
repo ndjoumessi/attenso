@@ -217,3 +217,45 @@ describe('tout ce qui prend le focus porte le même anneau', () => {
       'la seconde écriture de l\'anneau n\'est pas la variante des liens');
   });
 });
+
+/**
+ * Une relecture ratée se dit, et se dit D'UNE SEULE FAÇON.
+ *
+ * <p>Trois vues chargent des données à côté de la file — l'agenda, les
+ * montants, les compteurs du tableau de bord. Deux d'entre elles ne signalaient
+ * l'échec que si l'écran était VIDE : une fois les données affichées, une
+ * relecture ratée ne laissait plus rien. L'écran montrait alors des
+ * rendez-vous et des montants vieux de plusieurs minutes avec l'aplomb de
+ * ceux du moment — et la garde de la facturation exigeait ce silence, elle
+ * pinait le défaut.
+ *
+ * <p>Le tableau de bord, lui, portait déjà la bonne nuance en propre : « pas
+ * pu être lus » devant des tirets, « peuvent être périmés » au-dessus de
+ * chiffres. Elle vit dans `EchecRelecture` désormais — une seule fois, comme
+ * l'anneau de focus, et pour la même raison : une formulation recopiée
+ * diverge, et ce sont les écrans oubliés qui mentent.
+ */
+describe('le signal de relecture ratée a une seule source', () => {
+  it('la nuance « périmé / pas lu » n\'est écrite qu\'une fois', () => {
+    const copies = [];
+    for (const [nom, s] of sources()) {
+      const n = (s.match(/peuvent être périmés/g) ?? []).length;
+      const permis = nom === 'composants/formulaire.jsx' ? 1 : 0;
+      if (n > permis) copies.push(`${nom} (${n} fois)`);
+    }
+    assert.deepEqual(copies, [],
+      'la formulation du signal est recopiée hors de sa source');
+  });
+
+  it('les trois vues qui chargent à côté de la file l\'emploient', () => {
+    const emploient = [];
+    for (const [nom, s] of sources()) {
+      if (/<EchecRelecture/.test(s)) emploient.push(nom);
+    }
+    // Les deux fichiers qui portent l'agenda, les montants et les compteurs.
+    for (const attendu of ['accueil/Sections.jsx', 'accueil/Exploitation.jsx']) {
+      assert.ok(emploient.includes(attendu),
+        `${attendu} ne signale plus une relecture ratée`);
+    }
+  });
+});

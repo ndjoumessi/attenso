@@ -107,6 +107,34 @@ export function Principal({ children, disabled, ...reste }) {
   );
 }
 
+/**
+ * Une relecture a échoué : dire QUOI, selon qu'il reste quelque chose à lire.
+ *
+ * <p>Le mot change avec l'état de l'écran, et c'est tout l'intérêt : dire
+ * « périmé » devant des tirets serait faux, et dire « indisponible » au-dessus
+ * de chiffres visibles ferait douter de ce qu'on lit. Le tableau de bord
+ * portait déjà cette nuance en propre ; elle vit ici désormais, pour que les
+ * listes qui l'ignoraient en héritent.
+ *
+ * <p>`role="status"` et non `alert` : c'est une dégradation, pas une erreur
+ * qui demande un geste. On n'interrompt pas une personne au comptoir pour
+ * lui dire qu'une liste a deux minutes de retard.
+ *
+ * @param aDesDonnees l'écran montre-t-il déjà quelque chose à périmer
+ * @param quoi le sujet, au pluriel et sans article : « ces rendez-vous »
+ */
+export function EchecRelecture({ aDesDonnees, quoi }) {
+  return (
+    <p role="status" className="mt-2 rounded-[var(--rayon)] border
+                                border-attention bg-attention-voile px-4 py-3
+                                text-sm text-attention">
+      {aDesDonnees
+        ? `${quoi} peuvent être périmés : la dernière relecture a échoué.`
+        : `${quoi} n'ont pas pu être lus.`}
+    </p>
+  );
+}
+
 export function Erreur({ children }) {
   if (!children) return null;
   return (

@@ -576,9 +576,17 @@ describe('les vues du groupe Journée', () => {
     const branche = corps.slice(corps.indexOf('{rdvs === null ?'),
       corps.indexOf('rdvs.length === 0'));
     assert.ok(branche, 'la branche « pas encore chargé » a disparu');
-    assert.match(branche, /<Erreur>/, 'un échec de chargement ne se dit plus');
     assert.doesNotMatch(branche, /\bvide\b/,
       '« aucun rendez-vous » peut s\'afficher avant que la liste soit chargée');
+    // L'échec se dit, mais plus DANS cette branche : il y vivait, et une
+    // relecture ratée après un chargement réussi ne laissait alors aucun
+    // signal — l'écran montrait des rendez-vous périmés sans le dire. Le
+    // signal est donc sorti de la branche ; la garde suit la propriété.
+    assert.match(corps, /\{echec && <EchecRelecture/,
+      'un échec de chargement ne se dit plus');
+    assert.doesNotMatch(corps, /rdvs === null && echec|echec && rdvs === null/,
+      'le signal est de nouveau conditionné à une liste absente : '
+      + 'une liste périmée redeviendrait muette');
   });
 
   /**
