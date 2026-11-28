@@ -124,3 +124,86 @@ describe('les trois lectures du tableau disent leur échec', () => {
     assert.match(source, /echecBord\s*&&/, "l'échec n'est pas rendu");
   });
 });
+
+/**
+ * Une session expirée n'est pas un refus de droits, ni une panne passagère.
+ *
+ * <p>Deux messages mentaient, chacun à sa façon, pendant les trente secondes
+ * qui séparent l'expiration du jeton de la purge par `/api/file` :
+ *
+ * <ul>
+ * <li>un 401 sur la facturation ou les comptes affichait « Réservé au
+ *     gérant ». La personne au comptoir en conclut qu'elle n'a pas les
+ *     droits — et elle le dira au gérant, qui ne comprendra pas.</li>
+ * <li>les cinq autres vues affichaient « Réessayez dans un instant », alors
+ *     que réessayer ne sert strictement à rien : le serveur dira non de
+ *     nouveau. `affiche.jsx`, lui, faisait déjà la différence et renvoyait
+ *     à la connexion.</li>
+ * </ul>
+ *
+ * <p>403 et 401 ne se relisent ni l'un ni l'autre — `doitContinuerARelire`
+ * garde donc son sens — mais ils ne se DISENT pas pareil. C'est la confusion
+ * des deux qui produisait le mensonge.
+ */
+describe('un 401 se dit pour ce qu\'il est', () => {
+  const REFUS = 'front/src/accueil/refus.js';
+
+  it('la règle distingue le jeton expiré du droit refusé', () => {
+    const source = sansCommentaires(lire(REFUS));
+    assert.match(source, /export function sessionExpiree\(statut\)/,
+      'rien ne nomme le jeton expiré : il reste confondu avec le 403');
+    assert.match(source, /statut === 401/, 'le 401 n\'est pas reconnu');
+    // La règle de relecture ne bouge pas : les deux refus restent sans appel.
+    assert.match(source, /statut !== 401 && statut !== 403/,
+      'la règle de relecture a changé de sens');
+  });
+
+  it('« Réservé au gérant » n\'est plus montré sur un jeton expiré', () => {
+    const source = sansCommentaires(lire('front/src/accueil/Exploitation.jsx'));
+    // La décision vit au SETTER, pas au rendu : regarder les 200 caractères
+    // avant `<ReserveAuGerant>` ne disait rien de ce qui a posé le drapeau.
+    // Mesuré — cette première formulation rougissait sur du code correct.
+    assert.doesNotMatch(source, /setRefuse\(true\)/,
+      'le drapeau du refus est posé sans distinguer le jeton expiré : '
+      + '« Réservé au gérant » s\'affichera sur un 401');
+    const poses = [...source.matchAll(/setRefuse\(!sessionExpiree\([a-z]+\.statut\)\)/g)];
+    assert.equal(poses.length, 2,
+      `${poses.length} chemin(s) de refus distinguent le jeton expiré, attendu 2 `
+      + '(la facturation et les comptes)');
+    // DEUX rendus, comme les deux chemins de refus. Exiger « au moins un »
+    // laissait passer la suppression de celui de la facturation : l'autre
+    // suffisait à satisfaire la garde — mutation mesurée, restée verte.
+    const dits = [...source.matchAll(/\{expiree && <EchecDeChargement statut=\{401\}/g)];
+    assert.equal(dits.length, 2,
+      `${dits.length} écran(s) disent la session expirée, attendu 2 `
+      + '(la facturation et les comptes)');
+  });
+
+  /**
+   * Une seule source pour la phrase, comme l'anneau de focus : elle était
+   * recopiée dans cinq vues, et c'est ce qui avait permis à `affiche.jsx`
+   * d'être juste pendant que les cinq autres mentaient.
+   */
+  it('la phrase « Réessayez dans un instant » n\'est écrite qu\'une fois', () => {
+    const copies = [];
+    for (const chemin of TOUS) {
+      // Hors commentaires : le composant explique en tête POURQUOI la phrase
+      // ne doit pas être recopiée, et cette explication citait la phrase.
+      const n = (sansCommentaires(lire(chemin)).match(/Réessayez dans un instant/g) ?? []).length;
+      const permis = chemin.endsWith('composants/formulaire.jsx') ? 1 : 0;
+      if (n > permis) copies.push(`${chemin} (${n})`);
+    }
+    assert.deepEqual(copies, [],
+      'la phrase est recopiée hors de sa source : une vue peut mentir seule');
+  });
+
+  it('la source de la phrase dit autre chose sur un 401', () => {
+    const source = sansCommentaires(lire('front/src/composants/formulaire.jsx'));
+    const bloc = source.match(/export function EchecDeChargement[\s\S]*?\n}/)?.[0] ?? '';
+    assert.ok(bloc, 'le composant d\'échec de chargement est introuvable');
+    assert.match(bloc, /sessionExpiree|401/,
+      'le composant ne distingue pas le jeton expiré');
+    assert.match(bloc, /session a expir/,
+      'rien ne dit à la personne que sa session a expiré');
+  });
+});

@@ -15,3 +15,19 @@
 export function doitContinuerARelire(statut) {
   return statut !== 401 && statut !== 403;
 }
+
+/**
+ * Le refus est-il un jeton expiré plutôt qu'un droit manquant ?
+ *
+ * <p>Les deux ne se relisent pas — `doitContinuerARelire` garde son sens pour
+ * les deux — mais ils ne se DISENT pas pareil. Un 401 affiché en « Réservé au
+ * gérant » fait croire à la personne qu'elle n'a pas les droits ; elle le dira
+ * au gérant, qui ne comprendra pas. C'est la confusion des deux qui produisait
+ * le mensonge, pendant les trente secondes qui séparent l'expiration de la
+ * purge par `/api/file`.
+ *
+ * @param statut le code HTTP de l'échec, ou `undefined` si le réseau est tombé
+ */
+export function sessionExpiree(statut) {
+  return statut === 401;
+}

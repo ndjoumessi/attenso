@@ -107,22 +107,26 @@ describe('chaque vue range la réponse dans son état', () => {
 describe('Mesure et Carnets disent leur échec eux-mêmes', () => {
   const CAS = [
     ['Mesure', 'front/src/accueil/Mesure.jsx', /\.then\(\(recue\) => \{\s*setMesure\(recue\);\s*setEchec\(false\);/,
-      "La mesure n'a pas pu être chargée"],
+      'La mesure'],
     ['Carnets', 'front/src/accueil/Sections.jsx',
-      /\.then\(\(recus\) => \{ setAnimaux\(recus\); setEchec\(false\); \}\)\s*\.catch\(\(\) => setEchec\(true\)\)/,
-      "Les carnets n'ont pas pu être chargés"],
+      /\.then\(\(recus\) => \{ setAnimaux\(recus\); setEchec\(false\); \}\)\s*\.catch\(\(probleme\) => setEchec\(/,
+      'Les carnets'],
   ];
 
   for (const [composant, fichier, succes, message] of CAS) {
     it(`${composant} : la remise à zéro est liée au succès, le catch pose l'échec`, () => {
       const corps = corpsDe(fichier, composant);
       assert.match(corps, succes, 'le succès ne remet pas l\'échec à zéro dans la même expression');
-      assert.match(corps, /\.catch\(\(\) => setEchec\(true\)\)/, 'le catch ne pose pas l\'échec');
+      // Le catch retient désormais le STATUT et non un booléen : un 401 ne se
+      // dit pas comme une panne. La propriété gardée reste la même — l'échec
+      // est retenu — et `?? 'reseau'` garantit qu'il reste vrai sans statut.
+      assert.match(corps, /\.catch\(\(probleme\) => setEchec\(probleme\.statut \?\? 'reseau'\)\)/,
+        'le catch ne retient pas le statut de l\'échec');
     });
 
     it(`${composant} : l'échec se dit, avec le gabarit « n'a pas pu être … Réessayez »`, () => {
       assert.match(corpsDe(fichier, composant),
-        new RegExp(`\\{echec && \\(\\s*<div className="mt-4">\\s*<Erreur>\\s*${message}\\. Réessayez dans un instant\\.\\s*</Erreur>`),
+        new RegExp(`\\{echec && \\(\\s*<div className="mt-4">\\s*<EchecDeChargement statut=\\{echec\\} quoi="${message}"`),
         'l\'échec du chargement ne se dit pas');
     });
   }
