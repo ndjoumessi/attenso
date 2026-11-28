@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 const JETONS = 'src/main/resources/static/app/jetons.css';
@@ -178,5 +179,104 @@ describe('les règles non négociables du socle', () => {
 
   it('déclare color-scheme pour que les contrôles natifs suivent le thème', () => {
     assert.match(source, /color-scheme:\s*light dark/);
+  });
+});
+
+/**
+ * Un jeton déclaré et jamais employé finit par servir, et rarement comme son
+ * nom le promettait. Vingt-deux dormaient dans `jetons.css` — les familles
+ * `--pas-*`, `--txt-*`, `--plan-*`, plus `--interligne-*` et `--rayon-plein` —
+ * et ont été retirés le 2026-11-28.
+ *
+ * <p><strong>Mesurer « jamais employé » est le piège, et je m'y suis pris à
+ * trois fois.</strong> Deux faux positifs, chacun prêt à faire supprimer un
+ * jeton vivant :
+ *
+ * <ol>
+ * <li>Les jetons du bloc `@theme` de Tailwind ne s'écrivent presque jamais
+ *     `var(--color-accent)` : ils engendrent des UTILITAIRES — `bg-accent`,
+ *     `text-sur-fond-doux`. Les chercher sous leur nom complet les déclarait
+ *     tous morts, les trente-neuf.</li>
+ * <li>`--mur-fond` et `--mur-encre` ne vivent que dans `front/app/ecran.html`,
+ *     une page d'entrée écrite à la main. En ne balayant que `front/src`, on
+ *     les déclarait morts aussi.</li>
+ * </ol>
+ *
+ * <p>Et la direction inverse compte autant : les `.html` de
+ * `static/app/` sont CONSTRUITS. Les balayer ferait passer pour vivant un
+ * jeton que plus personne n'écrit, jusqu'au prochain build.
+ */
+describe('aucun jeton ne dort dans la feuille', () => {
+  const RACINE = resolve(import.meta.dirname, '../../..');
+
+  /** Les dossiers de sources écrites à la main, et eux seuls. */
+  const SOURCES = [
+    ['front/src', true], ['front/app', false], ['front/contenu', false],
+    ['front', false], ['src/main/resources/static/app', false],
+  ];
+  const LISIBLES = /\.(jsx|css|html|mjs|js)$/;
+
+  /** Les fichiers d'un dossier, récursivement ou non. */
+  function fichiers(dossier, recursif) {
+    const out = [];
+    let entrees;
+    try {
+      entrees = readdirSync(resolve(RACINE, dossier), { withFileTypes: true });
+    }
+    catch { return out; }
+    for (const e of entrees) {
+      const chemin = `${dossier}/${e.name}`;
+      if (e.isDirectory()) {
+        if (recursif) out.push(...fichiers(chemin, true));
+      }
+      // Les `.html` de `static/app` sont CONSTRUITS : les balayer ferait
+      // passer pour vivant un jeton que plus personne n'écrit.
+      else if (LISIBLES.test(e.name)
+        && !(dossier.endsWith('static/app') && e.name.endsWith('.html'))) {
+        out.push(chemin);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Deux jetons appartiennent au contrat du thème shadcn vendorisé, pas au
+   * nôtre : `sidebar-primary` et sa paire. Aucun composant ne les emploie
+   * aujourd'hui, mais les retirer casserait silencieusement le prochain
+   * composant vendorisé qui les attend.
+   */
+  const CONTRAT_VENDORISE = new Set([
+    '--color-sidebar-primary', '--color-sidebar-primary-foreground',
+  ]);
+
+  it('chaque jeton déclaré est employé quelque part', () => {
+    const textes = SOURCES.flatMap(([dossier, recursif]) =>
+      fichiers(dossier, recursif)
+        .map((f) => [f, readFileSync(resolve(RACINE, f), 'utf8')]));
+    assert.ok(textes.length > 50, `seulement ${textes.length} sources balayées`);
+
+    const theme = readFileSync(resolve(RACINE, 'front/src/styles.css'), 'utf8');
+    const bloc = theme.slice(theme.indexOf('@theme inline {'));
+    const dansLeTheme = new Set(
+      [...bloc.slice(0, bloc.indexOf('\n}')).matchAll(/^\s*(--[a-z0-9-]+)\s*:/gm)]
+        .map((m) => m[1]));
+
+    const dorment = [];
+    for (const fichier of [JETONS, 'front/src/styles.css']) {
+      const declare = readFileSync(resolve(RACINE, fichier), 'utf8');
+      for (const [, jeton] of declare.matchAll(/^\s*(--[a-z0-9-]+)\s*:/gm)) {
+        if (CONTRAT_VENDORISE.has(jeton)) continue;
+        const direct = new RegExp(`var\\(\\s*${jeton}\\s*\\)`);
+        let vu = textes.some(([, t]) => direct.test(t));
+        if (!vu && dansLeTheme.has(jeton)) {
+          const utilitaire = jeton.replace(/^--(color|radius|shadow|font|text|spacing)-/, '');
+          const motif = new RegExp(`[-:\\[\\s"'\`]${utilitaire}(?![a-z0-9-])`);
+          vu = textes.some(([f, t]) => !f.endsWith('styles.css') && motif.test(t));
+        }
+        if (!vu) dorment.push(jeton);
+      }
+    }
+    assert.deepEqual([...new Set(dorment)], [],
+      'des jetons sont déclarés et jamais employés : les retirer, ou les employer');
   });
 });

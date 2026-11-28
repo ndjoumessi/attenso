@@ -14,34 +14,13 @@
   color-scheme: light dark;
 
   /* --- Rythme d'espacement, base 4 ------------------------------------ */
-  --pas-1: 0.25rem;   /*  4px */
-  --pas-2: 0.5rem;    /*  8px */
-  --pas-3: 0.75rem;   /* 12px */
-  --pas-4: 1rem;      /* 16px */
-  --pas-6: 1.5rem;    /* 24px */
-  --pas-8: 2rem;      /* 32px */
-  --pas-12: 3rem;     /* 48px */
   --pas-16: 4rem;     /* 64px */
   --pas-24: 6rem;     /* 96px */
-
-  /* --- Échelle typographique ------------------------------------------ */
-  --txt-xs: 0.75rem;   /* 12px — étiquettes seulement */
-  --txt-sm: 0.875rem;  /* 14px */
-  --txt-base: 1rem;    /* 16px — plancher du corps de texte */
-  --txt-lg: 1.125rem;  /* 18px */
-  --txt-xl: 1.375rem;  /* 22px */
-  --txt-2xl: 1.75rem;  /* 28px */
-  --txt-3xl: 2.25rem;  /* 36px */
-  --txt-4xl: 3rem;     /* 48px */
-
-  --interligne-serre: 1.2;
-  --interligne-corps: 1.6;
 
   /* --- Formes --------------------------------------------------------- */
   --rayon-sm: 6px;
   --rayon: 10px;
   --rayon-lg: 16px;
-  --rayon-plein: 999px;
 
   /* Deux niveaux d'élévation, pas plus : une échelle d'ombres improvisée
      est le signe le plus sûr d'une interface assemblée au fil de l'eau. */
@@ -70,12 +49,6 @@
      elle sera ajoutée AVEC son usage, et mesurée. */
   --duree-courte: 150ms;
   --courbe-entree: cubic-bezier(0.2, 0, 0, 1);
-
-  /* --- Plans ----------------------------------------------------------- */
-  --plan-contenu: 0;
-  --plan-colle: 10;
-  --plan-bandeau: 20;
-  --plan-dialogue: 40;
 
   /* --- Couleurs, mode clair -------------------------------------------
      Chaque ratio mesuré contre son fond d'usage. */
