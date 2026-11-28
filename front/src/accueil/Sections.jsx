@@ -4,7 +4,7 @@ import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
 import { Adresse } from '../composants/adresse.jsx';
 import {
-  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, EchecRelecture, Erreur, SECONDAIRE,
 } from '../composants/formulaire.jsx';
 import { Qr } from '../composants/qr.jsx';
 import { entete } from './session.js';
@@ -47,10 +47,13 @@ export function Agenda({ jeton, vide, titre = true }) {
       {/* Trois états, et non deux : pas encore chargé, chargé et vide, chargé
           et plein. Sans squelette, le premier ressemblait au deuxième — un
           écran nu — et on ne pouvait pas savoir si la page travaillait. */}
-      {rdvs === null ? (echec ? (
-        <Erreur>Les rendez-vous n'ont pas pu être chargés. Réessayez dans un
-          instant.</Erreur>
-      ) : <Squelette />) : rdvs.length === 0 ? vide : (
+      {/* L'échec était rendu SOUS `rdvs === null` : une fois la liste chargée,
+          une relecture ratée ne laissait plus aucun signal, et l'écran
+          montrait des rendez-vous vieux de deux minutes avec l'aplomb des
+          rendez-vous du moment. Le signal vit maintenant à côté de la liste,
+          pas à sa place. */}
+      {echec && <EchecRelecture aDesDonnees={rdvs !== null} quoi="Ces rendez-vous" />}
+      {rdvs === null ? (echec ? null : <Squelette />) : rdvs.length === 0 ? vide : (
         <ul aria-busy={rdvs === null} className="mt-4 space-y-2">
           {rdvs.map((rdv) => (
             <li key={rdv.reference ?? `${rdv.heure}-${rdv.motif}`}

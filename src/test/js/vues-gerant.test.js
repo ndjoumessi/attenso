@@ -115,9 +115,15 @@ describe('les vues réservées au gérant', () => {
     it('Exploitation : la facturation démarre à `null`, et son échec se dit', () => {
       const corps = corpsDeVue('Exploitation');
       assert.match(corps, /\[facturation, setFacturation\] = useState\(null\)/);
+      // L'assertion d'avant exigeait `facturation === null &&` : elle PINAIT
+      // le défaut. Des montants périmés après un 500 restaient muets, et la
+      // garde l'imposait. On exige désormais l'inverse.
       assert.match(corps,
-        /\{!refuse && facturation === null && echecFacturation && \(\s*<div[^>]*>\s*<Erreur>\s*La facturation n'a pas pu être chargée/,
+        /\{!refuse && echecFacturation && \(\s*<div[^>]*>\s*<EchecRelecture/,
         'l\'échec de la facturation ne se dit pas, ou sa condition n\'est plus liée');
+      assert.doesNotMatch(corps, /facturation === null && echecFacturation/,
+        'le signal est de nouveau conditionné à des montants absents : '
+        + 'des montants périmés redeviendraient muets');
     });
   });
 });
