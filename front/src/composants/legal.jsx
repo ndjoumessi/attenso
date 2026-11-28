@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BandeLegale, Retour } from './chrome.jsx';
+import { ANNEAU_LIENS } from './formulaire.jsx';
 
 /** Ce qui manque est dit, pas masqué : un blanc dans des mentions légales
  *  ressemble à une page en règle, et ne l'est pas. */
@@ -42,12 +43,21 @@ export function PageLegale({ titre, children }) {
       <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{titre}</h1>
       {/* La mesure est bornée à 70 caractères : au-delà, l'œil perd la ligne
           suivante, et un texte juridique est déjà assez difficile à suivre. */}
-      <div className="mt-8 max-w-[70ch] space-y-4 leading-relaxed
-                      [&_a]:text-accent-texte [&_a]:underline
+      {/* L'anneau est posé ICI, sur le conteneur, et non par les liens
+          eux-mêmes : cinq des sept liens de ces pages vivent dans le HTML
+          juridique injecté, qui n'est pas du JSX et ne peut porter aucune
+          classe. Mesuré au clavier en production avant correction : le lien
+          « CNIL » du corps rendait l'anneau bleu du navigateur pendant que
+          « Mentions légales », deux centimètres plus bas, rendait le vert du
+          produit. Les trois classes sont écrites en toutes lettres plutôt que
+          composées depuis `ANNEAU` : Tailwind lit le TEXTE des sources, une
+          classe fabriquée à l'exécution ne serait jamais générée. */}
+      <div className={`mt-8 max-w-[70ch] space-y-4 leading-relaxed
+                      [&_a]:text-accent-texte [&_a]:underline ${ANNEAU_LIENS}
                       [&_dd]:mb-2 [&_dt]:mt-3 [&_dt]:font-semibold
                       [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-bold
                       [&_h3]:mt-6 [&_h3]:font-semibold
-                      [&_li]:mt-1 [&_ul]:list-disc [&_ul]:pl-6">
+                      [&_li]:mt-1 [&_ul]:list-disc [&_ul]:pl-6`}>
         {children}
       </div>
       <BandeLegale />

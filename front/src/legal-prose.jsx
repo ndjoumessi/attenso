@@ -25,9 +25,19 @@ export function ProseLegale({ titre, html }) {
     if (denomination) {
       denomination.textContent = editeur.denomination?.trim() || MANQUE;
     }
+    // Un champ absent ne doit pas fabriquer un lien vers nulle part. Mesuré
+    // en production le 2026-11-28 : les douze champs de l'éditeur étaient
+    // vides, et la page publique de confidentialité offrait « à compléter »
+    // en lien cliquable vers `#` comme seul chemin pour exercer ses droits.
+    // Le visiteur cliquait et remontait en haut de page.
     for (const lien of hote.current.querySelectorAll('[data-courriel]')) {
-      lien.textContent = editeur.email || MANQUE;
-      if (editeur.email) lien.href = `mailto:${editeur.email}`;
+      if (editeur.email) {
+        lien.textContent = editeur.email;
+        lien.href = `mailto:${editeur.email}`;
+      }
+      else {
+        lien.replaceWith(document.createTextNode(MANQUE));
+      }
     }
   }, [editeur]);
 

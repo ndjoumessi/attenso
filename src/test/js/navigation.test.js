@@ -633,3 +633,44 @@ describe('les vues du groupe Journée', () => {
       'le tableau monte encore une section en direct, sans état vide');
   });
 });
+
+/**
+ * Le tableau est l'écran que l'accueil tient toute la journée, et c'était le
+ * seul du produit sans repère de navigation ni lien d'évitement.
+ *
+ * <p>Mesuré dans l'arbre d'accessibilité : ONZE arrêts de tabulation — huit
+ * entrées de menu, le lien vers le site, la déconnexion — avant la première
+ * action de la file. La vitrine, elle, a son lien d'évitement depuis le
+ * début. La barre latérale de shadcn rend un `div` : il n'existait aucun
+ * `nav` dans tout le front.
+ */
+describe('le tableau se traverse au clavier', () => {
+  const BARRE = 'front/src/accueil/Barre.jsx';
+  const ACCUEIL = 'front/src/accueil.jsx';
+
+  it('expose la barre latérale comme un repère de navigation nommé', () => {
+    const source = sansCommentaires(lire(BARRE));
+    const nav = source.match(/<nav[^>]*>/)?.[0] ?? '';
+    assert.ok(nav, 'la barre ne rend aucun `nav` : sa navigation n\'est pas un repère');
+    assert.match(nav, /aria-label="[^"]+"/,
+      'le repère de navigation n\'est pas nommé : plusieurs `nav` dans une page '
+      + 'ne se distinguent que par l\'étiquette');
+    // Fenêtre BORNÉE : le repère doit englober le menu, pas vivre à côté.
+    assert.match(source, /<nav[\s\S]{0,400}?<SidebarMenu/,
+      'le menu est rendu hors du repère de navigation');
+  });
+
+  it('offre un lien d\'évitement vers le contenu', () => {
+    const source = sansCommentaires(lire(ACCUEIL));
+    const lien = source.match(/<a href="#([\w-]+)"[\s\S]{0,400}?<\/a>/);
+    assert.ok(lien, 'aucun lien d\'évitement : onze tabulations avant la file');
+    assert.match(lien[0], /sr-only focus:not-sr-only/,
+      'le lien d\'évitement est visible en permanence, ou jamais');
+    // La cible doit exister, sinon le lien ne mène nulle part — c'est le
+    // défaut qu'on vient de corriger sur la page de confidentialité.
+    assert.match(source, new RegExp(`id="${lien[1]}"`),
+      `le lien d\'évitement vise #${lien[1]}, qui n\'existe pas dans la page`);
+    assert.ok(source.indexOf(lien[0]) < source.indexOf('<Barre'),
+      'le lien d\'évitement est rendu après la barre : on l\'atteint trop tard');
+  });
+});

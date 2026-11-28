@@ -200,9 +200,20 @@ describe('tout ce qui prend le focus porte le même anneau', () => {
       // le fichier entier, comme je l'avais fait, laissait `CHAMP` réécrire
       // l'anneau juste au-dessus d'`ANNEAU` sans que rien ne le dise — et
       // c'est une mutation qui frappait la mauvaise ligne qui me l'a appris.
-      const permis = nom === 'composants/formulaire.jsx' ? 1 : 0;
+      // Deux dans le fichier source depuis le 2026-11-28 : la définition, et
+      // `ANNEAU_LIENS`, la variante `[&_a]:` pour les liens qu'on ne peut pas
+      // habiller un par un — le HTML juridique injecté n'est pas du JSX.
+      // Elle ne peut pas être composée depuis `ANNEAU` : Tailwind lit le texte
+      // des sources. Le compte reste un fil-piège, et l'assertion ci-dessous
+      // empêche que la deuxième place serve à autre chose qu'à cette variante.
+      const permis = nom === 'composants/formulaire.jsx' ? 2 : 0;
       if (n > permis) copies.push(`${nom} (${n} fois)`);
     }
     assert.deepEqual(copies, [], 'l\'anneau est réécrit hors de sa source');
+    // La deuxième occurrence du fichier source est bien la variante
+    // descendante, et pas une copie de plus qui aurait pris sa place.
+    const src = rendu(lire('front/src/composants/formulaire.jsx'));
+    assert.match(src, /export const ANNEAU_LIENS = [\s\S]*?\[&_a\]:focus-visible:outline-\[var\(--anneau\)\]/,
+      'la seconde écriture de l\'anneau n\'est pas la variante des liens');
   });
 });
