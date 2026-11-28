@@ -31,13 +31,19 @@ export function ProseLegale({ titre, html }) {
     // en lien cliquable vers `#` comme seul chemin pour exercer ses droits.
     // Le visiteur cliquait et remontait en haut de page.
     for (const lien of hote.current.querySelectorAll('[data-courriel]')) {
-      if (editeur.email) {
-        lien.textContent = editeur.email;
-        lien.href = `mailto:${editeur.email}`;
-      }
-      else {
-        lien.replaceWith(document.createTextNode(MANQUE));
-      }
+      lien.textContent = editeur.email || MANQUE;
+      // On RETIRE l'adresse, on ne retire pas l'élément. Un `<a>` sans `href`
+      // n'est ni un lien, ni focalisable, ni cliquable : le défaut est bien
+      // fermé. Mais l'élément reste là, donc ce passage est RÉVERSIBLE.
+      //
+      // La version précédente le remplaçait par du texte, et c'était faux :
+      // `useEditeur` part de champs vides, l'effet s'exécute une première fois
+      // avant la réponse du serveur, détruisait l'ancre — et au retour de la
+      // réponse `querySelectorAll` ne trouvait plus rien à remplir. Mesuré en
+      // production : l'API rendait le courriel, la page affichait
+      // « à compléter » pour toujours.
+      if (editeur.email) lien.href = `mailto:${editeur.email}`;
+      else lien.removeAttribute('href');
     }
   }, [editeur]);
 
