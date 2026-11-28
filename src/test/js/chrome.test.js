@@ -149,10 +149,18 @@ describe('le corps des pages légales habille ses liens comme le reste du produi
     const source = rendu(lire('front/src/legal-prose.jsx'));
     const boucle = source.match(/for \(const lien of[\s\S]*?\n {4}\}/)?.[0] ?? '';
     assert.ok(boucle, 'la boucle sur les liens de courriel est introuvable');
-    assert.match(boucle, /replaceWith/,
-      'le gabarit garde sa balise `a href="#"` quand le courriel manque : '
+    assert.match(boucle, /removeAttribute\('href'\)/,
+      'le gabarit garde son `href="#"` quand le courriel manque : '
       + '« à compléter » devient un lien qui ne mène nulle part');
     assert.match(boucle, /if \(editeur\.email\)/,
       'la pose du lien n\'est pas conditionnée à la présence du courriel');
+    // RÉVERSIBLE, et c'est une régression vécue : `useEditeur` part de champs
+    // vides, donc l'effet passe une première fois AVANT la réponse du serveur.
+    // Une version qui retirait l'élément au lieu de son `href` ne trouvait plus
+    // rien à remplir au retour de la réponse, et la page affichait
+    // « à compléter » pour toujours — mesuré en production.
+    assert.doesNotMatch(boucle, /replaceWith|\.remove\(\)/,
+      'le passage détruit l\'élément : la réponse du serveur, qui arrive après, '
+      + 'ne trouvera plus rien à remplir');
   });
 });
