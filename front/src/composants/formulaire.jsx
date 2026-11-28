@@ -1,3 +1,4 @@
+import { sessionExpiree } from '../accueil/refus.js';
 // Les primitives de formulaire, partagées par les écrans qui en portent un.
 // Elles existent parce que les mêmes classes revenaient à l'identique sur
 // cinq pages : un champ y change de bordure, et il doit changer partout.
@@ -133,6 +134,28 @@ export function EchecRelecture({ aDesDonnees, quoi }) {
         : `${quoi} n'ont pas pu être lus.`}
     </p>
   );
+}
+
+/**
+ * Un chargement a échoué : dire quoi faire, et ne pas mentir.
+ *
+ * <p>« Réessayez dans un instant » était recopié dans cinq vues, et c'est ce
+ * qui avait permis à `affiche.jsx` d'être juste — il renvoyait à la connexion
+ * sur un 401 — pendant que les cinq autres conseillaient de réessayer un
+ * refus qui sera refusé de nouveau.
+ *
+ * @param statut le code HTTP de l'échec, `'reseau'` si rien n'a répondu
+ * @param quoi le sujet, tel qu'il ouvre la phrase : « La mesure »
+ */
+export function EchecDeChargement({ statut, quoi }) {
+  if (sessionExpiree(statut)) {
+    return (
+      <Erreur>
+        Votre session a expiré. La page va revenir à l'écran de connexion.
+      </Erreur>
+    );
+  }
+  return <Erreur>{quoi} n'a pas pu être chargé. Réessayez dans un instant.</Erreur>;
 }
 
 export function Erreur({ children }) {

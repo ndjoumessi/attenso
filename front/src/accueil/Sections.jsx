@@ -4,7 +4,8 @@ import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import { heureCourte } from '../../../src/main/resources/static/app/formats.js';
 import { Adresse } from '../composants/adresse.jsx';
 import {
-  AIDE, ANNEAU, CHAMP, ETIQUETTE, EchecRelecture, Erreur, SECONDAIRE,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, EchecDeChargement, EchecRelecture, Erreur,
+  SECONDAIRE,
 } from '../composants/formulaire.jsx';
 import { Qr } from '../composants/qr.jsx';
 import { entete } from './session.js';
@@ -35,7 +36,7 @@ export function Agenda({ jeton, vide, titre = true }) {
       .then((recus) => { setRdvs(recus); setEchec(false); })
       // L'agenda est un à-côté : il ne doit pas masquer la file. Une liste déjà
       // chargée est gardée si un rafraîchissement échoue.
-      .catch(() => setEchec(true));
+      .catch((probleme) => setEchec(probleme.statut ?? 'reseau'));
     relire();
     const t = setInterval(relire, 120000);
     return () => clearInterval(t);
@@ -97,7 +98,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
   // événement SSE. Une liste déjà chargée est gardée si une relecture échoue.
   const relire = () => appel('/api/animaux', { headers: entete(jeton) })
     .then((recus) => { setAnimaux(recus); setEchec(false); })
-    .catch(() => setEchec(true));
+    .catch((probleme) => setEchec(probleme.statut ?? 'reseau'));
 
   useEffect(() => { relire(); }, [jeton]);
 
@@ -161,9 +162,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
       {titre && <Titre>Carnets de santé</Titre>}
       {echec && (
         <div className="mt-4">
-          <Erreur>
-            Les carnets n'ont pas pu être chargés. Réessayez dans un instant.
-          </Erreur>
+          <EchecDeChargement statut={echec} quoi="Les carnets" />
         </div>
       )}
       <form onSubmit={ajouter} className="mt-4 space-y-4">
@@ -241,7 +240,7 @@ export function Carnets({ jeton, surErreur, vide, titre = true }) {
                 )}
                 {echecQr && (
                   <p role="status" className={AIDE}>
-                    Le QR n'a pas pu être chargé. Réessayez dans un instant.
+                    Le QR n'a pas pu être chargé. Réessayez.
                   </p>
                 )}
               </div>

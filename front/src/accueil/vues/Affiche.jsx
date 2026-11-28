@@ -48,7 +48,7 @@ export function Affiche({ jeton, titre = true }) {
       {echec && (
         <div className="mt-4">
           <Erreur>
-            L'affiche n'a pas pu être chargée. Réessayez dans un instant.
+            L'affiche n'a pas pu être chargée. Réessayez.
           </Erreur>
         </div>
       )}

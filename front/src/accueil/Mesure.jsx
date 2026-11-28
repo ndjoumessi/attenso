@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { appel } from '../../../src/main/resources/static/app/attenso.js';
 import {
-  AIDE, ANNEAU, CHAMP, ETIQUETTE, Erreur, SECONDAIRE,
+  AIDE, ANNEAU, CHAMP, ETIQUETTE, EchecDeChargement, Erreur, SECONDAIRE,
 } from '../composants/formulaire.jsx';
 import { entete } from './session.js';
 import { Titre } from './Sections.jsx';
@@ -52,7 +52,7 @@ export function Mesure({ jeton, surErreur, titre = true }) {
       })
       // Local : la mesure est un à-côté, son indisponibilité ne doit pas couvrir
       // le tableau, et le bandeau partagé serait effacé à chaque événement SSE.
-      .catch(() => setEchec(true));
+      .catch((probleme) => setEchec(probleme.statut ?? 'reseau'));
     relire();
     const t = setInterval(relire, 120000);
     return () => clearInterval(t);
@@ -98,9 +98,7 @@ export function Mesure({ jeton, surErreur, titre = true }) {
       {titre && <Titre>Mesure de l'auto-enregistrement</Titre>}
       {echec && (
         <div className="mt-4">
-          <Erreur>
-            La mesure n'a pas pu être chargée. Réessayez dans un instant.
-          </Erreur>
+          <EchecDeChargement statut={echec} quoi="La mesure" />
         </div>
       )}
       <p className={AIDE}>

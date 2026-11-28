@@ -563,7 +563,8 @@ describe('les vues du groupe Journée', () => {
 
   it('un agenda qui n\'a pas pu charger ne dit pas « aucun rendez-vous »', () => {
     const corps = corpsDeSection(VUES_JOURNEE[0]);
-    assert.match(corps, /\.catch\(\(\) => setEchec\(true\)\)/,
+    // Le statut, et non un booléen : un 401 ne se dit pas comme une panne.
+    assert.match(corps, /\.catch\(\(probleme\) => setEchec\(probleme\.statut \?\? 'reseau'\)\)/,
       'l\'échec du chargement n\'est pas retenu');
     // La PROPRIÉTÉ, et non la forme du ternaire : la branche « pas encore
     // chargé » doit dire l'échec s'il y en a un, montrer qu'elle travaille
