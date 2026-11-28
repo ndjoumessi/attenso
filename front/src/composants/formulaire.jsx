@@ -18,6 +18,25 @@
 export const ANNEAU = 'focus-visible:outline-2 focus-visible:outline-offset-2 '
   + 'focus-visible:outline-[var(--anneau)]';
 
+/**
+ * Le même anneau, pour les liens qu'on ne peut pas habiller un par un.
+ *
+ * <p>Les pages légales injectent du HTML juridique qui n'est pas du JSX :
+ * cinq de leurs sept liens ne peuvent porter aucune classe, et c'est donc
+ * leur conteneur qui doit les habiller. Mesuré au clavier en production le
+ * 2026-11-28 avant correction : un lien du corps rendait l'anneau bleu du
+ * navigateur pendant que celui de la bande, deux centimètres plus bas,
+ * rendait le vert du produit.
+ *
+ * <p>Écrit en toutes lettres et non composé depuis {@link ANNEAU} : Tailwind
+ * lit le TEXTE des sources, une classe fabriquée à l'exécution ne serait
+ * jamais générée. C'est la seule raison pour laquelle le triplet apparaît
+ * deux fois dans ce fichier — et il n'apparaît nulle part ailleurs.
+ */
+export const ANNEAU_LIENS = '[&_a]:focus-visible:outline-2 '
+  + '[&_a]:focus-visible:outline-offset-2 '
+  + '[&_a]:focus-visible:outline-[var(--anneau)]';
+
 // Au survol la bordure se renforce, au focus elle passe à l'accent : le champ
 // actif se repère d'un coup d'œil, même sans l'anneau, sur une tablette vue de
 // biais. Les deux restent au-dessus du 3:1 (bordure-controle l'est, accent aussi).

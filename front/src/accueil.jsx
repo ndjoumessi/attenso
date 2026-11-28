@@ -236,6 +236,20 @@ function Tableau({ jeton, surDeconnexion }) {
 
   return (
     <SidebarProvider open onOpenChange={RESTE_OUVERTE}>
+      {/* Onze arrêts de tabulation séparaient le chargement de la page de la
+          première action de la file — huit entrées de menu, le lien vers le
+          site, la déconnexion. La vitrine avait son lien d'évitement depuis le
+          début ; cet écran-ci, celui que l'accueil tient toute la journée, non.
+          Invisible tant qu'il n'a pas le focus, premier dans l'ordre du DOM
+          pour être atteint avant la barre. */}
+      <a href="#tableau"
+         className={`sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0
+                     focus:z-30 focus:m-3 focus:rounded-[var(--rayon)]
+                     focus:border focus:border-bordure-controle focus:bg-surface
+                     focus:px-4 focus:py-2 focus:font-semibold focus:shadow-1
+                     ${ANNEAU}`}>
+        Aller au tableau
+      </a>
       <Barre identite={identite} vueCourante={vue} enFile={tableau?.enFile ?? 0}
              surChangement={allerA} />
       <SidebarInset>
@@ -245,7 +259,10 @@ function Tableau({ jeton, surDeconnexion }) {
             où ils comptent — pendant une panne, quand l'ASV change de vue. */}
         <Bandeaux horsReseau={horsReseau} journalAbsent={journalAbsent}
                   derniereVue={derniereVue} restantes={commandes.length} />
-        <div className={`mx-auto w-full px-5 py-8
+        {/* `tabIndex={-1}` : sans lui, le saut déplace la vue mais pas le
+            focus, et la tabulation suivante repart du haut de la barre. */}
+        <div id="tableau" tabIndex={-1}
+             className={`mx-auto w-full px-5 py-8
                          ${LARGEURS[vue] ?? COLONNE_DE_LECTURE}`}>
           <OuvreLaBarre />
           <Entete titre={libellePour(vue)} vue={tableau} commandes={commandes}

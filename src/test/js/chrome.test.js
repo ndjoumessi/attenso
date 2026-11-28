@@ -103,3 +103,56 @@ describe('la coquille partagée des pages publiques', () => {
     }
   });
 });
+
+/**
+ * Les pages légales, où l'anneau de focus était revenu à celui du navigateur.
+ *
+ * <p>Mesuré au clavier sur la production le 2026-11-28 : en tabulant dans le
+ * corps de `/confidentialite`, le lien « CNIL » rendait
+ * `1px auto rgb(153, 200, 255)` — le bleu par défaut — pendant que le lien
+ * « Mentions légales » de la bande, deux centimètres plus bas, rendait
+ * `2px solid rgb(78, 168, 138)`, celui du produit. Deux anneaux sur la même
+ * page : exactement ce que `ANNEAU` dit avoir corrigé, revenu par la porte des
+ * pages légales.
+ *
+ * <p>`PageLegale` habillait ses liens descendants en couleur et soulignement,
+ * pas en focus. Sept liens étaient concernés : deux écrits dans
+ * `mentions.jsx`, cinq dans le HTML juridique injecté — qui ne peut porter
+ * aucune classe, puisqu'il n'est pas du JSX. C'est donc le CONTENEUR qui doit
+ * les habiller, et c'est pour ça que la garde porte sur lui.
+ */
+describe('le corps des pages légales habille ses liens comme le reste du produit', () => {
+  const LEGAL = 'front/src/composants/legal.jsx';
+
+  it("donne à ses liens descendants l'anneau du produit", () => {
+    const source = rendu(lire(LEGAL));
+    // Sur la MÊME étendue que la couleur : un anneau posé sur un autre
+    // élément de la page ne toucherait pas les liens du corps juridique.
+    // Guillemets droits OU gabarit : la forme de la chaîne n'est pas la
+    // propriété. Ce qui compte est que l'anneau soit sur la MÊME étendue que
+    // la couleur — posé sur un autre élément, il ne toucherait pas les liens.
+    const conteneur = source.match(/className=(?:"[^"]*"|\{`[^`]*`\})/g)
+      ?.find((c) => c.includes('[&_a]:underline')) ?? '';
+    assert.ok(conteneur, 'le conteneur qui habille les liens est introuvable');
+    assert.match(conteneur, /ANNEAU_LIENS|\[&_a\]:focus-visible:outline-\[var\(--anneau\)\]/,
+      'le corps légal ne pose pas l\'anneau sur ses liens : ils retombent sur '
+      + 'celui du navigateur, différent de celui de la bande juste en dessous');
+  });
+
+  /**
+   * Un champ d'éditeur absent ne doit pas fabriquer un lien vers nulle part.
+   * Mesuré en production : les DOUZE champs sont vides, et la page publique de
+   * confidentialité offrait « à compléter » en lien cliquable vers `#` comme
+   * seul chemin pour exercer ses droits.
+   */
+  it("ne rend pas un lien quand le courriel de l'éditeur manque", () => {
+    const source = rendu(lire('front/src/legal-prose.jsx'));
+    const boucle = source.match(/for \(const lien of[\s\S]*?\n {4}\}/)?.[0] ?? '';
+    assert.ok(boucle, 'la boucle sur les liens de courriel est introuvable');
+    assert.match(boucle, /replaceWith/,
+      'le gabarit garde sa balise `a href="#"` quand le courriel manque : '
+      + '« à compléter » devient un lien qui ne mène nulle part');
+    assert.match(boucle, /if \(editeur\.email\)/,
+      'la pose du lien n\'est pas conditionnée à la présence du courriel');
+  });
+});

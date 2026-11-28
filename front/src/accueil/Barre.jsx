@@ -53,26 +53,31 @@ export function Barre({ identite, vueCourante, enFile, surChangement }) {
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        {/* La file est ÉPINGLÉE au-dessus des groupes : elle est l'écran par
-            défaut, pas une destination parmi d'autres. */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>{VUES.filter((v) => v.groupe === null).map(entree)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        {GROUPES.map((groupe) => (
-          <SidebarGroup key={groupe}>
-            <SidebarGroupLabel className="px-3 uppercase tracking-wide
-                                          text-sur-barre-doux">
-              {groupe}
-            </SidebarGroupLabel>
+        {/* `nav` nommé : la barre de shadcn rend un `div`, et il n'existait
+            aucun repère de navigation dans tout le front. Sans lui, un lecteur
+            d'écran n'a aucun moyen de sauter au menu ni de l'identifier. */}
+        <nav aria-label="Sections du tableau">
+          {/* La file est ÉPINGLÉE au-dessus des groupes : elle est l'écran par
+              défaut, pas une destination parmi d'autres. */}
+          <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {VUES.filter((v) => v.groupe === groupe).map(entree)}
-              </SidebarMenu>
+              <SidebarMenu>{VUES.filter((v) => v.groupe === null).map(entree)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ))}
+          {GROUPES.map((groupe) => (
+            <SidebarGroup key={groupe}>
+              <SidebarGroupLabel className="px-3 uppercase tracking-wide
+                                            text-sur-barre-doux">
+                {groupe}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {VUES.filter((v) => v.groupe === groupe).map(entree)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </nav>
       </SidebarContent>
       <SidebarSeparator />
       <SidebarFooter className="px-3 py-3">
